@@ -257,9 +257,9 @@ CONTAINS
 
     ! Create the filename for the last snapshot
 #ifdef MHDCLUSTER
-    WRITE(filename, '("nfs:",a,"/",i4.4,".l2d")') TRIM(data_dir), restart_snapshot
+    WRITE(filename, '("nfs:",a,"/",i4.4,".lld")') TRIM(data_dir), restart_snapshot
 #else
-    WRITE(filename, '(a,"/",i4.4,".l2d")') TRIM(data_dir), restart_snapshot
+    WRITE(filename, '(a,"/",i4.4,".lld")') TRIM(data_dir), restart_snapshot
 #endif
     ! Open the file
     CALL MPI_FILE_OPEN(comm, filename, MPI_MODE_RDONLY, &
