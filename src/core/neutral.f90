@@ -140,7 +140,7 @@ CONTAINS
        DO ix = -1, nx+2 
           rho0 = rho(ix,iy)
           e0 = energy(ix,iy)
-          Ta = MBAR * (gamma - 1.0_num) * (/  MAX((e0 - ionise_pot_local) / 2.0_num, none_zero), e0 /)
+          Ta = (gamma - 1.0_num) * (/  MAX((e0 - ionise_pot_local) / 2.0_num, none_zero), e0 /)
           IF (Ta(1) > Ta(2)) THEN 
              PRINT*, "Temperature bounds problem", Ta
              STOP
@@ -154,7 +154,7 @@ CONTAINS
              bof = Tr_bar/(f_bar * SQRT(x)) * EXP((0.25_num * (Tr_bar * x - 1.0_num) + 1.0_num) * T_bar / x)
              r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar*rho0 * bof))
              xi_a(1) = r / (1.0_num + r)
-             fa(1) = x - MBAR * (gamma - 1.0_num) * (e0 &
+             fa(1) = x - (gamma - 1.0_num) * (e0 &
                   - (1.0_num - xi_a(1)) * ionise_pot_local) / (2.0_num - xi_a(1))  
              IF (fa(1) <= 0.0_num) T = x
              IF (ABS(dx) < 1.e-8_num .OR. fa(1) == 0.0_num) EXIT
