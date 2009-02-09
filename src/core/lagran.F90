@@ -784,10 +784,9 @@ CONTAINS
              ! B at vertices
              bxv = (bx(ix,iy) + bx(ix,iyp)) / 2.0_num
              byv = (by(ix,iy) + by(ixp,iy)) / 2.0_num
-             bzv = (bz(ix,iy) + bz(ixp,iy) + bz(ix,iyp) &
-                  + bz(ixp,iyp)) / 4.0_num
+             bzv = (bz(ix,iy) + bz(ixp,iy) + bz(ix,iyp) + bz(ixp,iyp)) / 4.0_num
 
-             magn_b=SQRT(bxv**2+byv**2+bzv**2)
+             magn_b = bxv**2 + byv**2 + bzv**2
 
              !Calculate parallel and perpendicular currents
              j_par_x = (jx(ix,iy)*bxv + jy(ix,iy)*byv + jz(ix,iy)*bzv) * bxv / MAX(magn_b,none_zero)
