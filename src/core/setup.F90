@@ -280,12 +280,6 @@ CONTAINS
        END DO
     END DO
 
-    CALL MPI_ALLREDUCE(MINVAL(dxb(1:nx)), dxmin, 1, mpireal, MPI_MIN, &
-         comm, errcode)
-    CALL MPI_ALLREDUCE(MINVAL(dyb(1:ny)), dymin, 1, mpireal, MPI_MIN, &
-         comm, errcode)
-    min_grid_spacing = MIN(dxmin, dymin)
-
     DEALLOCATE( dxnew, dynew)
 
   END SUBROUTINE grid
