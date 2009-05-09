@@ -45,6 +45,10 @@ CONTAINS
     ALLOCATE(kx(0:nx+1, 0:ny+1), ky(0:nx+1, 0:ny+1))
     ALLOCATE(ux(0:nx+1, 0:ny+1), uy(0:nx+1, 0:ny+1))
     ALLOCATE(e2temp(-1:nx+1, -1:ny+1), kp(-1:nx+1, -1:ny+1), energy0(-1:nx+2, -1:ny+2))
+            
+kappa_0 = 1.0_num
+energy = energy + 4.0_num * kappa_0 * dt / 7.0_num
+CALL energy_bcs
 
 		! find factor reuired to convert between energy and temperature
     DO iy = -1, ny + 1
@@ -162,9 +166,9 @@ CONTAINS
           a2 = a2 + uxx * (kx(ix, iy) * rx + ky(ix, iy) * ry) &
               + uyy * (kx(ix, iy) * rx + ky(ix, iy) * ry)
           ! add isotropic elements
-          a1 = a1 + kp(ix, iy) * m0x + kp(ix, iy) * m0y &
+          a1 = a1 + kp(ix, iy) * (m0x + m0y) &
                     - kpx * q0x - kpy * q0y 
-          a2 = a2 + kp(ix, iy) * rxx + kp(ix, iy) * ryy &
+          a2 = a2 + kp(ix, iy) * (rxx + ryy) &
                     + kpx * rx + kpy * ry  
 
           a1 = a1 * dt * e2temp(ix, iy) / rho(ix, iy) 
@@ -187,7 +191,7 @@ CONTAINS
       IF (errmax .GT. errmax_prev) w = (1.0_num + w) / 2.0_num
       errmax_prev = errmax
 
-      IF (errmax .LT. 1.e-3_num) THEN
+      IF (errmax .LT. 1.e-5_num) THEN
         converged = .TRUE.  
         EXIT
       END IF

@@ -1,7 +1,8 @@
 *.[od]
 bin
 obj
-Data 
+Data
+Data/* 
 *.aux
 *.log
 *.gz
