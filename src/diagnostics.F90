@@ -29,14 +29,14 @@ CONTAINS
     INTEGER, SAVE :: index = 1, step = 1
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: data
     LOGICAL :: print_arrays, last_call
-    REAL(num), DIMENSION(2) :: Stagger = 0.0_num
+    REAL(num), DIMENSION(2) :: stagger = 0.0_num
     INTEGER, DIMENSION(2) :: dims
 
     ! this output routine uses the same sturcture as needed for mpi output
     ! this is more complicated than need for the serial code
     ! rank always equals zero in this serial code
-    CHARACTER(LEN = 9+Data_Dir_Max_Length+n_zeros) :: filename
-    CHARACTER(LEN = 30) :: FileNameDesc
+    CHARACTER(LEN = 9+data_dir_max_length+n_zeros) :: filename
+    CHARACTER(LEN = 30) :: file_name_desc
 
     REAL(num) :: t_out = 0.0_num
     REAL(num) :: en_ke = 0.0_num, en_int = 0.0_num
@@ -83,151 +83,151 @@ CONTAINS
       END IF
 
       ! Set the filename
-      WRITE(FileNameDesc, '("(''nfs:'', a, ''/'', i", i3.3, ".", i3.3, &
-          & "''.cfd'')")'), n_Zeros, n_Zeros
-      WRITE(filename, FileNameDesc) TRIM(data_dir), output_file
+      WRITE(file_name_desc, '("(''nfs:'', a, ''/'', i", i3.3, ".", i3.3, &
+          & "''.cfd'')")'), n_zeros, n_zeros
+      WRITE(filename, file_name_desc) TRIM(data_dir), output_file
 
-      CALL cfd_Open(filename, rank, comm, MPI_MODE_CREATE + MPI_MODE_WRONLY)
-      CALL cfd_Write_Snapshot_Data(time * T0, i, 0)
+      CALL cfd_open(filename, rank, comm, MPI_MODE_CREATE + MPI_MODE_WRONLY)
+      CALL cfd_write_snapshot_data(time * T0, i, 0)
 
       ALLOCATE(data(0:nx, 0:ny))
-      CALL cfd_Write_2D_Cartesian_Grid("Grid", "Grid", &
+      CALL cfd_write_2d_cartesian_grid("Grid", "Grid", &
           xb_global(0:nx_global) * L0, yb_global(0:ny_global) * L0, 0)
 
-      IF (DumpMask(1)) THEN
+      IF (dump_mask(1)) THEN
         data = rho(0:nx, 0:ny) * RHO0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Rho", "Fluid", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Rho", "Fluid", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(2)) THEN
+      IF (dump_mask(2)) THEN
         data = energy(0:nx, 0:ny) * ENERGY0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Energy", "Fluid", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Energy", "Fluid", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(3)) THEN
+      IF (dump_mask(3)) THEN
         data = vx(0:nx, 0:ny) * VEL0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Vx", "Velocity", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Vx", "Velocity", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(4)) THEN
+      IF (dump_mask(4)) THEN
         data = vy(0:nx, 0:ny) * VEL0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Vy", "Velocity", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Vy", "Velocity", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(5)) THEN
+      IF (dump_mask(5)) THEN
         data = vz(0:nx, 0:ny) * VEL0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Vz", "Velocity", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Vz", "Velocity", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(6)) THEN
+      IF (dump_mask(6)) THEN
         data = bx(0:nx, 0:ny) * B0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Bx", "Magnetic_Field", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Bx", "Magnetic_Field", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(7)) THEN
+      IF (dump_mask(7)) THEN
         data = by(0:nx, 0:ny) * B0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("By", "Magnetic_Field", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("By", "Magnetic_Field", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(8)) THEN
+      IF (dump_mask(8)) THEN
         data = bz(0:nx, 0:ny) * B0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Bz", "Magnetic_Field", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Bz", "Magnetic_Field", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(9)) THEN
+      IF (dump_mask(9)) THEN
         DO iy = 0, ny
           DO ix = 0, nx
-            CALL Get_Temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
+            CALL get_temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
                 data(ix, iy))
           END DO
         END DO
         data = data * TEMP0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Temperature", "Fluid", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(10)) THEN
+      IF (dump_mask(10)) THEN
         DO iy = 0, ny
           DO ix = 0, nx
-            CALL Get_Pressure(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
+            CALL get_pressure(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
                 data(ix, iy))
           END DO
         END DO
         data = data * PRESSURE0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("Pressure", "Fluid", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("Pressure", "Fluid", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(11)) THEN
+      IF (dump_mask(11)) THEN
         DO iy = 0, ny
           DO ix = 0, nx
-            CALL Get_Cs(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
+            CALL get_cs(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
                 data(ix, iy))
           END DO
         END DO
         data = data * VEL0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("cs", "Fluid", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("cs", "Fluid", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(12)) THEN
+      IF (dump_mask(12)) THEN
         data = parallel_current(0:nx, 0:ny) * J0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("j_par", "PIP", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("j_par", "PIP", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(13)) THEN
+      IF (dump_mask(13)) THEN
         data = perp_current(0:nx, 0:ny) * J0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("j_perp", "PIP", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("j_perp", "PIP", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(14)) THEN
-        data = Xi_n(0:nx, 0:ny)
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("neutral_fraction", &
-            "PIP", Dims, Stagger, "Grid", "Grid", data, subtype)
+      IF (dump_mask(14)) THEN
+        data = xi_n(0:nx, 0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel("neutral_fraction", &
+            "PIP", dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(15)) THEN
+      IF (dump_mask(15)) THEN
         data = eta_perp(0:nx, 0:ny) * RES0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("eta_perp", "PIP", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("eta_perp", "PIP", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(16)) THEN
+      IF (dump_mask(16)) THEN
         data = eta(0:nx, 0:ny) * RES0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("eta", "PIP", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("eta", "PIP", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(17)) THEN
+      IF (dump_mask(17)) THEN
         data = jx_r(0:nx, 0:ny) * J0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("jx", "current", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("jx", "current", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(18)) THEN
+      IF (dump_mask(18)) THEN
         data = jy_r(0:nx, 0:ny) * J0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("jy", "current", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("jy", "current", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
-      IF (DumpMask(19)) THEN
+      IF (dump_mask(19)) THEN
         data = jz_r(0:nx, 0:ny) * J0
-        CALL cfd_Write_2D_Cartesian_Variable_Parallel("jz", "current", &
-            Dims, Stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel("jz", "current", &
+            dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       ! Close the file
-      CALL cfd_Close()
+      CALL cfd_close()
 
       output_file = output_file + 1
 
@@ -290,7 +290,7 @@ CONTAINS
         iym = iy - 1
 
         w1 = bx(ix, iy)**2 + by(ix, iy)**2 + bz(ix, iy)**2
-        CALL Get_CS(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, cs)
+        CALL get_cs(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, cs)
 
         w2 = SQRT(cs**2 + w1 / MAX(rho(ix, iy), none_zero)) &
             + 2.0_num * SQRT(p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))

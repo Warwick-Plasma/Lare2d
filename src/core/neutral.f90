@@ -17,8 +17,8 @@ CONTAINS
 
   SUBROUTINE setup_neutral
     ! Ion neutral collision cross section(m^2)
-    REAL(num) :: Sigma_in = 5.0e-19_num
-    REAL(num) :: Tr
+    REAL(num) :: sigma_in = 5.0e-19_num
+    REAL(num) :: tr
 
     IF (include_neutrals) THEN
       ALLOCATE(xi_n(-1:nx+2, -1:ny+2))
@@ -35,8 +35,8 @@ CONTAINS
     ionise_pot = ionise_pot_0
 
     ! Temperature of the photospheric radiation field
-    Tr = 7230.85_num
-    Tr_bar = 1.0_num / Tr
+    tr = 7230.85_num
+    tr_bar = 1.0_num / tr
 
     ! Calculate fbar^(2 / 3) in (k^-1 m^-2)
     f_bar = (pi * me_0 * kb_0) / h_0**2
@@ -87,19 +87,19 @@ CONTAINS
         bfieldsq = bxv**2 + byv**2 + bzv**2
 
         ! Get the vertex temperature
-        CALL Get_Temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, T_v)
-        CALL Get_Temp(rho(ixp, iy), energy(ixp, iy), eos_number, ix, iy, T)
+        CALL get_temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, T_v)
+        CALL get_temp(rho(ixp, iy), energy(ixp, iy), eos_number, ix, iy, T)
 
         T_v = T_v + T
-        CALL Get_Temp(rho(ix, iyp), energy(ix, iyp), eos_number, ix, iy, T)
+        CALL get_temp(rho(ix, iyp), energy(ix, iyp), eos_number, ix, iy, T)
 
         T_v = T_v + T
-        CALL Get_Temp(rho(ixp, iyp), energy(ixp, iyp), eos_number, ix, iy, T)
+        CALL get_temp(rho(ixp, iyp), energy(ixp, iyp), eos_number, ix, iy, T)
 
         T_v = T_v + T
         T_v = T_v / 4.0_num
 
-        xi_v = Get_Neutral(T_v, rho_v)
+        xi_v = get_neutral(T_v, rho_v)
 
         f = MAX(1.0_num - xi_v, none_zero)
         IF (f .GT. 0) THEN
@@ -117,18 +117,18 @@ CONTAINS
 
 
 
-  FUNCTION Get_Neutral(T_v, rho_v)
+  FUNCTION get_neutral(T_v, rho_v)
 
     REAL(num), INTENT(IN) :: T_V, rho_v
-    REAL(num) :: Get_Neutral
+    REAL(num) :: get_neutral
     REAL(num) :: f, b, r
 
-    f = f_bar * SQRT(T_v) * EXP(-T_bar / T_v) ! T from b has been cancelled
-    b = Tr_bar * EXP(0.25_num * T_bar / T_v * (Tr_bar * T_v - 1.0_num))
+    f = f_bar * SQRT(T_v) * EXP(-t_bar / T_v) ! T from b has been cancelled
+    b = tr_bar * EXP(0.25_num * t_bar / T_v * (tr_bar * T_v - 1.0_num))
     r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho_v * b / f))
-    Get_Neutral = r / (1.0_num + r)
+    get_neutral = r / (1.0_num + r)
 
-  END FUNCTION  Get_Neutral
+  END FUNCTION  get_neutral
 
 
 
@@ -136,7 +136,7 @@ CONTAINS
 
     INTEGER, INTENT(IN) :: material
     REAL(num) :: bof, r, T, rho0, e0, dx, x
-    REAL(num), DIMENSION(2) :: Ta, fa, xi_a
+    REAL(num), DIMENSION(2) :: ta, fa, xi_a
     REAL(num) :: ionise_pot_local
     INTEGER :: loop
 
@@ -151,22 +151,22 @@ CONTAINS
       DO ix = -1, nx + 2
         rho0 = rho(ix, iy)
         e0 = energy(ix, iy)
-        Ta = (gamma - 1.0_num) &
+        ta = (gamma - 1.0_num) &
             * (/ MAX((e0 - ionise_pot_local) / 2.0_num, none_zero), e0 /)
 
-        IF (Ta(1) > Ta(2)) THEN
-          PRINT * , "Temperature bounds problem", Ta
+        IF (ta(1) > ta(2)) THEN
+          PRINT * , "Temperature bounds problem", ta
           STOP
         END IF
 
-        dx = Ta(2) - Ta(1)
-        T = Ta(1)
+        dx = ta(2) - ta(1)
+        T = ta(1)
 
         DO loop = 1, 100
           dx = dx / 2.0_num
           x = T  + dx
-          bof = Tr_bar / (f_bar * SQRT(x)) &
-              * EXP((0.25_num * (Tr_bar * x - 1.0_num) + 1.0_num) * T_bar / x)
+          bof = tr_bar / (f_bar * SQRT(x)) &
+              * EXP((0.25_num * (tr_bar * x - 1.0_num) + 1.0_num) * t_bar / x)
           r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho0 * bof))
           xi_a(1) = r / (1.0_num + r)
           fa(1) = x - (gamma - 1.0_num) * (e0 &
@@ -175,8 +175,8 @@ CONTAINS
           IF (ABS(dx) < 1.e-8_num .OR. fa(1) == 0.0_num) EXIT
         END DO
 
-        bof = Tr_bar / (f_bar * SQRT(T)) &
-            * EXP((0.25_num * (Tr_bar * T - 1.0_num) + 1.0_num) * T_bar / T)
+        bof = tr_bar / (f_bar * SQRT(T)) &
+            * EXP((0.25_num * (tr_bar * T - 1.0_num) + 1.0_num) * t_bar / T)
         r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho0 * bof))
         xi_n(ix, iy) = r / (1.0_num + r)
       END DO

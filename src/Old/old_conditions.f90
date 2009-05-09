@@ -1,7 +1,7 @@
 ! This file contains example initial conditions used in previous simulations
 
 
-    SUBROUTINE Set_Initial_Conditions
+    SUBROUTINE set_initial_conditions
     ! Simple Harris current sheet
     ! Normalise equations
     INTEGER:: ix, iy
@@ -26,11 +26,11 @@
 
     energy = 0.75_num 
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 
 
-SUBROUTINE Set_Initial_Conditions
+SUBROUTINE set_initial_conditions
     INTEGER:: ix, iy
 
     ! strong shock test
@@ -63,11 +63,11 @@ SUBROUTINE Set_Initial_Conditions
        END IF
     END DO
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 
 
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
 
     INTEGER:: ix, iy
 
@@ -98,11 +98,11 @@ SUBROUTINE Set_Initial_Conditions
 
     energy = energy / rho
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 
 
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
 
     INTEGER:: ix, iy
     REAL(num) :: b1, b2, x, y, s
@@ -140,11 +140,11 @@ SUBROUTINE Set_Initial_Conditions
     by(:,-2) = by(:,-1)
     energy = energy / rho
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 
 
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
 
     INTEGER:: ix, iy
     ! Ortzang-Tang
@@ -178,11 +178,11 @@ SUBROUTINE Set_Initial_Conditions
     vx(-2,:) = vx(nx-2,:)
     vy(:,-2) = vy(:,ny-2)
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 
 
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
 
     INTEGER:: ix, iy
     REAL(num) :: angle
@@ -240,15 +240,15 @@ SUBROUTINE Set_Initial_Conditions
 
     energy = 1.0_num / (gamma - 1.0_num)
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 
 
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
 ! Startified model atmosphere that uses the neutral fraction to correctly
 ! include the effects of pratial pressures
 ! S.I. units
-    INTEGER:: ix, iy, iCycle,flipy
+    INTEGER:: ix, iy, icycle,flipy
 
     REAL(num)::dg,m=1.5_num,a=1.0_num,y_cor=3.75e6,t_ph=6420.0_num
     REAL(num) :: t_cor=963000.0_num,wtr=7.5e5_num,T
@@ -274,7 +274,7 @@ SUBROUTINE Set_Initial_Conditions
 
     !First cycle always use ideal gas equation of state for first guess
     eos_this_cycle=EOS_IDEAL
-    DO iCycle=1,max_cycles
+    DO icycle=1,max_cycles
      !define energy profile
       DO ix = -1,nx+2
           DO iy = -1,ny+2
@@ -316,15 +316,15 @@ SUBROUTINE Set_Initial_Conditions
 
   by = 0.001_num
 
-END SUBROUTINE Set_Initial_Conditions
+END SUBROUTINE set_initial_conditions
 
 
 
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
   ! 2D flux emergence based on Fan atmosphere with flux tube
   ! as used (or at least close to) in Leake's 2D flux emergence paper
   !S.I. units
-    INTEGER:: ix, iy, iCycle,flipy
+    INTEGER:: ix, iy, icycle,flipy
 
     REAL(num)::dg,m=1.5_num,a=1.0_num,y_cor=3.75e6,t_ph=6420.0_num
     REAL(num) :: t_cor=963000.0_num,wtr=7.5e5_num,T
@@ -402,16 +402,16 @@ END SUBROUTINE Set_Initial_Conditions
        END DO
     END DO
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 
 
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
   ! 2D flux emergence based on Fan atmosphere with flux tube
   ! as used (or at least close to) in Leake's 2D flux emergence paper
   ! but now with iteration to include effects of neutrals in equilibrium
   !S.I.units
-    INTEGER:: ix, iy, iCycle,flipy
+    INTEGER:: ix, iy, icycle,flipy
 
     REAL(num)::dg,m=1.5_num,a=1.0_num,y_cor=3.75e6,t_ph=6420.0_num
     REAL(num) :: t_cor=963000.0_num,wtr=7.5e5_num,T
@@ -437,7 +437,7 @@ END SUBROUTINE Set_Initial_Conditions
 
     !First cycle always use ideal gas equation of state for first guess
     eos_this_cycle=EOS_IDEAL
-    DO iCycle=1,max_cycles
+    DO icycle=1,max_cycles
        !define energy profile
        DO ix = -1,nx+2
           DO iy = -1,ny+2
@@ -499,5 +499,5 @@ END SUBROUTINE Set_Initial_Conditions
        END DO
     END DO
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 

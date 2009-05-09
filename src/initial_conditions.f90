@@ -8,7 +8,7 @@ MODULE initial_conditions
 
   PRIVATE
 
-  PUBLIC :: Set_Initial_Conditions
+  PUBLIC :: set_initial_conditions
 
 CONTAINS
 
@@ -35,7 +35,7 @@ CONTAINS
   ! REAL(num) :: output_energy - The specific internal energy returned by
   !              the routine
   !---------------------------------------------------------------------------
-  SUBROUTINE Set_Initial_Conditions
+  SUBROUTINE set_initial_conditions
 
     vx = 0.0_num
     vy = 0.0_num
@@ -50,6 +50,6 @@ CONTAINS
 
     grav = 0.0_num
 
-  END SUBROUTINE Set_Initial_Conditions
+  END SUBROUTINE set_initial_conditions
 
 END MODULE initial_conditions

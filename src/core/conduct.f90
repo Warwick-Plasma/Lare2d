@@ -7,7 +7,7 @@ MODULE conduct
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: Conduct_Heat
+  PUBLIC :: conduct_heat
 
 CONTAINS
 
@@ -18,29 +18,29 @@ CONTAINS
 
   ! For this as well as other reasons, this routine doesn't work properly
   ! for partially ionised plasmas.
-  SUBROUTINE Conduct_Heat
+  SUBROUTINE conduct_heat
 
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: kx, ky, ux, uy
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: energy0, EnergyToT
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: energy0, energytot
     REAL(num) :: e, T
     REAL(num) :: B, bxc, byc, bzc
     REAL(num) :: pow = 5.0_num / 2.0_num
-    REAL(num) :: QpX, QmX, Q0X
-    REAL(num) :: QpY, QmY, Q0Y
+    REAL(num) :: qpx, qmx, q0x
+    REAL(num) :: qpy, qmy, q0y
 
-    REAL(num) :: MpX, MmX, M0X
-    REAL(num) :: MpY, MmY, M0Y
+    REAL(num) :: mpx, mmx, m0x
+    REAL(num) :: mpy, mmy, m0y
 
-    REAL(num) :: Rx, Ry
-    REAL(num) :: Rxx, Ryy
-    REAL(num) :: Rxy
+    REAL(num) :: rx, ry
+    REAL(num) :: rxx, ryy
+    REAL(num) :: rxy
 
-    REAL(num) :: KxX, KyX
-    REAL(num) :: KxY, KyY
+    REAL(num) :: kxx, kyx
+    REAL(num) :: kxy, kyy
 
-    REAL(num) :: uxX, uyY
+    REAL(num) :: uxx, uyy
 
-    REAL(num) :: A1, A2, mx, Q, errtot, mx1, errtot_prev = 0.0_num
+    REAL(num) :: a1, a2, mx, Q, errtot, mx1, errtot_prev = 0.0_num
     REAL(num), SAVE :: w = 1.9_num
 
     INTEGER :: CYCLE, start_index
@@ -54,15 +54,15 @@ CONTAINS
 
     ALLOCATE(kx(0:nx+1, 0:ny+1), ky(0:nx+1, 0:ny+1))
     ALLOCATE(ux(0:nx+1, 0:ny+1), uy(0:nx+1, 0:ny+1))
-    ALLOCATE(energy0(-1:nx+1, -1:ny+1), EnergyToT(-1:nx+1, -1:ny+1))
+    ALLOCATE(energy0(-1:nx+1, -1:ny+1), energytot(-1:nx+1, -1:ny+1))
 
     energy0 = energy(-1:nx+1, -1:ny+1)
     converged = .FALSE.
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1
         e = energy(ix, iy)
-        CALL Get_Temp(rho(ix, iy), e, eos_number, ix, iy, T)
-        EnergyToT(ix, iy) = T / e
+        CALL get_temp(rho(ix, iy), e, eos_number, ix, iy, T)
+        energytot(ix, iy) = T / e
       END DO
     END DO
 
@@ -79,9 +79,9 @@ CONTAINS
         uy(ix, iy) = byc**2 / (B**2 + b_min**2)
 
         ! Kappa along magnetic field
-        kx(ix, iy) = kappa * (EnergyToT(ix, iy) * energy0(ix, iy))**pow &
+        kx(ix, iy) = kappa * (energytot(ix, iy) * energy0(ix, iy))**pow &
             * (ABS(ux(ix, iy)) + b_min**2 / (B**2 + b_min**2))
-        ky(ix, iy) = kappa * (EnergyToT(ix, iy) * energy0(ix, iy))**pow &
+        ky(ix, iy) = kappa * (energytot(ix, iy) * energy0(ix, iy))**pow &
             * (ABS(uy(ix, iy)) + b_min**2 / (B**2 + b_min**2))
       END DO
     END DO
@@ -93,54 +93,54 @@ CONTAINS
       DO iy = 1, ny
         start_index = 1
         DO ix = start_index, nx! , 2
-          QpX = dxc(ix-1) / (dxc(ix) * (dxc(ix) + dxc(ix-1)))
-          QmX = dxc(ix) / (dxc(ix-1) * (dxc(ix) + dxc(ix-1)))
-          Q0X = (dxc(ix)**2 - dxc(ix-1)**2) &
+          qpx = dxc(ix-1) / (dxc(ix) * (dxc(ix) + dxc(ix-1)))
+          qmx = dxc(ix) / (dxc(ix-1) * (dxc(ix) + dxc(ix-1)))
+          q0x = (dxc(ix)**2 - dxc(ix-1)**2) &
               / (dxc(ix) * dxc(ix-1) * (dxc(ix) + dxc(ix-1)))
 
-          QpY = dyc(iy-1) / (dyc(iy) * (dyc(iy) + dyc(iy-1)))
-          QmY = dyc(iy) / (dyc(iy-1) * (dyc(iy) + dyc(iy-1)))
-          Q0Y = (dyc(iy)**2 - dyc(iy-1)**2) &
+          qpy = dyc(iy-1) / (dyc(iy) * (dyc(iy) + dyc(iy-1)))
+          qmy = dyc(iy) / (dyc(iy-1) * (dyc(iy) + dyc(iy-1)))
+          q0y = (dyc(iy)**2 - dyc(iy-1)**2) &
               / (dyc(iy) * dyc(iy-1) * (dyc(iy) + dyc(iy-1)))
 
-          MpX = 1.0_num / (dxc(ix) * dxb(ix))
-          MmX = 1.0_num / (dxc(ix-1) * dxb(ix))
-          M0X = (dxc(ix) + dxc(ix-1)) / (dxc(ix) * dxc(ix-1) * dxb(ix))
+          mpx = 1.0_num / (dxc(ix) * dxb(ix))
+          mmx = 1.0_num / (dxc(ix-1) * dxb(ix))
+          m0x = (dxc(ix) + dxc(ix-1)) / (dxc(ix) * dxc(ix-1) * dxb(ix))
 
-          MpY = 1.0_num / (dyc(iy) * dyb(iy))
-          MmY = 1.0_num / (dyc(iy-1) * dyb(iy))
-          M0Y = (dyc(iy) + dyc(iy-1)) / (dyc(iy) * dyc(iy-1) * dyb(iy))
+          mpy = 1.0_num / (dyc(iy) * dyb(iy))
+          mmy = 1.0_num / (dyc(iy-1) * dyb(iy))
+          m0y = (dyc(iy) + dyc(iy-1)) / (dyc(iy) * dyc(iy-1) * dyb(iy))
 
-          Rx = QpX * EnergyToT(ix+1, iy) * energy(ix+1, iy) &
-              - QmX * EnergyToT(ix-1, iy) * energy(ix-1, iy)
-          Ry = QpY * EnergyToT(ix, iy+1) * energy(ix, iy+1) &
-              - QmY * EnergyToT(ix, iy-1) * energy(ix, iy-1)
+          rx = qpx * energytot(ix+1, iy) * energy(ix+1, iy) &
+              - qmx * energytot(ix-1, iy) * energy(ix-1, iy)
+          ry = qpy * energytot(ix, iy+1) * energy(ix, iy+1) &
+              - qmy * energytot(ix, iy-1) * energy(ix, iy-1)
 
-          Rxx = MpX * EnergyToT(ix+1, iy) * energy(ix+1, iy) &
-              + MmX * EnergyToT(ix-1, iy) * energy(ix-1, iy)
-          Ryy = MpY * EnergyToT(ix, iy+1) * energy(ix, iy+1) &
-              + MmY * EnergyToT(ix, iy-1) * energy(ix, iy-1)
+          rxx = mpx * energytot(ix+1, iy) * energy(ix+1, iy) &
+              + mmx * energytot(ix-1, iy) * energy(ix-1, iy)
+          ryy = mpy * energytot(ix, iy+1) * energy(ix, iy+1) &
+              + mmy * energytot(ix, iy-1) * energy(ix, iy-1)
 
-          Rxy = QpY / 16.0_num &
-              * (QpX * EnergyToT(ix+1, iy+1) * energy(ix+1, iy+1) &
-              - QmX * EnergyToT(ix-1, iy+1) * energy(ix-1, iy+1) &
-              + Q0X * EnergyToT(ix, iy+1) * energy(ix, iy+1)) &
-              - QmY / 16.0_num &
-              * (QpX * EnergyToT(ix+1, iy-1) * energy(ix+1, iy-1) &
-              - QmX * EnergyToT(ix-1, iy-1) * energy(ix-1, iy-1) &
-              + Q0X * EnergyToT(ix , iy-1) * energy(ix, iy-1)) &
-              + Q0Y / 16.0_num &
-              * (QpX * EnergyToT(ix+1, iy) * energy(ix+1, iy) &
-              - QmX * EnergyToT(ix-1, iy) * energy(ix-1, iy))
+          rxy = qpy / 16.0_num &
+              * (qpx * energytot(ix+1, iy+1) * energy(ix+1, iy+1) &
+              - qmx * energytot(ix-1, iy+1) * energy(ix-1, iy+1) &
+              + q0x * energytot(ix, iy+1) * energy(ix, iy+1)) &
+              - qmy / 16.0_num &
+              * (qpx * energytot(ix+1, iy-1) * energy(ix+1, iy-1) &
+              - qmx * energytot(ix-1, iy-1) * energy(ix-1, iy-1) &
+              + q0x * energytot(ix , iy-1) * energy(ix, iy-1)) &
+              + q0y / 16.0_num &
+              * (qpx * energytot(ix+1, iy) * energy(ix+1, iy) &
+              - qmx * energytot(ix-1, iy) * energy(ix-1, iy))
 
-          KxX = QpX * kx(ix+1, iy) - QmX * kx(ix-1, iy) + Q0X * kx(ix, iy)
-          KyX = QpX * ky(ix+1, iy) - QmX * ky(ix-1, iy) + Q0X * ky(ix, iy)
+          kxx = qpx * kx(ix+1, iy) - qmx * kx(ix-1, iy) + q0x * kx(ix, iy)
+          kyx = qpx * ky(ix+1, iy) - qmx * ky(ix-1, iy) + q0x * ky(ix, iy)
 
-          KxY = QpY * kx(ix, iy+1) - QmY * kx(ix, iy-1) + Q0Y * kx(ix, iy)
-          KyY = QpY * ky(ix, iy+1) - QmY * ky(ix, iy-1) + Q0Y * ky(ix, iy)
+          kxy = qpy * kx(ix, iy+1) - qmy * kx(ix, iy-1) + q0y * kx(ix, iy)
+          kyy = qpy * ky(ix, iy+1) - qmy * ky(ix, iy-1) + q0y * ky(ix, iy)
 
-          uxX = QpX * ux(ix+1, iy) - QmX * ux(ix-1, iy) + Q0X * ux(ix, iy)
-          uyY = QpY * uy(ix, iy+1) - QmY * uy(ix, iy-1) + Q0Y * uy(ix, iy)
+          uxx = qpx * ux(ix+1, iy) - qmx * ux(ix-1, iy) + q0x * ux(ix, iy)
+          uyy = qpy * uy(ix, iy+1) - qmy * uy(ix, iy-1) + q0y * uy(ix, iy)
 
           bxc = (bx(ix, iy) + bx(ix-1, iy)) / 2.0_num
           byc = (by(ix, iy) + by(ix, iy-1)) / 2.0_num
@@ -148,38 +148,38 @@ CONTAINS
 
           B = SQRT(bxc**2 + byc**2 + bzc**2)
           ! Second differentials in T
-          A1 = M0X * ux(ix, iy) * kx(ix, iy) &
-              + M0Y * uy(ix, iy) * ky(ix, iy) &
-              + Q0X * Q0Y / 16.0_num &
+          a1 = m0x * ux(ix, iy) * kx(ix, iy) &
+              + m0y * uy(ix, iy) * ky(ix, iy) &
+              + q0x * q0y / 16.0_num &
               * (ux(ix, iy) * ky(ix, iy) + uy(ix, iy) * kx(ix, iy))
           ! Differentials in kx, ky
-          A1 = A1 + ux(ix, iy) * (KxX * Q0X + KyX * Q0Y) &
-              + uy(ix, iy) * (KxY * Q0X + KyY * Q0Y)
+          a1 = a1 + ux(ix, iy) * (kxx * q0x + kyx * q0y) &
+              + uy(ix, iy) * (kxy * q0x + kyy * q0y)
           ! Differentials in ux, uy
-          A1 = A1 + Q0X * kx(ix, iy) * (uxX + uyY) &
-              + Q0Y * ky(ix, iy) * (uxX + uyY)
+          a1 = a1 + q0x * kx(ix, iy) * (uxx + uyy) &
+              + q0y * ky(ix, iy) * (uxx + uyy)
 
           ! Second differentials in T
-          A2 = Rxx * ux(ix, iy) * kx(ix, iy) + Ryy * uy(ix, iy) * ky(ix, iy) &
-              + Rxy * (ux(ix, iy) * ky(ix, iy) + uy(ix, iy) * kx(ix, iy))
+          a2 = rxx * ux(ix, iy) * kx(ix, iy) + ryy * uy(ix, iy) * ky(ix, iy) &
+              + rxy * (ux(ix, iy) * ky(ix, iy) + uy(ix, iy) * kx(ix, iy))
           ! Differentials in kx, ky
-          A2 = A2 + ux(ix, iy) * (KxX * Rx + KyX * Ry) &
-              + uy(ix, iy) * (KxY * Rx + KyY * Ry)
+          a2 = a2 + ux(ix, iy) * (kxx * rx + kyx * ry) &
+              + uy(ix, iy) * (kxy * rx + kyy * ry)
           ! Differentials in ux, uy
-          A2 = A2 + uxX * (kx(ix, iy) * Rx + ky(ix, iy) * Ry) &
-              + uyY * (kx(ix, iy) * Rx + ky(ix, iy) * Ry)
+          a2 = a2 + uxx * (kx(ix, iy) * rx + ky(ix, iy) * ry) &
+              + uyy * (kx(ix, iy) * rx + ky(ix, iy) * ry)
 
-          A1 = A1 + (kx(ix, iy) * M0X + ky(ix, iy) * M0Y &
-              + KxX * Q0X + KyY * Q0Y) * b_min**2 / (b**2 + b_min**2)
-          A2 = A2 + (kx(ix, iy) * Rxx + ky(ix, iy) * Ryy &
-              + KxX * Rx + KyY * Ry) * b_min**2 / (b**2 + b_min**2)
-          A1 = A1 * dt / rho(ix, iy)
-          A2 = A2 * dt / rho(ix, iy)
+          a1 = a1 + (kx(ix, iy) * m0x + ky(ix, iy) * m0y &
+              + kxx * q0x + kyy * q0y) * b_min**2 / (b**2 + b_min**2)
+          a2 = a2 + (kx(ix, iy) * rxx + ky(ix, iy) * ryy &
+              + kxx * rx + kyy * ry) * b_min**2 / (b**2 + b_min**2)
+          a1 = a1 * dt / rho(ix, iy)
+          a2 = a2 * dt / rho(ix, iy)
 
           Q = energy(ix, iy)
           energy(ix, iy) = (1.0_num-w) * energy(ix, iy) &
-              + w / (1.0_num / EnergyToT(ix, iy) + A1) &
-              * (energy0(ix, iy) / EnergyToT(ix, iy) + A2 / EnergyToT(ix, iy))
+              + w / (1.0_num / energytot(ix, iy) + a1) &
+              * (energy0(ix, iy) / energytot(ix, iy) + a2 / energytot(ix, iy))
           Q = (Q - energy(ix, iy)) / Q
 
           errtot = errtot + ABS(Q) * dxc(ix) * dyc(iy)
@@ -205,8 +205,8 @@ CONTAINS
     ! PRINT * , "Cycle Over", w
     DEALLOCATE(kx, ky)
     DEALLOCATE(ux, uy)
-    DEALLOCATE(energy0, EnergyToT)
+    DEALLOCATE(energy0, energytot)
 
-  END SUBROUTINE Conduct_Heat
+  END SUBROUTINE conduct_heat
 
 END MODULE conduct
