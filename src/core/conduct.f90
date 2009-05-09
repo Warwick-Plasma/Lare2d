@@ -44,7 +44,7 @@ CONTAINS
 
     ALLOCATE(kx(0:nx+1, 0:ny+1), ky(0:nx+1, 0:ny+1))
     ALLOCATE(ux(0:nx+1, 0:ny+1), uy(0:nx+1, 0:ny+1))
-    ALLOCATE(e2temp(-1:nx+1, -1:ny+1), kp(-1:nx+1, -1:ny+1), energy0(-1:nx+1, -1:ny+1))
+    ALLOCATE(e2temp(-1:nx+1, -1:ny+1), kp(-1:nx+1, -1:ny+1), energy0(-1:nx+2, -1:ny+2))
 
 		! find factor reuired to convert between energy and temperature
     DO iy = -1, ny + 1
