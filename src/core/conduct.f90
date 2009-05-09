@@ -40,6 +40,7 @@ CONTAINS
     INTEGER :: loop
 
     LOGICAL :: converged
+    REAL(num), PARAMETER :: fractional_error = 1.0e-5_num
     REAL(num), PARAMETER :: b_min = 1.0e-4_num
 
     ALLOCATE(kx(0:nx+1, 0:ny+1), ky(0:nx+1, 0:ny+1))
@@ -187,7 +188,7 @@ CONTAINS
       IF (errmax .GT. errmax_prev) w = (1.0_num + w) / 2.0_num
       errmax_prev = errmax
 
-      IF (errmax .LT. 1.e-5_num) THEN
+      IF (errmax .LT. fractional_error) THEN
         converged = .TRUE.  
         EXIT
       END IF
