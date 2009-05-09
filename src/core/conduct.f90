@@ -2,7 +2,6 @@ MODULE conduct
 
   USE shared_data
   USE boundary
-  USE normalise
   USE eos
 
   IMPLICIT NONE
@@ -35,7 +34,7 @@ CONTAINS
     REAL(num) :: kxx, kyx, kpx
     REAL(num) :: kxy, kyy, kpy
     REAL(num) :: uxx, uyy
-    REAL(num) :: a1, a2, total, q, errmax, errmax_prev = 0.0_num
+    REAL(num) :: a1, a2, error, q, errmax, errmax_prev = 0.0_num
     REAL(num) :: w 
 
     INTEGER :: loop
@@ -47,10 +46,6 @@ CONTAINS
     ALLOCATE(ux(0:nx+1, 0:ny+1), uy(0:nx+1, 0:ny+1))
     ALLOCATE(e2temp(-1:nx+1, -1:ny+1), kp(-1:nx+1, -1:ny+1), energy0(-1:nx+1, -1:ny+1))
 
-    w = 1.9_num       ! initial over-relaxation parameter
-    total = 0.0_num
-
-    converged = .FALSE. 
 		! find factor reuired to convert between energy and temperature
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1
@@ -70,22 +65,24 @@ CONTAINS
         ux(ix, iy) = bxc / SQRT(B**2 + b_min**2)
         uy(ix, iy) = byc / SQRT(B**2 + b_min**2)
 
-        ! Kappa along magnetic field, now a vector
-        kx(ix, iy) = kappa_0 * (e2temp(ix, iy) * energy(ix, iy))**pow * ux(ix, iy) 
-        ky(ix, iy) = kappa_0 * (e2temp(ix, iy) * energy(ix, iy))**pow * uy(ix, iy) 
+        ! Kappa along magnetic field, now a vector 
+				T = (e2temp(ix, iy) * energy(ix, iy))**pow
+        kx(ix, iy) = kappa_0 * T * ux(ix, iy) 
+        ky(ix, iy) = kappa_0 * T * uy(ix, iy) 
 
 				! Kappa isotropic
-				kp(ix,iy) = kappa_0 * (e2temp(ix, iy) * energy(ix, iy))**pow * &
-							b_min**2 / (B**2 + b_min**2)
+				kp(ix,iy) = kappa_0 * T * b_min**2 / (B**2 + b_min**2)
       END DO
     END DO
      
+    converged = .FALSE. 
+    w = 1.9_num       ! initial over-relaxation parameter
 		! store energy^{n} 
 		energy0 = energy   
 		! interate to get energy^{n+1} by SOR Guass-Seidel
     DO loop = 0, 100
       errmax = 0.0_num
-      total = 0.0_num
+      error = 0.0_num
       DO iy = 1, ny
         DO ix = 1, nx
           qpx = dxc(ix-1) / (dxc(ix) * (dxc(ix) + dxc(ix-1)))
@@ -184,13 +181,13 @@ CONTAINS
 
       CALL energy_bcs
   
-      CALL MPI_ALLREDUCE(errmax, total, 1, mpireal, MPI_MAX, comm, errcode)
-      errmax = total
+      CALL MPI_ALLREDUCE(errmax, error, 1, mpireal, MPI_MAX, comm, errcode)
+      errmax = error
 
       IF (errmax .GT. errmax_prev) w = (1.0_num + w) / 2.0_num
       errmax_prev = errmax
 
-      IF (errmax .LT. 1e-3_num) THEN
+      IF (errmax .LT. 1.e-3_num) THEN
         converged = .TRUE.  
         EXIT
       END IF
