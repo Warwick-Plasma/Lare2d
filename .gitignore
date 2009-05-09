@@ -1,4 +1,9 @@
 *.[od]
 bin
 obj
-Data
+Data 
+*.aux
+*.log
+*.gz
+Manual/LareXd-manual.pdf
+*.dvi
