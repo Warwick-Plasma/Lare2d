@@ -40,12 +40,10 @@ CONTAINS
 
     REAL(num) :: uxX, uyY
 
-    REAL(num) :: A1, A2, mx, Q, errtot, mx1, errtot_prev
+    REAL(num) :: A1, A2, mx, Q, errtot, mx1, errtot_prev = 0.0_num
     REAL(num), SAVE :: w = 1.9_num
 
-    REAL(dbl) :: runtime = 0.0_dbl, starttime, endtime
-
-    INTEGER :: CYCLE, sweep, mx_x, mx_y, mx_z, start_index
+    INTEGER :: CYCLE, start_index
 
     LOGICAL :: converged
 

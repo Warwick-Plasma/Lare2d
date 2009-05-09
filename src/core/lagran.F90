@@ -88,17 +88,12 @@ CONTAINS
   ! The main predictor / corrector step which advances the momentum equation
   SUBROUTINE predictor_corrector_step
 
-    REAL(num) :: p, pxp, pyp, pxpyp, p1, p2, p3, p4
-    REAL(num) :: e1xp, e1yp, e1xpyp
-
     REAL(num) :: e1, rho_v
     REAL(num) :: fx, fy, fz
     REAL(num) :: vxb, vxbm, vyb, vybm
-    REAL(num) :: dv, dvxp, dvyp, dvxpyp
+    REAL(num) :: dv
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
     REAL(num) :: cvx, cvxp, cvy, cvyp
-
-    REAL(num) :: mx, mn, momentum
 
     dt2 = dt / 2.0_num
     CALL viscosity_and_b_update
@@ -496,11 +491,8 @@ CONTAINS
   SUBROUTINE eta_calc
 
     REAL(num) :: jx, jy, jz, jx1, jx2, jy1, jy2
-    REAL(num) :: current, cs, d, r2
+    REAL(num) :: d
     INTEGER :: ixp, iyp
-
-    REAL(num) :: centre = 2100000.0_num / 150.0e3_num / 3.0_num
-    REAL(num) :: wid = 9.0e4_num / 150.0e3_num
 
     eta = 0.0_num
     d = 6.66_num * eta0
@@ -540,8 +532,7 @@ CONTAINS
   ! Use the subroutine rkstep
   SUBROUTINE resistive_effects
 
-    REAL(num) :: jx, jy, jz, jxxp, jyyp, flux
-    REAL(num) :: rho_v, half_dt, dt6
+    REAL(num) :: dt6
     REAL(num) :: jx1, jx2, jy1, jy2
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1x, k2x, k3x, k4x
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1y, k2y, k3y, k4y
@@ -772,15 +763,12 @@ CONTAINS
   SUBROUTINE rkstep
 
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: jx, jy, jz
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: hxflux, hyflux, hzflux
-    REAL(num) :: jx1, jy1, jz1, jx2, jy2
-    REAL(num) :: bxv, byv, bzv, rho_v
-    REAL(num) :: f1, f2, area
+    REAL(num) :: jx1, jy1, jx2, jy2
+    REAL(num) :: bxv, byv, bzv
     REAL(num) :: magn_b
     REAL(num) :: j_par_x, j_par_y, j_par_z
     REAL(num) :: j_perp_x, j_perp_y, j_perp_z
     REAL(num) :: magn_j_perp, magn_j_par
-    INTEGER :: ixp2, iyp2
 
     ALLOCATE(jx(-1:nx+1, -1:ny+1), jy(-1:nx+1, -1:ny+1), jz(-1:nx+1, -1:ny+1))
 
@@ -883,8 +871,7 @@ CONTAINS
   ! Uses the subroutine rkstep1
   SUBROUTINE hall_effects
 
-    REAL(num) :: jx, jy, jz, jxxp, jyyp, flux
-    REAL(num) :: rho_v, half_dt, dt6
+    REAL(num) :: dt6
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1x, k2x, k3x, k4x
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1y, k2y, k3y, k4y
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1z, k2z, k3z, k4z
@@ -1060,7 +1047,7 @@ CONTAINS
 
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: jx, jy, jz
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: hxflux, hyflux, hzflux
-    REAL(num) :: jx1, jy1, jz1, jx2, jy2
+    REAL(num) :: jx1, jy1, jx2, jy2
     REAL(num) :: bxv, byv, bzv, rho_v
     REAL(num) :: f1, f2, area
     REAL(num) :: jadp, jadm

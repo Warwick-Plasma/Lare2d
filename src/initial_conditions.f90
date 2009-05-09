@@ -37,13 +37,6 @@ CONTAINS
   !---------------------------------------------------------------------------
   SUBROUTINE Set_Initial_Conditions
 
-    INTEGER :: ix, iy, iCycle, flipy
-
-    REAL(num) :: dg, m = 1.5_num, a = 1.0_num, y_cor = 3.75e6, t_ph = 6420.0_num
-    REAL(num) :: t_cor = 963000.0_num, wtr = 7.5e5_num, T
-    REAL(num) :: yt, q, r, bphi, b1, pb, b, b_0
-    INTEGER :: eos_this_cycle, max_cycles
-
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num

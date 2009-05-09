@@ -27,10 +27,8 @@ CONTAINS
 
     INTEGER, PARAMETER :: out = 1000
     INTEGER, SAVE :: index = 1, step = 1
-    INTEGER :: filehandle, localcellcount
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: data
     LOGICAL :: print_arrays, last_call
-    INTEGER :: code
     REAL(num), DIMENSION(2) :: Stagger = 0.0_num
     INTEGER, DIMENSION(2) :: dims
 
@@ -44,7 +42,7 @@ CONTAINS
     REAL(num) :: en_ke = 0.0_num, en_int = 0.0_num
     REAL(num) :: en_b = 0.0_num, heating_visc = 0.0_num
     REAL(num) :: heating_ohmic = 0.0_num
-    REAL(num) :: j_max_local, total
+    REAL(num) :: total
 
     dims = (/ nx_global+1, ny_global+1 /)
 
@@ -416,8 +414,6 @@ CONTAINS
 
 
   SUBROUTINE output_log ! writes basic data to 'lare2d.dat'
-
-    REAL(num) :: temp
 
     WRITE(20, *) 'Density normalisation = ', RHO0, ' kg m^(-3)'
     WRITE(20, *) 'Specific energy density normalisation = ', ENERGY0, ' K'

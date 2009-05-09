@@ -119,7 +119,7 @@ CONTAINS
       hours = total / 3600
       WRITE(20, *)
       WRITE(20, '("runtime = ", i4, "h ", i2, "m ", i2, &
-          "s on ", i4, " process elements.")') hours, minutes, seconds, nproc
+          & "s on ", i4, " process elements.")') hours, minutes, seconds, nproc
     END IF
 
     CALL MPI_BARRIER(comm, errcode)

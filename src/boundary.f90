@@ -16,7 +16,6 @@ CONTAINS
 
   SUBROUTINE set_boundary_conditions
 
-    REAL(num) :: a
     LOGICAL :: first_call = .TRUE.
 
     IF (first_call) THEN
@@ -45,8 +44,6 @@ CONTAINS
 
 
   SUBROUTINE boundary_conditions
-
-    REAL(num) :: a, d
 
     CALL bfield_bcs
     CALL energy_bcs
@@ -196,8 +193,6 @@ CONTAINS
 
 
   SUBROUTINE remap_v_bcs
-
-    REAL(num) :: theta
 
     CALL remap_v_MPI
 
