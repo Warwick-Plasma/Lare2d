@@ -30,6 +30,8 @@ CONTAINS
     rho1 = rho ! store initial density in rho1
 
     DO iy = -1, ny+2
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+2
         ixm = ix - 1
         iym = iy - 1
@@ -56,6 +58,8 @@ CONTAINS
     END DO
 
     DO iy = -1, ny+1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+1
         dyc1(ix, iy) = 0.5_num * (dyb1(ix, iy) + dyb1(ix, iy+1))
       END DO
@@ -65,6 +69,8 @@ CONTAINS
     ! constrained transport remap of magnetic fluxes
     CALL vy_bx_flux
     DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym = iy - 1
         bx(ix, iy) = bx(ix, iy) - flux(ix, iy) + flux(ix, iym)
@@ -72,6 +78,8 @@ CONTAINS
     END DO
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         by(ix, iy) = by(ix, iy) + flux(ix, iy) - flux(ixm, iy)
@@ -80,6 +88,8 @@ CONTAINS
 
     CALL vy_bz_flux
     DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         iym = iy - 1
         bz(ix, iy) = bz(ix, iy) - flux(ix, iy) + flux(ix, iym)
@@ -90,6 +100,8 @@ CONTAINS
     CALL y_mass_flux ! calculates dm(0:nx, 0:ny+1)
     CALL dm_y_bcs    ! need dm(-1:nx+1, 0:ny+1) for velocity remap
     DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         iym = iy - 1
         rho(ix, iy) = (rho1(ix, iy) * cv1(ix, iy) &
@@ -100,6 +112,8 @@ CONTAINS
     ! remap specific energy density using mass coordinates
     CALL y_energy_flux
     DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         iym = iy - 1
         energy(ix, iy) = (energy(ix, iy) * cv1(ix, iy) * rho1(ix, iy) &
@@ -111,6 +125,8 @@ CONTAINS
     ! in some of these calculations the flux variable is used as a
     ! temporary array
     DO iy = -1, ny+1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         iyp = iy + 1
@@ -127,6 +143,8 @@ CONTAINS
     END DO
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         iyp = iy + 1
@@ -137,6 +155,8 @@ CONTAINS
     cv1(0:nx, 0:ny) = flux(0:nx, 0:ny) / 4.0_num
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         iyp = iy + 1
@@ -147,6 +167,8 @@ CONTAINS
     cv2(0:nx, 0:ny) = flux(0:nx, 0:ny) / 4.0_num
 
     DO iy = -2, ny+1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iyp = iy + 1
         flux(ix, iy) = (vy1(ix, iy) + vy1(ix, iyp)) / 2.0_num
@@ -156,6 +178,8 @@ CONTAINS
     vy1(0:nx, -2:ny+1) = flux(0:nx, -2:ny+1)
 
     DO iy = -1, ny+1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym = iy - 1
         dyb1(ix, iy) = dyc(iy) + (vy1(ix, iy) - vy1(ix, iym)) * dt
@@ -163,6 +187,8 @@ CONTAINS
     END DO
 
     DO iy = -1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         iyp = iy + 1
@@ -173,6 +199,8 @@ CONTAINS
     dm(0:nx, -1:ny) = flux(0:nx, -1:ny) / 4.0_num
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym = iy - 1
         ! vertex density after remap
@@ -183,6 +211,8 @@ CONTAINS
 
     CALL y_momz_flux
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym = iy - 1
         vz(ix, iy) = (rho_v(ix, iy) * vz(ix, iy) * cv1(ix, iy) &
@@ -192,6 +222,8 @@ CONTAINS
 
     CALL y_momx_flux
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym = iy - 1
         vx(ix, iy) = (rho_v(ix, iy) * vx(ix, iy) * cv1(ix, iy) &
@@ -201,6 +233,8 @@ CONTAINS
 
     CALL y_momy_flux
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym = iy - 1
         vy(ix, iy) = (rho_v(ix, iy) * vy(ix, iy) * cv1(ix, iy) &
@@ -219,11 +253,13 @@ CONTAINS
 
   SUBROUTINE vy_bx_flux
 
-    REAL(num) :: v_advect
+    REAL(num) :: v_advect, vad_p, vad_m
     REAL(num) :: db, dbyp, dbyp2, dbym
     INTEGER :: iyp2
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym  = iy - 1
         iyp  = iy + 1
@@ -247,26 +283,30 @@ CONTAINS
         w2 = bx(ix, iy  ) / db    - bx(ix, iym) / dbym
         w3 = bx(ix, iyp2) / dbyp2 - bx(ix, iyp) / dbyp
 
-        IF (v_advect > 0.0) THEN
-          w5 = ABS(v_advect) * dt / db
-          w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
-              + (1.0_num + w5) * ABS(w2) / dyc1(ix, iym)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w2))
-          w6 = w8 * MIN(ABS(w4) * dyb1(ix, iy), ABS(w1), ABS(w2))
-          flux(ix, iy) = flux(ix, iy) &
-              + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
-        ELSE
-          w5 = ABS(v_advect) * dt / dbyp
-          w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
-              + (1.0_num + w5) * ABS(w3) / dyc1(ix, iyp)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w3))
-          w6 = -w8 * MIN(ABS(w4) * dyb1(ix, iyp), ABS(w1), ABS(w3))
-          flux(ix, iy) = flux(ix, iy) &
-              + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
-        END IF
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
 
+        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+
+        w5 = ABS(v_advect) * dt / (db * vad_p + dbyp * vad_m)
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
+            + (1.0_num + w5) * (ABS(w2) / dyc1(ix, iym) * vad_p &
+            + ABS(w3) / dyc1(ix, iyp) * vad_m)
+
+        w4 = w4 / 6.0_num
+
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+
+        w6 = SIGN(1.0_num, v_advect) * w8 &
+            * MIN(ABS(w4) * (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m), &
+            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+
+        flux(ix, iy) = flux(ix, iy) &
+            + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
       END DO
     END DO
 
@@ -276,10 +316,12 @@ CONTAINS
 
   SUBROUTINE vy_bz_flux
 
-    REAL(num) :: v_advect
+    REAL(num) :: v_advect, vad_p, vad_m
     INTEGER :: iyp2
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         iym  = iy - 1
         iyp  = iy + 1
@@ -298,26 +340,29 @@ CONTAINS
         w2 = bz(ix, iy  ) / dyb1(ix, iy  ) - bz(ix, iym) / dyb1(ix, iym)
         w3 = bz(ix, iyp2) / dyb1(ix, iyp2) - bz(ix, iyp) / dyb1(ix, iyp)
 
-        IF (v_advect > 0.0) THEN
-          w5 = ABS(v_advect) * dt / dyb1(ix, iy)
-          w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
-              + (1.0_num + w5) * ABS(w2) / dyc1(ix, iym)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w2))
-          w6 = w8 * MIN(ABS(w4) * dyb1(ix, iy), ABS(w1), ABS(w2))
-          flux(ix, iy) = flux(ix, iy) &
-              + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
-        ELSE
-          w5 = ABS(v_advect) * dt / dyb1(ix, iyp)
-          w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
-              + (1.0_num + w5) * ABS(w3) / dyc1(ix, iyp)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w3))
-          w6 = -w8 * MIN(ABS(w4) * dyb1(ix, iyp), ABS(w1), ABS(w3))
-          flux(ix, iy) = flux(ix, iy) &
-              + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
-        END IF
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
 
+        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+
+        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
+            + (1.0_num + w5) * (ABS(w2) / dyc1(ix, iym) * vad_p &
+            + ABS(w3) / dyc1(ix, iyp) * vad_m)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+
+        w6 = SIGN(1.0_num, v_advect) * w8 &
+            * MIN(ABS(w4) * (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m), &
+            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+
+        flux(ix, iy) = flux(ix, iy) &
+            + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
       END DO
     END DO
 
@@ -327,10 +372,12 @@ CONTAINS
 
   SUBROUTINE y_mass_flux
 
-    REAL(num) :: v_advect, flux_rho
+    REAL(num) :: v_advect, flux_rho, vad_p, vad_m
     INTEGER :: iyp2
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx+1
         iym  = iy - 1
         iyp  = iy + 1
@@ -346,23 +393,29 @@ CONTAINS
         w2 = rho(ix, iy  ) - rho(ix, iym)
         w3 = rho(ix, iyp2) - rho(ix, iyp)
 
-        IF (v_advect > 0.0) THEN
-          w5 = ABS(v_advect) * dt / dyb1(ix, iy)
-          w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
-              + (1.0_num + w5) * ABS(w2) / dyc1(ix, iym)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w2))
-          w6 = w8 * MIN(ABS(w4) * dyb1(ix, iy), ABS(w1), ABS(w2))
-          flux_rho = v_advect * dt * w6 * (1.0_num - w5)
-        ELSE
-          w5 = ABS(v_advect) * dt / dyb1(ix, iyp)
-          w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
-              + (1.0_num + w5) * ABS(w3) / dyc1(ix, iyp)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w3))
-          w6 = -w8 * MIN(ABS(w4) * dyb1(ix, iyp), ABS(w1), ABS(w3))
-          flux_rho = v_advect * dt * w6 * (1.0_num - w5)
-        END IF
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
+
+        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+
+        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
+            + (1.0_num + w5) * (ABS(w2) / dyc1(ix, iym) * vad_p &
+            + ABS(w3) / dyc1(ix, iyp) * vad_m)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+
+        w6 = SIGN(1.0_num, v_advect) * w8 &
+            * MIN(ABS(w4) * (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m), &
+            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+
+        flux_rho = v_advect * dt * w6 * (1.0_num - w5)
+
         dm(ix, iy) = (bzone(ix, iy) * flux_rho + dm(ix, iy)) * dxb(ix)
       END DO
     END DO
@@ -373,10 +426,12 @@ CONTAINS
 
   SUBROUTINE y_energy_flux ! energy remap in mass coordinates
 
-    REAL(num) :: v_advect
+    REAL(num) :: v_advect, vad_p, vad_m
     INTEGER :: iyp2
 
     DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym  = iy - 1
         iyp  = iy + 1
@@ -389,25 +444,31 @@ CONTAINS
         w2 = energy(ix, iy  ) - energy(ix, iym)
         w3 = energy(ix, iyp2) - energy(ix, iyp)
 
-        IF (v_advect > 0.0) THEN
-          w5 = ABS(v_advect) * dt / dyb1(ix, iy)
-          w7 = energy(ix, iy)
-          w6 = ABS(dm(ix, iy)) / (rho1(ix, iy) * dyb1(ix, iy) * dxb(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyc(iy) &
-              + (1.0_num + w5) * ABS(w2) / dyc(iym)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w2))
-          w5 = w8 * MIN(ABS(w4) * dyb(iy), ABS(w1), ABS(w2))
-        ELSE
-          w5 = ABS(v_advect) * dt / dyb1(ix, iyp)
-          w7 = energy(ix, iyp)
-          w6 = ABS(dm(ix, iy)) / (rho1(ix, iyp) * dyb1(ix, iyp) * dxb(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyc(iy) &
-              + (1.0_num + w5) * ABS(w3) / dyc(iyp)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w3))
-          w5 = -w8 * MIN(ABS(w4) * dyb(iyp), ABS(w1), ABS(w3))
-        END IF
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
+
+        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+
+        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+
+        w7 = energy(ix, iy) * vad_p + energy(ix, iyp) * vad_m
+
+        w6 = ABS(dm(ix, iy)) / ((rho1(ix, iy) * dyb1(ix, iy) * vad_p + &
+            rho1(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxb(ix))
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyc(iy) &
+            + (1.0_num + w5) * (ABS(w2) / dyc(iym) * vad_p &
+            + ABS(w3) / dyc(iyp) * vad_m)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+
+        w5 = SIGN(1.0_num, v_advect) * w8 &
+            * MIN(ABS(w4) * (dyb(iy) * vad_p + dyb(iyp) * vad_m), &
+            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = dm(ix, iy) * (w7 + bzone(ix, iy) * w5 * (1.0_num - w6))
       END DO
@@ -419,10 +480,12 @@ CONTAINS
 
   SUBROUTINE y_momx_flux ! energy remap in mass coordinates
 
-    REAL(num) :: v_advect, m, mp, ai, aip, dk
+    REAL(num) :: v_advect, m, mp, ai, aip, dk, vad_p, vad_m
     INTEGER :: iyp2
 
     DO iy = -1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym  = iy - 1
         iyp  = iy + 1
@@ -434,25 +497,31 @@ CONTAINS
         w2 = vx(ix, iy  ) - vx(ix, iym)
         w3 = vx(ix, iyp2) - vx(ix, iyp)
 
-        IF (v_advect > 0.0) THEN
-          w5 = ABS(v_advect) * dt / dyb1(ix, iy)
-          w7 = vx(ix, iy)
-          w6 = ABS(dm(ix, iy)) / (rho_v(ix, iy) * dyb1(ix, iy) * dxc(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-              + (1.0_num + w5) * ABS(w2) / dyb(iy)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w2))
-          w5 = w8 * MIN(ABS(w4) * dyc(iy), ABS(w1), ABS(w2))
-        ELSE
-          w5 = ABS(v_advect) * dt / dyb1(ix, iyp)
-          w7 = vx(ix, iyp)
-          w6 = ABS(dm(ix, iy)) / (rho_v(ix, iyp) * dyb1(ix, iyp) * dxc(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-              + (1.0_num + w5) * ABS(w3) / dyb(iyp2)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w3))
-          w5 = -w8 * MIN(ABS(w4) * dyc(iyp), ABS(w1), ABS(w3))
-        END IF
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
+
+        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+
+        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+
+        w7 = vy(ix, iy) * vad_p + vy(ix, iyp) * vad_m
+
+        w6 = ABS(dm(ix, iy)) / ((rho_v(ix, iy) * dyb1(ix, iy) * vad_p + &
+            rho_v(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxc(ix))
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
+            + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
+            + ABS(w3) / dyb(iyp2) * vad_m)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+
+        w5 = SIGN(1.0_num, v_advect) * w8 &
+            * MIN(ABS(w4) * (dyc(iy) * vad_p + dyc(iyp) * vad_m), &
+            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = w7 + bzone(ix, iy) * w5 * (1.0_num - w6)
       END DO
@@ -460,6 +529,8 @@ CONTAINS
 
     IF (rke) THEN
       DO iy = 0, ny-1
+        !DEC$ IVDEP
+        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           iym = iy - 1
           iyp = iy + 1
@@ -494,10 +565,12 @@ CONTAINS
 
   SUBROUTINE y_momz_flux ! energy remap in mass coordinates
 
-    REAL(num) :: v_advect, m, mp, ai, aip, dk
+    REAL(num) :: v_advect, m, mp, ai, aip, dk, vad_p, vad_m
     INTEGER :: iyp2
 
     DO iy = -1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym  = iy - 1
         iyp  = iy + 1
@@ -509,25 +582,31 @@ CONTAINS
         w2 = vz(ix, iy  ) - vz(ix, iym)
         w3 = vz(ix, iyp2) - vz(ix, iyp)
 
-        IF (v_advect > 0.0) THEN
-          w5 = ABS(v_advect) * dt / dyb1(ix, iy)
-          w7 = vz(ix, iy)
-          w6 = ABS(dm(ix, iy)) / (rho_v(ix, iy) * dyb1(ix, iy) * dxc(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-              + (1.0_num + w5) * ABS(w2) / dyb(iy)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w2))
-          w5 = w8 * MIN(ABS(w4) * dyc(iy), ABS(w1), ABS(w2))
-        ELSE
-          w5 = ABS(v_advect) * dt / dyb1(ix, iyp)
-          w7 = vz(ix, iyp)
-          w6 = ABS(dm(ix, iy)) / (rho_v(ix, iyp) * dyb1(ix, iyp) * dxc(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-              + (1.0_num + w5) * ABS(w3) / dyb(iyp2)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w3))
-          w5 = -w8 * MIN(ABS(w4) * dyc(iyp), ABS(w1), ABS(w3))
-        END IF
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
+
+        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+
+        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+
+        w7 = vz(ix, iy) * vad_p + vz(ix, iyp) * vad_m
+
+        w6 = ABS(dm(ix, iy)) / ((rho_v(ix, iy) * dyb1(ix, iy) * vad_p + &
+            rho_v(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxc(ix))
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
+            + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
+            + ABS(w3) / dyb(iyp2) * vad_m)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+
+        w5 = SIGN(1.0_num, v_advect) * w8 &
+            * MIN(ABS(w4) * (dyc(iy) * vad_p + dyc(iyp) * vad_m), &
+            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = w7 + bzone(ix, iy) * w5 * (1.0_num - w6)
       END DO
@@ -535,6 +614,8 @@ CONTAINS
 
     IF (rke) THEN
       DO iy = 0, ny-1
+        !DEC$ IVDEP
+        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           iym = iy - 1
           iyp = iy + 1
@@ -569,10 +650,12 @@ CONTAINS
 
   SUBROUTINE y_momy_flux
 
-    REAL(num) :: v_advect, m, mp, ai, aip, dk
+    REAL(num) :: v_advect, m, mp, ai, aip, dk, vad_p, vad_m
     INTEGER :: iyp2
 
     DO iy = -1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         iym  = iy - 1
         iyp  = iy + 1
@@ -584,25 +667,31 @@ CONTAINS
         w2 = vy(ix, iy  ) - vy(ix, iym)
         w3 = vy(ix, iyp2) - vy(ix, iyp)
 
-        IF (v_advect > 0.0) THEN
-          w5 = ABS(v_advect) * dt / dyb1(ix, iy)
-          w7 = vy(ix, iy)
-          w6 = ABS(dm(ix, iy)) / (rho_v(ix, iy) * dyb1(ix, iy) * dxc(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp)&
-              + (1.0_num + w5) * ABS(w2) / dyb(iy)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w2))
-          w5 = w8 * MIN(ABS(w4) * dyc(iy), ABS(w1), ABS(w2))
-        ELSE
-          w5 = ABS(v_advect) * dt / dyb1(ix, iyp)
-          w7 = vy(ix, iyp)
-          w6 = ABS(dm(ix, iy)) / (rho_v(ix, iyp) * dyb1(ix, iyp) * dxc(ix))
-          w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-              + (1.0_num + w5) * ABS(w3) / dyb(iyp2)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num, w1) + SIGN(1.0_num, w3))
-          w5 = -w8 * MIN(ABS(w4) * dyc(iyp), ABS(w1), ABS(w3))
-        END IF
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
+
+        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+
+        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+
+        w7 = vy(ix, iy) * vad_p + vy(ix, iyp) * vad_m
+
+        w6 = ABS(dm(ix, iy)) / ((rho_v(ix, iy) * dyb1(ix, iy) * vad_p &
+            + rho_v(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxc(ix))
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
+            + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
+            + ABS(w3) / dyb(iyp2) * vad_m)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+
+        w5 = SIGN(1.0_num, v_advect) * w8 &
+            * MIN(ABS(w4) * (dyc(iy) * vad_p + dyc(iyp) * vad_m), &
+            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = w7 + bzone(ix, iy) * w5 * (1.0_num - w6)
       END DO
@@ -610,6 +699,8 @@ CONTAINS
 
     IF (rke) THEN
       DO iy = 0, ny-1
+        !DEC$ IVDEP
+        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           iym = iy - 1
           iyp = iy + 1
