@@ -8,38 +8,41 @@ MODULE initial_conditions
 
   PRIVATE
 
-  PUBLIC:: Set_Initial_Conditions
+  PUBLIC :: Set_Initial_Conditions
 
 CONTAINS
 
-  !-----------------------------------------------------------------------------
-  !This function sets up the initial condition for the code
-  !The variables which must be set are
-  !Rho - density
-  !V{x,y,z} - Velocities in x,y,z
-  !B{x,y,z} - Magnetic fields in x,y,z
-  !Energy - Specific internal energy
-  !Since temperature is a more intuitive quantity than specific internal energy
-  !There is a helper function Get_Energy which converts temperature to energy
-  !The syntax for this function is
-
-  !CALL Get_Energy(density, temperature, equation_of_state, ix, iy, output_energy)
-  !REAL(num) :: density - The density at point (ix,iy) on the grid
-  !REAL(num) :: temperature - The temperature at point (ix,iy) on the grid
-  !INTEGER :: equation_of_state - The code for the equation of state to use. The 
-  !           global equation of state for the code is eos_number
-  !INTEGER :: ix - The current gridpoint in the x direction
-  !INTEGER :: iy - The current gridpoint in the y direction
-  !REAL(num) :: output_energy - The specific internal energy returned by the routine
-  !-----------------------------------------------------------------------------
+  !---------------------------------------------------------------------------
+  ! This function sets up the initial condition for the code
+  ! The variables which must be set are
+  ! Rho - density
+  ! V{x, y, z} - Velocities in x, y, z
+  ! B{x, y, z} - Magnetic fields in x, y, z
+  ! Energy - Specific internal energy
+  ! Since temperature is a more intuitive quantity than specific internal energy
+  ! There is a helper function Get_Energy which converts temperature to energy
+  ! The syntax for this function is
+  !
+  ! CALL Get_Energy(density, temperature, equation_of_state, ix, iy, &
+  !     output_energy)
+  !
+  ! REAL(num) :: density - The density at point (ix, iy) on the grid
+  ! REAL(num) :: temperature - The temperature at point (ix, iy) on the grid
+  ! INTEGER :: equation_of_state - The code for the equation of state to use.
+  !            The global equation of state for the code is eos_number
+  ! INTEGER :: ix - The current gridpoint in the x direction
+  ! INTEGER :: iy - The current gridpoint in the y direction
+  ! REAL(num) :: output_energy - The specific internal energy returned by
+  !              the routine
+  !---------------------------------------------------------------------------
   SUBROUTINE Set_Initial_Conditions
 
-    INTEGER:: ix, iy, iCycle,flipy
+    INTEGER :: ix, iy, iCycle, flipy
 
-    REAL(num)::dg,m=1.5_num,a=1.0_num,y_cor=3.75e6,t_ph=6420.0_num
-    REAL(num) :: t_cor=963000.0_num,wtr=7.5e5_num,T
-    REAL(num) :: yt,q,r,bphi,b1,pb,b,b_0
-    INTEGER :: eos_this_cycle,max_cycles
+    REAL(num) :: dg, m = 1.5_num, a = 1.0_num, y_cor = 3.75e6, t_ph = 6420.0_num
+    REAL(num) :: t_cor = 963000.0_num, wtr = 7.5e5_num, T
+    REAL(num) :: yt, q, r, bphi, b1, pb, b, b_0
+    INTEGER :: eos_this_cycle, max_cycles
 
     vx = 0.0_num
     vy = 0.0_num
@@ -55,8 +58,5 @@ CONTAINS
     grav = 0.0_num
 
   END SUBROUTINE Set_Initial_Conditions
-
-
-
 
 END MODULE initial_conditions

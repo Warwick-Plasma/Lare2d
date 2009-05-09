@@ -1,71 +1,81 @@
 MODULE lagran
 
-  USE shared_data; USE boundary; USE conduct; USE normalise
-  USE eos; USE neutral
+  USE shared_data
+  USE boundary
+  USE neutral
+  USE conduct
+  USE normalise
+  USE eos
+
   IMPLICIT NONE
 
   PRIVATE
+
   PUBLIC :: lagrangian_step, eta_calc
 
   ! only used inside lagran.f90
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qxy, qxz, qyz
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qxx, qyy, visc_heat, pressure
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
+  REAL(num), DIMENSION(:, :), ALLOCATABLE :: qxy, qxz, qyz
+  REAL(num), DIMENSION(:, :), ALLOCATABLE :: qxx, qyy, visc_heat, pressure
+  REAL(num), DIMENSION(:, :), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
 
 CONTAINS
 
-
-  !This subroutine manages the progress of the lagrangian step
+  ! This subroutine manages the progress of the lagrangian step
   SUBROUTINE lagrangian_step
 
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
 
-    ALLOCATE (bx1(0:nx+1,0:ny+1),by1(0:nx+1,0:ny+1),bz1(0:nx+1,0:ny+1), &
-         qxy(0:nx+1,0:ny+1),qxz(0:nx+1,0:ny+1),qyz(0:nx+1,0:ny+1), &
-         qxx(0:nx+1,0:ny+1),qyy(0:nx+1,0:ny+1), &
-         visc_heat(-1:nx+2,-1:ny+2),pressure(-1:nx+2,-1:ny+2), &
-         flux_x(0:nx,0:ny),flux_y(0:nx,0:ny),flux_z(0:nx,0:ny),curlb(0:nx,0:ny))
+    ALLOCATE (bx1(0:nx+1, 0:ny+1), by1(0:nx+1, 0:ny+1), bz1(0:nx+1, 0:ny+1), &
+        qxy(0:nx+1, 0:ny+1), qxz(0:nx+1, 0:ny+1), qyz(0:nx+1, 0:ny+1), &
+        qxx(0:nx+1, 0:ny+1), qyy(0:nx+1, 0:ny+1), &
+        visc_heat(-1:nx+2, -1:ny+2), pressure(-1:nx+2, -1:ny+2), &
+        flux_x(0:nx, 0:ny), flux_y(0:nx, 0:ny), flux_z(0:nx, 0:ny), &
+        curlb(0:nx, 0:ny))
 
     IF (resistiveMHD .OR. HallMHD) THEN
-       ! if subcycling isn't wanted set dt = dtr in set_dt, don't just
-       ! set substeps to 1.
-       IF (resistiveMHD) THEN
-          dt_sub = dtr
-       ELSE
-          dt_sub = dth
-       END IF
-       IF (resistiveMHD .AND. HallMHD) dt_sub = MIN(dtr, dth)
-       substeps = INT(dt/dt_sub) + 1
-       IF (substeps > peak_substeps) peak_substeps = substeps
-       actual_dt = dt
-       dt = dt / REAL(substeps,num)
-       DO subcycle = 1, substeps
-          CALL eta_calc
-          IF (include_neutrals) CALL neutral_fraction(eos_number)
-          IF (cowling_resistivity) CALL perpendicular_resistivity
-          IF (HallMHD) CALL hall_effects  
-          IF (resistiveMHD) CALL resistive_effects  
-       ENDDO
-       dt = actual_dt
-    ENDIF
+      ! if subcycling isn't wanted set dt = dtr in set_dt, don't just
+      ! set substeps to 1.
+      IF (resistiveMHD) THEN
+        dt_sub = dtr
+      ELSE
+        dt_sub = dth
+      END IF
+
+      IF (resistiveMHD .AND. HallMHD) dt_sub = MIN(dtr, dth)
+      substeps = INT(dt / dt_sub) + 1
+
+      IF (substeps > peak_substeps) peak_substeps = substeps
+      actual_dt = dt
+      dt = dt / REAL(substeps, num)
+
+      DO subcycle = 1, substeps
+        CALL eta_calc
+        IF (include_neutrals) CALL neutral_fraction(eos_number)
+        IF (cowling_resistivity) CALL perpendicular_resistivity
+        IF (HallMHD) CALL hall_effects
+        IF (resistiveMHD) CALL resistive_effects
+      END DO
+
+      dt = actual_dt
+    END IF
 
     IF (conduction) CALL conduct_heat
 
-    DO iy = 0, ny+1
-       DO ix = 0, nx+1
-          ixm = ix - 1
-          iym = iy - 1
-          bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy)) / 2.0_num
-          by1(ix,iy) = (by(ix,iy) + by(ix,iym)) / 2.0_num
-       END DO
+    DO iy = 0, ny + 1
+      DO ix = 0, nx + 1
+        ixm = ix - 1
+        iym = iy - 1
+        bx1(ix, iy) = (bx(ix, iy) + bx(ixm, iy)) / 2.0_num
+        by1(ix, iy) = (by(ix, iy) + by(ix, iym)) / 2.0_num
+      END DO
     END DO
-    bz1 = bz(0:nx+1,0:ny+1)      ! bz1 = bz at C
+    bz1 = bz(0:nx+1, 0:ny+1) ! bz1 = bz at C
 
     CALL predictor_corrector_step
 
     DEALLOCATE (bx1, by1, bz1, qxy, qxz, qyz, qxx, qyy, visc_heat, pressure, &
-         flux_x, flux_y, flux_z, curlb)
+        flux_x, flux_y, flux_z, curlb)
 
     CALL energy_bcs
     CALL density_bcs
@@ -74,7 +84,8 @@ CONTAINS
   END SUBROUTINE lagrangian_step
 
 
-  !The main predictor/corrector step which advances the momentum equation 
+
+  ! The main predictor / corrector step which advances the momentum equation
   SUBROUTINE predictor_corrector_step
 
     REAL(num) :: p, pxp, pyp, pxpyp, p1, p2, p3, p4
@@ -87,378 +98,388 @@ CONTAINS
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
     REAL(num) :: cvx, cvxp, cvy, cvyp
 
-    REAL(num) :: mx,mn,momentum
+    REAL(num) :: mx, mn, momentum
 
     dt2 = dt / 2.0_num
     CALL viscosity_and_b_update
 
-    bx1 = bx1*cv1(0:nx+1,0:ny+1)
-    by1 = by1*cv1(0:nx+1,0:ny+1)
-    bz1 = bz1*cv1(0:nx+1,0:ny+1)
+    bx1 = bx1 * cv1(0:nx+1, 0:ny+1)
+    by1 = by1 * cv1(0:nx+1, 0:ny+1)
+    bz1 = bz1 * cv1(0:nx+1, 0:ny+1)
 
-    DO iy = -1, ny+2
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = -1, nx+2
-          dv = cv1(ix,iy) / cv(ix,iy) - 1.0_num
-          e1 = energy(ix,iy) - pressure(ix,iy) * dv/rho(ix,iy)   !predictor energy
-#ifdef Q_MONO
-          IF (visc3 > 1.e-6_num) THEN
-#endif
-             e1 = e1  + visc_heat(ix,iy)*dt2/rho(ix,iy)   
-#ifdef Q_MONO
-          END IF
-#endif
-#ifdef Q_MONO
-          e1 = e1 - p_visc(ix,iy) * dv/rho(ix,iy) 
+    DO iy = -1, ny + 2
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = -1, nx + 2
+        dv = cv1(ix, iy) / cv(ix, iy) - 1.0_num
+        ! predictor energy
+        e1 = energy(ix, iy) - pressure(ix, iy) * dv / rho(ix, iy)
+
+#ifndef Q_MONO
+        e1 = e1 + visc_heat(ix, iy) * dt2 / rho(ix, iy)
+#else
+        IF (visc3 > 1.e-6_num) &
+            e1 = e1 + visc_heat(ix, iy) * dt2 / rho(ix, iy)
+        e1 = e1 - p_visc(ix, iy) * dv / rho(ix, iy)
 #endif
 
-          ! now define the predictor step pressures
-!!$          pressure(ix,iy) = e1 * (gamma - 1.0_num) * rho(ix,iy) * cv(ix,iy) / cv1(ix,iy)
-          CALL Get_Pressure(rho(ix,iy) * cv(ix,iy)/cv1(ix,iy), e1, eos_number, ix, iy, pressure(ix,iy))
-          ! add shock viscosity
+        ! now define the predictor step pressures
+!!$     pressure(ix, iy) = e1 * (gamma - 1.0_num) &
+!!$        * rho(ix, iy) * cv(ix, iy) / cv1(ix, iy)
+        CALL Get_Pressure(rho(ix, iy) * cv(ix, iy) / cv1(ix, iy), &
+            e1, eos_number, ix, iy, pressure(ix, iy))
 #ifdef Q_MONO
-          pressure(ix,iy) = pressure(ix,iy) + p_visc(ix,iy) 
+        ! add shock viscosity
+        pressure(ix, iy) = pressure(ix, iy) + p_visc(ix, iy)
 #endif
-       END DO
+      END DO
     END DO
 
     DO iy = 0, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          ixp = ix + 1
-          iyp = iy + 1
-          w1 = (pressure(ix,iy) + pressure(ix,iyp)) / 2.0_num     ! P total at Ey(i,j)
-          w2 = (pressure(ixp,iy) + pressure(ixp,iyp)) / 2.0_num        ! P total at Ey(i+1,j)
-          fx = - (w2 - w1) / dxc(ix)
-          w1 = (pressure(ix,iy) + pressure(ixp,iy)) / 2.0_num     ! P total at Ex(i,j)
-          w2 = (pressure(ix,iyp) + pressure(ixp,iyp)) / 2.0_num        ! P total at Ex(i,j+1)
-          fy = - (w2 - w1) / dyc(iy)
-          fz = 0.0_num
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        ixp = ix + 1
+        iyp = iy + 1
+
+        ! P total at Ey(i, j)
+        w1 = (pressure(ix , iy) + pressure(ix , iyp)) / 2.0_num
+        ! P total at Ey(i+1, j)
+        w2 = (pressure(ixp, iy) + pressure(ixp, iyp)) / 2.0_num
+        fx = -(w2 - w1) / dxc(ix)
+        ! P total at Ex(i, j)
+        w1 = (pressure(ix, iy ) + pressure(ixp, iy )) / 2.0_num
+        ! P total at Ex(i, j+1)
+        w2 = (pressure(ix, iyp) + pressure(ixp, iyp)) / 2.0_num
+        fy = -(w2 - w1) / dyc(iy)
+        fz = 0.0_num
 #ifdef Q_MONO
-          IF (visc3 > 1.e-6_num) THEN
+        IF (visc3 > 1.e-6_num) THEN
 #endif
-             ! add parallel component of viscosity
-             w1 = (qxx(ix,iy) + qxx(ix,iyp)) / 2.0_num     
-             w2 = (qxx(ixp,iy) + qxx(ixp,iyp)) / 2.0_num        
-             fx = fx + (w2 - w1) / dxc(ix)
-             w1 = (qyy(ix,iy) + qyy(ixp,iy)) / 2.0_num     
-             w2 = (qyy(ix,iyp) + qyy(ixp,iyp)) / 2.0_num        
-             fy = fy + (w2 - w1) / dyc(iy)
+          ! add parallel component of viscosity
+          w1 = (qxx(ix, iy) + qxx(ix, iyp)) / 2.0_num
+          w2 = (qxx(ixp, iy) + qxx(ixp, iyp)) / 2.0_num
+          fx = fx + (w2 - w1) / dxc(ix)
+          w1 = (qyy(ix, iy) + qyy(ixp, iy)) / 2.0_num
+          w2 = (qyy(ix, iyp) + qyy(ixp, iyp)) / 2.0_num
+          fy = fy + (w2 - w1) / dyc(iy)
 
-             ! add shear forces
-             w1 = (qxy(ix,iy) + qxy(ixp,iy)) / 2.0_num
-             w2 = (qxy(ix,iyp) + qxy(ixp,iyp)) / 2.0_num
-             fx = fx + (w2 - w1) / dyc(iy)
-             w1 = (qxy(ix,iy) + qxy(ix,iyp)) / 2.0_num
-             w2 = (qxy(ixp,iy) + qxy(ixp,iyp)) / 2.0_num
-             fy = fy + (w2 - w1) / dxc(ix)
-             w1 = (qxz(ix,iy)+qxz(ix,iyp)) / 2.0_num
-             w2 = (qxz(ixp,iy)+qxz(ixp,iyp)) / 2.0_num
-             fz = (w2 - w1) / dxc(ix)
-             w1 = (qyz(ix,iy)+qyz(ixp,iy)) / 2.0_num
-             w2 = (qyz(ix,iyp)+qyz(ixp,iyp)) / 2.0_num
-             fz = fz + (w2 - w1) / dyc(iy)
+          ! add shear forces
+          w1 = (qxy(ix, iy) + qxy(ixp, iy)) / 2.0_num
+          w2 = (qxy(ix, iyp) + qxy(ixp, iyp)) / 2.0_num
+          fx = fx + (w2 - w1) / dyc(iy)
+          w1 = (qxy(ix, iy) + qxy(ix, iyp)) / 2.0_num
+          w2 = (qxy(ixp, iy) + qxy(ixp, iyp)) / 2.0_num
+          fy = fy + (w2 - w1) / dxc(ix)
+          w1 = (qxz(ix, iy) + qxz(ix, iyp)) / 2.0_num
+          w2 = (qxz(ixp, iy) + qxz(ixp, iyp)) / 2.0_num
+          fz = (w2 - w1) / dxc(ix)
+          w1 = (qyz(ix, iy) + qyz(ixp, iy)) / 2.0_num
+          w2 = (qyz(ix, iyp) + qyz(ixp, iyp)) / 2.0_num
+          fz = fz + (w2 - w1) / dyc(iy)
 #ifdef Q_MONO
-          END IF
+        END IF
 #endif
-          cvx = cv1(ix,iy)+cv1(ix,iyp)
-          cvxp = cv1(ixp,iy)+cv1(ixp,iyp)
-          cvy = cv1(ix,iy)+cv1(ixp,iy)
-          cvyp = cv1(ix,iyp)+cv1(ixp,iyp)
+        cvx = cv1(ix, iy) + cv1(ix, iyp)
+        cvxp = cv1(ixp, iy) + cv1(ixp, iyp)
+        cvy = cv1(ix, iy) + cv1(ixp, iy)
+        cvyp = cv1(ix, iyp) + cv1(ixp, iyp)
 
-          w1 = (bz1(ix,iy)+bz1(ixp,iy)) / cvy
-          w2 = (bz1(ix,iyp)+bz1(ixp,iyp)) / cvyp
-          jx = (w2 - w1) / dyc(iy)
+        w1 = (bz1(ix, iy) + bz1(ixp, iy)) / cvy
+        w2 = (bz1(ix, iyp) + bz1(ixp, iyp)) / cvyp
+        jx = (w2 - w1) / dyc(iy)
 
-          w1 = (bz1(ix,iy)+bz1(ix,iyp)) / cvx
-          w2 = (bz1(ixp,iy)+bz1(ixp,iyp)) / cvxp
-          jy = - (w2 - w1) / dxc(ix)
+        w1 = (bz1(ix, iy) + bz1(ix, iyp)) / cvx
+        w2 = (bz1(ixp, iy) + bz1(ixp, iyp)) / cvxp
+        jy = -(w2 - w1) / dxc(ix)
 
-          w1 = (by1(ix,iy)+by1(ix,iyp)) / cvx
-          w2 = (by1(ixp,iy)+by1(ixp,iyp)) / cvxp
-          jz = (w2 - w1) / dxc(ix)
-          w1 = (bx1(ix,iy)+bx1(ixp,iy)) / cvy
-          w2 = (bx1(ix,iyp)+bx1(ixp,iyp)) / cvyp
-          jz = jz - (w2 - w1) / dyc(iy)
+        w1 = (by1(ix, iy) + by1(ix, iyp)) / cvx
+        w2 = (by1(ixp, iy) + by1(ixp, iyp)) / cvxp
+        jz = (w2 - w1) / dxc(ix)
+        w1 = (bx1(ix, iy) + bx1(ixp, iy)) / cvy
+        w2 = (bx1(ix, iyp) + bx1(ixp, iyp)) / cvyp
+        jz = jz - (w2 - w1) / dyc(iy)
 
-          bxv = (bx1(ix,iy)+bx1(ixp,iy)+bx1(ix,iyp)+bx1(ixp,iyp)) &
-               / (cvx + cvxp)
-          byv = (by1(ix,iy)+by1(ixp,iy)+by1(ix,iyp)+by1(ixp,iyp)) &
-               / (cvx + cvxp)
-          bzv = (bz1(ix,iy)+bz1(ixp,iy)+bz1(ix,iyp)+bz1(ixp,iyp)) &
-               / (cvx + cvxp)
+        bxv = (bx1(ix, iy) + bx1(ixp, iy) + bx1(ix, iyp) + bx1(ixp, iyp)) &
+            / (cvx + cvxp)
+        byv = (by1(ix, iy) + by1(ixp, iy) + by1(ix, iyp) + by1(ixp, iyp)) &
+            / (cvx + cvxp)
+        bzv = (bz1(ix, iy) + bz1(ixp, iy) + bz1(ix, iyp) + bz1(ixp, iyp)) &
+            / (cvx + cvxp)
 
-          fx = fx + (jy*bzv - jz*byv) 
-          fy = fy + (jz*bxv - jx*bzv)
-          fz = fz + (jx*byv - jy*bxv) 
+        fx = fx + (jy * bzv - jz * byv)
+        fy = fy + (jz * bxv - jx * bzv)
+        fz = fz + (jx * byv - jy * bxv)
 
-          rho_v = (rho(ix,iy)*cv(ix,iy) + rho(ixp,iy)*cv(ixp,iy) &
-               + rho(ix,iyp)*cv(ix,iyp) +rho(ixp,iyp)*cv(ixp,iyp))
-          rho_v = rho_v / (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
+        rho_v = (rho(ix, iy) * cv(ix, iy) + rho(ixp, iy) * cv(ixp, iy) &
+            + rho(ix, iyp) * cv(ix, iyp) + rho(ixp, iyp) * cv(ixp, iyp))
+        rho_v = rho_v / (cv(ix, iy) + cv(ixp, iy) + cv(ix, iyp) + cv(ixp, iyp))
 
-          fy = fy - rho_v * grav(iy)
+        fy = fy - rho_v * grav(iy)
 
-          ! find half step velocity needed for remap
-          vx1(ix,iy) = vx(ix,iy) + dt2 * fx / rho_v
-          vy1(ix,iy) = vy(ix,iy) + dt2 * fy / rho_v
-          vz1(ix,iy) = vz(ix,iy) + dt2 * fz / rho_v
+        ! find half step velocity needed for remap
+        vx1(ix, iy) = vx(ix, iy) + dt2 * fx / rho_v
+        vy1(ix, iy) = vy(ix, iy) + dt2 * fy / rho_v
+        vz1(ix, iy) = vz(ix, iy) + dt2 * fz / rho_v
 
-          ! velocity at the end of the Lagrangian step
-          vx(ix,iy) = vx(ix,iy) + dt * fx / rho_v
-          vy(ix,iy) = vy(ix,iy) + dt * fy / rho_v
-          vz(ix,iy) = vz(ix,iy) + dt * fz / rho_v
+        ! velocity at the end of the Lagrangian step
+        vx(ix, iy) = vx(ix, iy) + dt * fx / rho_v
+        vy(ix, iy) = vy(ix, iy) + dt * fy / rho_v
+        vz(ix, iy) = vz(ix, iy) + dt * fz / rho_v
 
-       END DO
+      END DO
     END DO
 
     CALL remap_v_bcs
 #ifdef Q_MONO
     IF (visc3 > 1.e-6_num) THEN
 #endif
-       CALL visc_heating
+      CALL visc_heating
 #ifdef Q_MONO
-    ENDIF
+    END IF
 #endif
 
     ! finally correct density and energy to final values
     DO iy = 1, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
 
-          vxb = (vx1(ix,iy) + vx1(ix,iym)) / 2.0_num     !vx1 at Ex(i,j)
-          vxbm = (vx1(ixm,iy) + vx1(ixm,iym)) / 2.0_num  !vx1 at Ex(i-1,j)
-          vyb = (vy1(ix,iy) + vy1(ixm,iy)) / 2.0_num     !vy1 at Ey(i,j)
-          vybm = (vy1(ix,iym) + vy1(ixm,iym)) / 2.0_num  !vy1 at Ey(i-1,j)
-          dv = ((vxb - vxbm)/dxb(ix) + (vyb - vybm)/dyb(iy)) * dt
-          cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
+        vxb = (vx1(ix, iy) + vx1(ix, iym)) / 2.0_num     ! vx1 at Ex(i, j)
+        vxbm = (vx1(ixm, iy) + vx1(ixm, iym)) / 2.0_num  ! vx1 at Ex(i-1, j)
+        vyb = (vy1(ix, iy) + vy1(ixm, iy)) / 2.0_num     ! vy1 at Ey(i, j)
+        vybm = (vy1(ix, iym) + vy1(ixm, iym)) / 2.0_num  ! vy1 at Ey(i-1, j)
+        dv = ((vxb - vxbm) / dxb(ix) + (vyb - vybm) / dyb(iy)) * dt
+        cv1(ix, iy) = cv(ix, iy) * (1.0_num + dv)
 
-          IF (p_visc(ix,iy) .LT. 0.0_num) p_visc(ix,iy)=0.0_num
-          !energy at end of Lagrangian step
+        IF (p_visc(ix, iy) .LT. 0.0_num) p_visc(ix, iy) = 0.0_num
+        ! energy at end of Lagrangian step
 #ifdef Q_MONO
-          pressure(ix,iy) = pressure(ix,iy) - p_visc(ix,iy) 
+        pressure(ix, iy) = pressure(ix, iy) - p_visc(ix, iy)
 #endif
-          energy(ix,iy) = energy(ix,iy)  &
-               - pressure(ix,iy) * dv / rho(ix,iy) 
+        energy(ix, iy) = energy(ix, iy) &
+            - pressure(ix, iy) * dv / rho(ix, iy)
 #ifdef Q_MONO
-          IF (visc3 > 1.e-6_num) THEN
+        IF (visc3 > 1.e-6_num) THEN
 #endif
-             energy(ix,iy) = energy(ix,iy)  &
-                  + dt * visc_heat(ix,iy) / rho(ix,iy)
+          energy(ix, iy) = energy(ix, iy) &
+              + dt * visc_heat(ix, iy) / rho(ix, iy)
 #ifdef Q_MONO
-          END IF
-          energy(ix,iy) = energy(ix,iy)  &
-               - p_visc(ix,iy) * dv / rho(ix,iy) 
+        END IF
+        energy(ix, iy) = energy(ix, iy) &
+            - p_visc(ix, iy) * dv / rho(ix, iy)
 #endif
 
-          rho(ix,iy) = rho(ix,iy) / (1.0_num + dv) 
+        rho(ix, iy) = rho(ix, iy) / (1.0_num + dv)
 #ifdef Q_MONO
-          IF (visc3 > 1.e-6_num) THEN
+        IF (visc3 > 1.e-6_num) THEN
 #endif
-             total_visc_heating = total_visc_heating  &
-                  + dt * visc_heat(ix,iy) * cv(ix,iy)
+          total_visc_heating = total_visc_heating &
+              + dt * visc_heat(ix, iy) * cv(ix, iy)
 #ifdef Q_MONO
-          END IF
-          total_visc_heating = total_visc_heating  &
-               - p_visc(ix,iy) * dv * cv(ix,iy) 
+        END IF
+        total_visc_heating = total_visc_heating &
+            - p_visc(ix, iy) * dv * cv(ix, iy)
 #endif
-       END DO
+      END DO
     END DO
 
   END SUBROUTINE predictor_corrector_step
 
 
 
-  !This subroutine calculates the viscous effects and updates the magnetic field
+  ! This subroutine calculates the viscous effects and updates the
+  ! magnetic field
   SUBROUTINE viscosity_and_b_update
 
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm, dvxdy, dvydx
     REAL(num) :: p, pxp, pxm, pyp, pym, fx, fy, dv
     REAL(num) :: dvxdx, dvydy, dvxy, dvzdx, dvzdy, s, L, cf, L2
     REAL(num) :: sxx, syy, sxy, sxz, syz
-    REAL(num) :: case1,case2,flip,Cs
+    REAL(num) :: case1, case2, flip, Cs
 
     p_visc = 0.0_num
 
-    DO iy = -1, ny+2
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = -1, nx+2
-          CALL Get_Pressure(rho(ix,iy), energy(ix,iy), eos_number, ix, iy, pressure(ix,iy))
-       ENDDO
-    ENDDO
+    DO iy = -1, ny + 2
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = -1, nx + 2
+        CALL Get_Pressure(rho(ix, iy), energy(ix, iy), eos_number, &
+            ix, iy, pressure(ix, iy))
+      END DO
+    END DO
 
-    DO iy = 0, ny+1
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx+1
-          ixp = ix + 1
-          iyp = iy + 1
-          ixm = ix - 1
-          iym = iy - 1
-          vxb = (vx(ix,iy) + vx(ix,iym)) / 2.0_num     !vx at Ex(i,j)
-          vxbm = (vx(ixm,iy) + vx(ixm,iym)) / 2.0_num  !vx at Ex(i-1,j)
-          vyb = (vy(ix,iy) + vy(ixm,iy)) / 2.0_num     !vy at Ey(i,j)
-          vybm = (vy(ix,iym) + vy(ixm,iym)) / 2.0_num  !vy at Ey(i-1,j)
-          dv = ((vxb - vxbm)/dxb(ix) + (vyb - vybm)/dyb(iy)) * dt2
-          cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
+    DO iy = 0, ny + 1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx + 1
+        ixp = ix + 1
+        iyp = iy + 1
+        ixm = ix - 1
+        iym = iy - 1
 
-          dvxdx = (vxb - vxbm) / dxb(ix)
-          dvydy = (vyb - vybm) / dyb(iy)
+        vxb = (vx(ix, iy) + vx(ix, iym)) / 2.0_num     ! vx at Ex(i, j)
+        vxbm = (vx(ixm, iy) + vx(ixm, iym)) / 2.0_num  ! vx at Ex(i-1, j)
+        vyb = (vy(ix, iy) + vy(ixm, iy)) / 2.0_num     ! vy at Ey(i, j)
+        vybm = (vy(ix, iym) + vy(ixm, iym)) / 2.0_num  ! vy at Ey(i-1, j)
+        dv = ((vxb - vxbm) / dxb(ix) + (vyb - vybm) / dyb(iy)) * dt2
+        cv1(ix, iy) = cv(ix, iy) * (1.0_num + dv)
 
-          vxb = (vx(ix,iy) + vx(ixm,iy)) / 2.0_num     !vx at Ey(i,j)
-          vxbm = (vx(ix,iym) + vx(ixm,iym)) / 2.0_num  !vx at Ey(i,j-1)
-          vyb = (vy(ix,iy) + vy(ix,iym)) / 2.0_num     !vy at Ex(i,j)
-          vybm = (vy(ixm,iy) + vy(ixm,iym)) / 2.0_num  !vy at Ex(i-1,j)
+        dvxdx = (vxb - vxbm) / dxb(ix)
+        dvydy = (vyb - vybm) / dyb(iy)
 
-          dvxdy = (vxb - vxbm)/dyb(iy)
-          dvydx = (vyb - vybm)/dxb(ix)
-          dvxy = dvxdy + dvydx
+        vxb = (vx(ix, iy) + vx(ixm, iy)) / 2.0_num     ! vx at Ey(i, j)
+        vxbm = (vx(ix, iym) + vx(ixm, iym)) / 2.0_num  ! vx at Ey(i, j-1)
+        vyb = (vy(ix, iy) + vy(ix, iym)) / 2.0_num     ! vy at Ex(i, j)
+        vybm = (vy(ixm, iy) + vy(ixm, iym)) / 2.0_num  ! vy at Ex(i-1, j)
 
-          sxy = dvxy / 2.0_num
-          sxx = 2.0_num * dvxdx / 3.0_num - dvydy / 3.0_num
-          syy = 2.0_num * dvydy / 3.0_num - dvxdx / 3.0_num
+        dvxdy = (vxb - vxbm) / dyb(iy)
+        dvydx = (vyb - vybm) / dxb(ix)
+        dvxy = dvxdy + dvydx
 
-          vzb = (vz(ix,iy) + vz(ix,iym)) / 2.0_num
-          vzbm = (vz(ixm,iy) + vz(ixm,iym)) / 2.0_num
-          dvzdx = (vzb - vzbm) / dxb(ix) 
-          sxz = dvzdx / 2.0_num
+        sxy = dvxy / 2.0_num
+        sxx = 2.0_num * dvxdx / 3.0_num - dvydy / 3.0_num
+        syy = 2.0_num * dvydy / 3.0_num - dvxdx / 3.0_num
 
-          vzb = (vz(ix,iy) + vz(ixm,iy)) / 2.0_num
-          vzbm = (vz(ix,iym) + vz(ixm,iym)) / 2.0_num
-          dvzdy = (vzb - vzbm) / dyb(iy) 
-          syz = dvzdy / 2.0_num
+        vzb = (vz(ix, iy) + vz(ix, iym)) / 2.0_num
+        vzbm = (vz(ixm, iy) + vz(ixm, iym)) / 2.0_num
+        dvzdx = (vzb - vzbm) / dxb(ix)
+        sxz = dvzdx / 2.0_num
 
-          p = pressure(ix,iy)
-          pxp = pressure(ixp,iy)
-          pxm = pressure(ixm,iy)
-          pyp = pressure(ix,iyp)
-          pym = pressure(ix,iym)
+        vzb = (vz(ix, iy) + vz(ixm, iy)) / 2.0_num
+        vzbm = (vz(ix, iym) + vz(ixm, iym)) / 2.0_num
+        dvzdy = (vzb - vzbm) / dyb(iy)
+        syz = dvzdy / 2.0_num
 
-          fx = - (pxp - pxm) / dxb(ix) 
-          fy = - (pyp - pym) / dyb(iy)  
+        p = pressure(ix, iy)
+        pxp = pressure(ixp, iy)
+        pxm = pressure(ixm, iy)
+        pyp = pressure(ix, iyp)
+        pym = pressure(ix, iym)
 
-          w1 = fx**2 + fy**2
-          s = (dvxdx*fx**2 + dvydy*fy**2 + dvxy*fx*fy)   &
-               / MAX(w1, none_zero)
+        fx = -(pxp - pxm) / dxb(ix)
+        fy = -(pyp - pym) / dyb(iy)
 
-          !(dxb(ix)*ABS(fy) > dyb(iy)*ABS(fx)) ? 1:-1
-          flip=SIGN(1.0_num,dxb(ix)*ABS(fy)-dyb(iy)*ABS(fx))  
-          case1 = -MIN(flip,0.0_num) !(flip < 0) ? 1:0
-          case2 = MAX(flip,0.0_num)  ! (flip > 0) ? 1:0
+        w1 = fx**2 + fy**2
+        s = (dvxdx * fx**2 + dvydy * fy**2 + dvxy * fx * fy) &
+            / MAX(w1, none_zero)
 
-          w2 = dxb(ix)**2*w1 / MAX(fx**2, none_zero) * case1&
-               + dyb(iy)**2*w1 / MAX(fy**2, none_zero) *case2&
-               + dxb(ix)**2+dyb(iy)**2 * (1.0_num-case1) * (1.0_num-case2)
+        ! (dxb(ix) * ABS(fy) > dyb(iy) * ABS(fx)) ? 1: - 1
+        flip = SIGN(1.0_num, dxb(ix) * ABS(fy) - dyb(iy) * ABS(fx))
+        case1 = -MIN(flip, 0.0_num) ! (flip < 0) ? 1:0
+        case2 =  MAX(flip, 0.0_num) ! (flip > 0) ? 1:0
 
-          flip = -MIN(SIGN(1.0_num,w1-1.e-6_num),0.0_num) !(w1 < 1.e-6) ? 1:0
+        w2 = dxb(ix)**2 * w1 / MAX(fx**2, none_zero) * case1 &
+            + dyb(iy)**2 * w1 / MAX(fy**2, none_zero) * case2 &
+            + dxb(ix)**2 + dyb(iy)**2 * (1.0_num - case1) * (1.0_num - case2)
 
-          w2 = w2 * (1.0_num-flip) + flip*MIN(dxb(ix),dyb(iy))**2
-          L = SQRT(w2)
+        flip = -MIN(SIGN(1.0_num, w1 - 1.e-6_num), 0.0_num) ! (w1 < 1.e-6) ? 1:0
 
-          L2 = L
-          IF (s > 0.0_num .OR. dv > 0.0_num) L = 0.0_num
+        w2 = w2 * (1.0_num - flip) + flip * MIN(dxb(ix), dyb(iy))**2
+        L = SQRT(w2)
 
-          w1 = (bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2)/rho(ix,iy)
-          CALL Get_Cs(rho(ix,iy),energy(ix,iy),eos_number,ix,iy,Cs)
-          cf = SQRT(cs**2+w1)
+        L2 = L
+        IF (s > 0.0_num .OR. dv > 0.0_num) L = 0.0_num
 
-          p_visc(ix,iy) = visc1*ABS(s)*L*cf*rho(ix,iy) &
-               + visc2*(s*L)**2*rho(ix,iy)
+        w1 = (bx1(ix, iy)**2 + by1(ix, iy)**2 + bz1(ix, iy)**2) / rho(ix, iy)
+        CALL Get_Cs(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, Cs)
+        cf = SQRT(cs**2 + w1)
 
-          qxy(ix,iy) = 0.0_num
-          qxz(ix,iy) = 0.0_num
-          qyz(ix,iy) = 0.0_num
-          qxx(ix,iy) = 0.0_num
-          qyy(ix,iy) = 0.0_num
-#ifndef Q_MONO      
-          qxy(ix,iy) = sxy * (L2 * rho(ix,iy)  &
-               * (visc1 * cf + L2 * visc2 * ABS(s)))
-          qxz(ix,iy) = sxz * (L2 * rho(ix,iy)  &
-               * (visc1 * cf + L2 * visc2 * ABS(s)))
-          qyz(ix,iy) = syz * (L2 * rho(ix,iy)  &
-               * (visc1 * cf + L2 * visc2 * ABS(s)))
-          qxx(ix,iy) = sxx * (L2 * rho(ix,iy)  &
-               * (visc1 * cf + L2 * visc2 * ABS(s)))
-          qyy(ix,iy) = syy * (L2 * rho(ix,iy)  &
-               * (visc1 * cf + L2 * visc2 * ABS(s)))
+        p_visc(ix, iy) = visc1 * ABS(s) * L * cf * rho(ix, iy) &
+            + visc2 * (s * L)**2 * rho(ix, iy)
+
+        qxy(ix, iy) = 0.0_num
+        qxz(ix, iy) = 0.0_num
+        qyz(ix, iy) = 0.0_num
+        qxx(ix, iy) = 0.0_num
+        qyy(ix, iy) = 0.0_num
+#ifndef Q_MONO
+        qxy(ix, iy) = sxy * (L2 * rho(ix, iy) &
+            * (visc1 * cf + L2 * visc2 * ABS(s)))
+        qxz(ix, iy) = sxz * (L2 * rho(ix, iy) &
+            * (visc1 * cf + L2 * visc2 * ABS(s)))
+        qyz(ix, iy) = syz * (L2 * rho(ix, iy) &
+            * (visc1 * cf + L2 * visc2 * ABS(s)))
+        qxx(ix, iy) = sxx * (L2 * rho(ix, iy) &
+            * (visc1 * cf + L2 * visc2 * ABS(s)))
+        qyy(ix, iy) = syy * (L2 * rho(ix, iy) &
+            * (visc1 * cf + L2 * visc2 * ABS(s)))
 #endif
 
-          flip= - MIN(SIGN(1.0_num,1.e-6_num-visc3),0.0_num)!(visc3 < 1.e-6) ? 1:0
-          qxy(ix,iy) = qxy(ix,iy) + sxy * rho(ix,iy) * visc3 * flip 
-          qxz(ix,iy) = qxz(ix,iy) + sxz * rho(ix,iy) * visc3 * flip
-          qyz(ix,iy) = qyz(ix,iy) + syz * rho(ix,iy) * visc3 * flip
-          qxx(ix,iy) = qxx(ix,iy) + sxx * rho(ix,iy) * visc3 * flip  
-          qyy(ix,iy) = qyy(ix,iy) + syy * rho(ix,iy) * visc3 * flip  
+        ! (visc3 < 1.e-6) ? 1:0
+        flip = -MIN(SIGN(1.0_num, 1.e-6_num - visc3), 0.0_num)
+        qxy(ix, iy) = qxy(ix, iy) + sxy * rho(ix, iy) * visc3 * flip
+        qxz(ix, iy) = qxz(ix, iy) + sxz * rho(ix, iy) * visc3 * flip
+        qyz(ix, iy) = qyz(ix, iy) + syz * rho(ix, iy) * visc3 * flip
+        qxx(ix, iy) = qxx(ix, iy) + sxx * rho(ix, iy) * visc3 * flip
+        qyy(ix, iy) = qyy(ix, iy) + syy * rho(ix, iy) * visc3 * flip
 
 #ifdef Q_MONO
-          IF (visc3 > 1.e-6_num) THEN
+        IF (visc3 > 1.e-6_num) THEN
 #endif
-             visc_heat(ix,iy) = qxy(ix,iy)*dvxy + qxz(ix,iy)*dvzdx &
-                  + qyz(ix,iy)*dvzdy + qxx(ix,iy)*dvxdx + qyy(ix,iy)*dvydy 
+          visc_heat(ix, iy) = qxy(ix, iy) * dvxy + qxz(ix, iy) * dvzdx &
+              + qyz(ix, iy) * dvzdy + qxx(ix, iy) * dvxdx + qyy(ix, iy) * dvydy
 #ifdef Q_MONO
-          END IF
+        END IF
 #endif
 
-          w3 = bx1(ix,iy)*dvxdx + by1(ix,iy)*dvxdy
-          w4 = bx1(ix,iy)*dvydx + by1(ix,iy)*dvydy
-          w5 = bx1(ix,iy)*dvzdx + by1(ix,iy)*dvzdy
+        w3 = bx1(ix, iy) * dvxdx + by1(ix, iy) * dvxdy
+        w4 = bx1(ix, iy) * dvydx + by1(ix, iy) * dvydy
+        w5 = bx1(ix, iy) * dvzdx + by1(ix, iy) * dvzdy
 
-          bx1(ix,iy) = (bx1(ix,iy) + w3 * dt2) / (1.0_num + dv)
-          by1(ix,iy) = (by1(ix,iy) + w4 * dt2) / (1.0_num + dv)
-          bz1(ix,iy) = (bz1(ix,iy) + w5 * dt2) / (1.0_num + dv)
+        bx1(ix, iy) = (bx1(ix, iy) + w3 * dt2) / (1.0_num + dv)
+        by1(ix, iy) = (by1(ix, iy) + w4 * dt2) / (1.0_num + dv)
+        bz1(ix, iy) = (bz1(ix, iy) + w5 * dt2) / (1.0_num + dv)
 
-       END DO
+      END DO
     END DO
 
   END SUBROUTINE viscosity_and_b_update
 
 
 
-  !Calculate the viscous heating
+  ! Calculate the viscous heating
   SUBROUTINE visc_heating
 
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
     REAL(num) :: dvxdx, dvydy, dvxy, dvxz, dvyz
 
-    DO iy = 0, ny+1
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx+1
-          ixp = ix + 1
-          iyp = iy + 1
-          ixm = ix - 1
-          iym = iy - 1
-          vxb = (vx1(ix,iy) + vx1(ix,iym)) / 2.0_num     !vx at Ex(i,j)
-          vxbm = (vx1(ixm,iy) + vx1(ixm,iym)) / 2.0_num  !vx at Ex(i-1,j)
-          vyb = (vy1(ix,iy) + vy1(ixm,iy)) / 2.0_num     !vy at Ey(i,j)
-          vybm = (vy1(ix,iym) + vy1(ixm,iym)) / 2.0_num  !vy at Ey(i-1,j)
+    DO iy = 0, ny + 1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx + 1
+        ixp = ix + 1
+        iyp = iy + 1
+        ixm = ix - 1
+        iym = iy - 1
+        vxb = (vx1(ix, iy) + vx1(ix, iym)) / 2.0_num     ! vx at Ex(i, j)
+        vxbm = (vx1(ixm, iy) + vx1(ixm, iym)) / 2.0_num  ! vx at Ex(i-1, j)
+        vyb = (vy1(ix, iy) + vy1(ixm, iy)) / 2.0_num     ! vy at Ey(i, j)
+        vybm = (vy1(ix, iym) + vy1(ixm, iym)) / 2.0_num  ! vy at Ey(i-1, j)
 
-          dvxdx = (vxb - vxbm) / dxb(ix)
-          dvydy = (vyb - vybm) / dyb(iy)
+        dvxdx = (vxb - vxbm) / dxb(ix)
+        dvydy = (vyb - vybm) / dyb(iy)
 
-          vxb = (vx1(ix,iy) + vx1(ixm,iy)) / 2.0_num     !vx at Ey(i,j)
-          vxbm = (vx1(ix,iym) + vx1(ixm,iym)) / 2.0_num  !vx at Ey(i,j-1)
-          vyb = (vy1(ix,iy) + vy1(ix,iym)) / 2.0_num     !vy at Ex(i,j)
-          vybm = (vy1(ixm,iy) + vy1(ixm,iym)) / 2.0_num  !vy at Ex(i-1,j)
+        vxb = (vx1(ix, iy) + vx1(ixm, iy)) / 2.0_num     ! vx at Ey(i, j)
+        vxbm = (vx1(ix, iym) + vx1(ixm, iym)) / 2.0_num  ! vx at Ey(i, j-1)
+        vyb = (vy1(ix, iy) + vy1(ix, iym)) / 2.0_num     ! vy at Ex(i, j)
+        vybm = (vy1(ixm, iy) + vy1(ixm, iym)) / 2.0_num  ! vy at Ex(i-1, j)
 
-          dvxy = (vxb - vxbm)/dyb(iy) + (vyb - vybm)/dxb(ix)
+        dvxy = (vxb - vxbm) / dyb(iy) + (vyb - vybm) / dxb(ix)
 
-          vzb = (vz1(ix,iy) + vz1(ix,iym)) / 2.0_num
-          vzbm = (vz1(ixm,iy) + vz1(ixm,iym)) / 2.0_num
-          dvxz = (vzb - vzbm) / dxb(ix) 
+        vzb = (vz1(ix, iy) + vz1(ix, iym)) / 2.0_num
+        vzbm = (vz1(ixm, iy) + vz1(ixm, iym)) / 2.0_num
+        dvxz = (vzb - vzbm) / dxb(ix)
 
-          vzb = (vz1(ix,iy) + vz1(ixm,iy)) / 2.0_num
-          vzbm = (vz1(ix,iym) + vz1(ixm,iym)) / 2.0_num
-          dvyz = (vzb - vzbm) / dyb(iy) 
+        vzb = (vz1(ix, iy) + vz1(ixm, iy)) / 2.0_num
+        vzbm = (vz1(ix, iym) + vz1(ixm, iym)) / 2.0_num
+        dvyz = (vzb - vzbm) / dyb(iy)
 
-          visc_heat(ix,iy) = qxy(ix,iy)*dvxy + qxz(ix,iy)*dvxz &
-               + qyz(ix,iy)*dvyz + qxx(ix,iy) * dvxdx + qyy(ix,iy) * dvydy 
-       END DO
+        visc_heat(ix, iy) = qxy(ix, iy) * dvxy + qxz(ix, iy) * dvxz &
+            + qyz(ix, iy) * dvyz + qxx(ix, iy) * dvxdx + qyy(ix, iy) * dvydy
+      END DO
     END DO
 
     visc_heat = MAX(visc_heat, 0.0_num)
@@ -466,45 +487,46 @@ CONTAINS
   END SUBROUTINE visc_heating
 
 
-  !Calculate the spatial profile of the resistivity at the current timestep
-  !Note that this is a core routine so it works in normalised units
-  !This includes lengths etc.
-  !This routine also sets the Lambda_i, normalised ion-inertial depth, array
-  !used in the Hall term
+
+  ! Calculate the spatial profile of the resistivity at the current timestep
+  ! Note that this is a core routine so it works in normalised units
+  ! This includes lengths etc.
+  ! This routine also sets the Lambda_i, normalised ion - inertial depth, array
+  ! used in the Hall term
   SUBROUTINE eta_calc
 
     REAL(num) :: jx, jy, jz, jx1, jx2, jy1, jy2
     REAL(num) :: current, cs, d, r2
     INTEGER :: ixp, iyp
 
-    REAL(num) :: centre=2100000.0_num/150.0e3_num/3.0_num
-    REAL(num) :: wid=9.0e4_num/150.0e3_num
+    REAL(num) :: centre = 2100000.0_num / 150.0e3_num / 3.0_num
+    REAL(num) :: wid = 9.0e4_num / 150.0e3_num
 
     eta = 0.0_num
     d = 6.66_num * eta0
     lambda_i = lambda0
 
-    DO iy = -1, ny+1
-       DO ix = -1, nx+1
+    DO iy = -1, ny + 1
+      DO ix = -1, nx + 1
+        ixp = ix + 1
+        iyp = iy + 1
 
-          ixp = ix + 1
-          iyp = iy + 1
-          jx1 = (bz(ix,iyp) - bz(ix,iy)) / dyc(iy)      
-          jx2 = (bz(ixp,iyp) - bz(ixp,iy)) / dyc(iy) 
-          jy1 = - (bz(ixp,iy) - bz(ix,iy)) / dxc(ix)   
-          jy2 = - (bz(ixp,iyp) - bz(ix,iyp)) / dxc(ix)
-          jx = (jx1 + jx2) / 2.0_num    
-          jy = (jy1 + jy2) / 2.0_num    
-          jz = (by(ixp,iy) - by(ix,iy)) / dxc(ix)  &  
-               - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
+        jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
+        jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
+        jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
+        jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
+        jx = (jx1 + jx2) / 2.0_num
+        jy = (jy1 + jy2) / 2.0_num
+        jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
+            - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
 
-          IF (SQRT(jx**2+jy**2+jz**2) .GT. j_max) THEN
-             eta(ix,iy) = eta_background+eta0
-          ELSE
-             eta(ix,iy) = eta_background
-          ENDIF
+        IF (SQRT(jx**2 + jy**2 + jz**2) .GT. j_max) THEN
+          eta(ix, iy) = eta_background + eta0
+        ELSE
+          eta(ix, iy) = eta_background
+        END IF
 
-       END DO
+      END DO
     END DO
 
     IF (.NOT. resistiveMHD) eta = 0.0_num
@@ -513,28 +535,29 @@ CONTAINS
   END SUBROUTINE eta_calc
 
 
-  !Calculate the effect of resistivity on the magnetic field and Ohmic heating
-  !Use the subroutine rkstep
+
+  ! Calculate the effect of resistivity on the magnetic field and Ohmic heating
+  ! Use the subroutine rkstep
   SUBROUTINE resistive_effects
 
     REAL(num) :: jx, jy, jz, jxxp, jyyp, flux
     REAL(num) :: rho_v, half_dt, dt6
-    REAL(num) :: jx1,jx2,jy1,jy2
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1x,k2x,k3x,k4x
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1y,k2y,k3y,k4y
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1z,k2z,k3z,k4z
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: c1,c2,c3,c4
+    REAL(num) :: jx1, jx2, jy1, jy2
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1x, k2x, k3x, k4x
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1y, k2y, k3y, k4y
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1z, k2z, k3z, k4z
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: c1, c2, c3, c4
 
-    ALLOCATE(k1x(0:nx,0:ny),k2x(0:nx,0:ny),k3x(0:nx,0:ny),k4x(0:nx,0:ny))
-    ALLOCATE(k1y(0:nx,0:ny),k2y(0:nx,0:ny),k3y(0:nx,0:ny),k4y(0:nx,0:ny))
-    ALLOCATE(k1z(0:nx,0:ny),k2z(0:nx,0:ny),k3z(0:nx,0:ny),k4z(0:nx,0:ny))
-    ALLOCATE(c1(0:nx,0:ny),c2(0:nx,0:ny),c3(0:nx,0:ny),c4(0:nx,0:ny))
+    ALLOCATE(k1x(0:nx, 0:ny), k2x(0:nx, 0:ny), k3x(0:nx, 0:ny), k4x(0:nx, 0:ny))
+    ALLOCATE(k1y(0:nx, 0:ny), k2y(0:nx, 0:ny), k3y(0:nx, 0:ny), k4y(0:nx, 0:ny))
+    ALLOCATE(k1z(0:nx, 0:ny), k2z(0:nx, 0:ny), k3z(0:nx, 0:ny), k4z(0:nx, 0:ny))
+    ALLOCATE(c1(0:nx, 0:ny), c2(0:nx, 0:ny), c3(0:nx, 0:ny), c4(0:nx, 0:ny))
 
     dt = dt / 2.0_num
 
-    bx1 = bx(0:nx+1,0:ny+1)
-    by1 = by(0:nx+1,0:ny+1)
-    bz1 = bz(0:nx+1,0:ny+1)
+    bx1 = bx(0:nx+1, 0:ny+1)
+    by1 = by(0:nx+1, 0:ny+1)
+    bz1 = bz(0:nx+1, 0:ny+1)
 
     ! step 1
     CALL rkstep
@@ -544,31 +567,34 @@ CONTAINS
     c1 = curlb
 
     ! step 2
-    DO iy = 1, ny 
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k1z(ix,iy) - k1z(ix,iy-1)) * dt / dyb(iy)
-       END DO
-    END DO
-    DO iy = 0, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k1z(ix,iy) + k1z(ix-1,iy)) * dt / dxb(ix)
-       END DO
-    END DO
     DO iy = 1, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k1x(ix,iy) - k1x(ixm,iy) + k1x(ixm,iym) + k1x(ix,iym)
-          w2 = w1 + k1y(ix,iy) + k1y(ix,iym) - k1y(ixm,iy) - k1y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) + (k1z(ix, iy) - k1z(ix, iy-1)) * dt / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) + (-k1z(ix, iy) + k1z(ix-1, iy)) * dt / dxb(ix)
+      END DO
+    END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k1x(ix, iy) - k1x(ixm, iy) + k1x(ixm, iym) + k1x(ix, iym)
+        w2 = w1 + k1y(ix, iy) + k1y(ix, iym) - k1y(ixm, iy) - k1y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
     CALL rkstep
     k2x = flux_x
@@ -577,31 +603,34 @@ CONTAINS
     c2 = curlb
 
     ! step 3
-    DO iy = 1, ny 
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k2z(ix,iy) - k2z(ix,iy-1)) * dt / dyb(iy)
-       END DO
-    END DO
-    DO iy = 0, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k2z(ix,iy) + k2z(ix-1,iy)) * dt / dxb(ix)
-       END DO
-    END DO
     DO iy = 1, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k2x(ix,iy) - k2x(ixm,iy) + k2x(ixm,iym) + k2x(ix,iym)
-          w2 = w1 + k2y(ix,iy) + k2y(ix,iym) - k2y(ixm,iy) - k2y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) + (k2z(ix, iy) - k2z(ix, iy-1)) * dt / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) + (-k2z(ix, iy) + k2z(ix-1, iy)) * dt / dxb(ix)
+      END DO
+    END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k2x(ix, iy) - k2x(ixm, iy) + k2x(ixm, iym) + k2x(ix, iym)
+        w2 = w1 + k2y(ix, iy) + k2y(ix, iym) - k2y(ixm, iy) - k2y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
     CALL rkstep
     k3x = flux_x
@@ -611,32 +640,35 @@ CONTAINS
 
     dt = 2.0_num * dt
 
-    !step 4
-    DO iy = 1, ny 
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k3z(ix,iy) - k3z(ix,iy-1)) * dt / dyb(iy)
-       END DO
-    END DO
-    DO iy = 0, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k3z(ix,iy) + k3z(ix-1,iy)) * dt / dxb(ix)
-       END DO
-    END DO
+    ! step 4
     DO iy = 1, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k3x(ix,iy) - k3x(ixm,iy) + k3x(ixm,iym) + k3x(ix,iym)
-          w2 = w1 + k3y(ix,iy) + k3y(ix,iym) - k3y(ixm,iy) - k3y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) + (k3z(ix, iy) - k3z(ix, iy-1)) * dt / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt / dxb(ix)
+      END DO
+    END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k3x(ix, iy) - k3x(ixm, iy) + k3x(ixm, iym) + k3x(ix, iym)
+        w2 = w1 + k3y(ix, iy) + k3y(ix, iym) - k3y(ixm, iy) - k3y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
     CALL rkstep
     k4x = flux_x
@@ -644,85 +676,93 @@ CONTAINS
     k4z = flux_z
     c4 = curlb
 
-    !full update
+    ! full update
     dt6 = dt / 6.0_num
     k3x = k1x + 2.0_num * k2x + 2.0_num * k3x + k4x
     k3y = k1y + 2.0_num * k2y + 2.0_num * k3y + k4y
     k3z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
     c1 = c1 + 2.0_num * c2 + 2.0_num * c3 + c4
+
     DO iy = 0, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k3z(ix,iy) + k3z(ix-1,iy)) * dt6 / dxb(ix)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) &
+            + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt6 / dxb(ix)
+      END DO
     END DO
-    DO iy = 1, ny 
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k3z(ix,iy) - k3z(ix,iy-1)) * dt6 / dyb(iy)
-       END DO
-    END DO
+
     DO iy = 1, ny
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k3x(ix,iy) - k3x(ixm,iy) + k3x(ixm,iym) + k3x(ix,iym)
-          w2 = w1 + k3y(ix,iy) + k3y(ix,iym) - k3y(ixm,iy) - k3y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt6 / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) &
+            + (k3z(ix, iy) - k3z(ix, iy-1)) * dt6 / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k3x(ix, iy) - k3x(ixm, iy) + k3x(ixm, iym) + k3x(ix, iym)
+        w2 = w1 + k3y(ix, iy) + k3y(ix, iym) - k3y(ixm, iy) - k3y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt6 / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
 
     DO iy = 1, ny
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1
-          energy(ix,iy) = energy(ix,iy) + (c1(ix,iy) + c1(ixm,iy) + c1(ix,iym) + c1(ixm,iym)) &
-               * dt6 / (4.0_num * rho(ix,iy))
-       END DO
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        energy(ix, iy) = energy(ix, iy) &
+            + (c1(ix, iy) + c1(ixm, iy) + c1(ix, iym) + c1(ixm, iym)) &
+            * dt6 / (4.0_num * rho(ix, iy))
+      END DO
     END DO
 
-    DO iy = 0, ny+1
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx+1
-          ixp = ix + 1
-          iyp = iy + 1
-          jx1 = (bz(ix,iyp) - bz(ix,iy)) / dyc(iy)      
-          jx2 = (bz(ixp,iyp) - bz(ixp,iy)) / dyc(iy) 
-          jy1 = - (bz(ixp,iy) - bz(ix,iy)) / dxc(ix)   
-          jy2 = - (bz(ixp,iyp) - bz(ix,iyp)) / dxc(ix)
-          jx_r(ix,iy) = (jx1 + jx2) / 2.0_num    
-          jy_r(ix,iy) = (jy1 + jy2) / 2.0_num    
-          jz_r(ix,iy) = (by(ixp,iy) - by(ix,iy)) / dxc(ix)  &  
-               - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
-       END DO
+    DO iy = 0, ny + 1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx + 1
+        ixp = ix + 1
+        iyp = iy + 1
+
+        jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
+        jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
+        jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
+        jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
+        jx_r(ix, iy) = (jx1 + jx2) / 2.0_num
+        jy_r(ix, iy) = (jy1 + jy2) / 2.0_num
+        jz_r(ix, iy) = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
+            - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
+      END DO
     END DO
 
     CALL energy_bcs
 
     DO iy = 0, ny
-       DO ix = 0, nx
-          w1 = dt6 * dxc(ix) * dyc(iy) * c1(ix,iy) 
-          IF ((ix == 0) .OR. (ix == nx)) THEN
-             w1 = w1 * 0.5_num
-          ENDIF
-          IF ((iy == 0) .OR. (iy == ny)) THEN
-             w1 = w1 * 0.5_num
-          ENDIF
-          total_ohmic_heating = total_ohmic_heating + w1
-       END DO
+      DO ix = 0, nx
+        w1 = dt6 * dxc(ix) * dyc(iy) * c1(ix, iy)
+        IF ((ix == 0) .OR. (ix == nx)) THEN
+          w1 = w1 * 0.5_num
+        END IF
+        IF ((iy == 0) .OR. (iy == ny)) THEN
+          w1 = w1 * 0.5_num
+        END IF
+        total_ohmic_heating = total_ohmic_heating + w1
+      END DO
     END DO
 
-    !Once more to get j_perp and j_par correct
+    ! Once more to get j_perp and j_par correct
     CALL rkstep
 
-    DEALLOCATE(k1x,k2x,k3x,k4x,k1y,k2y,k3y,k4y,k1z,k2z,k3z,k4z)
-    DEALLOCATE(c1,c2,c3,c4)
+    DEALLOCATE(k1x, k2x, k3x, k4x, k1y, k2y, k3y, k4y, k1z, k2z, k3z, k4z)
+    DEALLOCATE(c1, c2, c3, c4)
 
   END SUBROUTINE resistive_effects
 
@@ -731,8 +771,8 @@ CONTAINS
   ! calculates 'k' values from b[xyz]1 values
   SUBROUTINE rkstep
 
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx, jy, jz
-    REAL(num), DIMENSION(:,:), ALLOCATABLE  :: hxflux, hyflux, hzflux
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: jx, jy, jz
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: hxflux, hyflux, hzflux
     REAL(num) :: jx1, jy1, jz1, jx2, jy2
     REAL(num) :: bxv, byv, bzv, rho_v
     REAL(num) :: f1, f2, area
@@ -742,110 +782,122 @@ CONTAINS
     REAL(num) :: magn_j_perp, magn_j_par
     INTEGER :: ixp2, iyp2
 
-    ALLOCATE(jx(-1:nx+1,-1:ny+1),jy(-1:nx+1,-1:ny+1),jz(-1:nx+1,-1:ny+1))
+    ALLOCATE(jx(-1:nx+1, -1:ny+1), jy(-1:nx+1, -1:ny+1), jz(-1:nx+1, -1:ny+1))
 
-    DO iy = -1, ny+1
-       !DEC$ IVDEP
-       !DEC$ VECTOR ALWAYS
-       DO ix = -1, nx+1
-          ixp = ix + 1
-          iyp = iy + 1
-          jx1 = (bz(ix,iyp) - bz(ix,iy)) / dyc(iy)      
-          jx2 = (bz(ixp,iyp) - bz(ixp,iy)) / dyc(iy) 
-          jy1 = - (bz(ixp,iy) - bz(ix,iy)) / dxc(ix)   
-          jy2 = - (bz(ixp,iyp) - bz(ix,iyp)) / dxc(ix)
-          jx(ix,iy) = (jx1 + jx2) / 2.0_num    
-          jy(ix,iy) = (jy1 + jy2) / 2.0_num    
-          jz(ix,iy) = (by(ixp,iy) - by(ix,iy)) / dxc(ix)  &  
-               - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
-       END DO
+    DO iy = -1, ny + 1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = -1, nx + 1
+        ixp = ix + 1
+        iyp = iy + 1
+
+        jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
+        jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
+        jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
+        jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
+        jx(ix, iy) = (jx1 + jx2) / 2.0_num
+        jy(ix, iy) = (jy1 + jy2) / 2.0_num
+        jz(ix, iy) = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
+            - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
+      END DO
     END DO
 
     IF (.NOT. Cowling_Resistivity) THEN
-       !Use simple flux calculation
-       DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-          DO ix = 0, nx
-             flux_x(ix,iy) = - jx(ix,iy) * eta(ix,iy) * dxc(ix) / 2.0_num
-             flux_y(ix,iy) = - jy(ix,iy) * eta(ix,iy) * dyc(iy) / 2.0_num
-             flux_z(ix,iy) = - jz(ix,iy) * eta(ix,iy)
-             curlb(ix,iy) = eta(ix,iy) * (jx(ix,iy)**2 + jy(ix,iy)**2 + jz(ix,iy)**2)
-          END DO
-       END DO
+      ! Use simple flux calculation
+      DO iy = 0, ny
+        !DEC$ IVDEP
+        !DEC$ VECTOR ALWAYS
+        DO ix = 0, nx
+          flux_x(ix, iy) = -jx(ix, iy) * eta(ix, iy) * dxc(ix) / 2.0_num
+          flux_y(ix, iy) = -jy(ix, iy) * eta(ix, iy) * dyc(iy) / 2.0_num
+          flux_z(ix, iy) = -jz(ix, iy) * eta(ix, iy)
+          curlb(ix, iy) = eta(ix, iy) &
+              * (jx(ix, iy)**2 + jy(ix, iy)**2 + jz(ix, iy)**2)
+        END DO
+      END DO
     ELSE
-       !Use partially ionised flux calculation
-       DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-          DO ix = 0, nx
-             ixp = ix + 1
-             iyp = iy + 1 
-             ! B at vertices
-             bxv = (bx(ix,iy) + bx(ix,iyp)) / 2.0_num
-             byv = (by(ix,iy) + by(ixp,iy)) / 2.0_num
-             bzv = (bz(ix,iy) + bz(ixp,iy) + bz(ix,iyp) + bz(ixp,iyp)) / 4.0_num
+      ! Use partially ionised flux calculation
+      DO iy = 0, ny
+        !DEC$ IVDEP
+        !DEC$ VECTOR ALWAYS
+        DO ix = 0, nx
+          ixp = ix + 1
+          iyp = iy + 1
+          ! B at vertices
+          bxv = (bx(ix, iy) + bx(ix, iyp)) / 2.0_num
+          byv = (by(ix, iy) + by(ixp, iy)) / 2.0_num
+          bzv = (bz(ix, iy) + bz(ixp, iy) &
+              + bz(ix, iyp) + bz(ixp, iyp)) / 4.0_num
 
-             magn_b = bxv**2 + byv**2 + bzv**2
+          magn_b = bxv**2 + byv**2 + bzv**2
 
-             !Calculate parallel and perpendicular currents
-             j_par_x = (jx(ix,iy)*bxv + jy(ix,iy)*byv + jz(ix,iy)*bzv) * bxv / MAX(magn_b,none_zero)
-             j_par_y = (jx(ix,iy)*bxv + jy(ix,iy)*byv + jz(ix,iy)*bzv) * byv / MAX(magn_b,none_zero)
-             j_par_z = (jx(ix,iy)*bxv + jy(ix,iy)*byv + jz(ix,iy)*bzv) * bzv / MAX(magn_b,none_zero)
+          ! Calculate parallel and perpendicular currents
+          j_par_x = (jx(ix, iy) * bxv + jy(ix, iy) * byv &
+              + jz(ix, iy) * bzv) * bxv / MAX(magn_b, none_zero)
+          j_par_y = (jx(ix, iy) * bxv + jy(ix, iy) * byv &
+              + jz(ix, iy) * bzv) * byv / MAX(magn_b, none_zero)
+          j_par_z = (jx(ix, iy) * bxv + jy(ix, iy) * byv &
+              + jz(ix, iy) * bzv) * bzv / MAX(magn_b, none_zero)
 
-             !If b=0 then there is no parallel current
-             IF (magn_b .LT. none_zero) THEN
-                j_par_x=0.0_num
-                j_par_y=0.0_num
-                j_par_z=0.0_num
-             ENDIF
-             !Calculate perpendicular current
-             j_perp_x = jx(ix,iy)-j_par_x
-             j_perp_y = jy(ix,iy)-j_par_y
-             j_perp_z = jz(ix,iy)-j_par_z
+          ! If b = 0 then there is no parallel current
+          IF (magn_b .LT. none_zero) THEN
+            j_par_x = 0.0_num
+            j_par_y = 0.0_num
+            j_par_z = 0.0_num
+          END IF
 
-             magn_j_par = SQRT(j_par_x**2 + j_par_y**2 + j_par_z**2)
-             magn_j_perp = SQRT(j_perp_x**2 + j_perp_y**2 + j_perp_z**2)
+          ! Calculate perpendicular current
+          j_perp_x = jx(ix, iy) - j_par_x
+          j_perp_y = jy(ix, iy) - j_par_y
+          j_perp_z = jz(ix, iy) - j_par_z
 
-             parallel_current(ix,iy) = magn_j_par
-             perp_current(ix,iy) = magn_j_perp
+          magn_j_par = SQRT(j_par_x**2 + j_par_y**2 + j_par_z**2)
+          magn_j_perp = SQRT(j_perp_x**2 + j_perp_y**2 + j_perp_z**2)
 
-             !This isn't really curlb. It's actually heat flux
-             curlb(ix,iy) = eta(ix,iy) * magn_j_par**2 + (eta_perp(ix,iy)+eta(ix,iy)) * magn_j_perp**2
+          parallel_current(ix, iy) = magn_j_par
+          perp_current(ix, iy) = magn_j_perp
 
-             flux_x(ix,iy) = - ((j_par_x * eta(ix,iy) + j_perp_x * (eta_perp(ix,iy)+eta(ix,iy)))&
-                  * dxc(ix)/2.0_num)
-             flux_y(ix,iy) = - ((j_par_y * eta(ix,iy) + j_perp_y * (eta_perp(ix,iy)+eta(ix,iy)))&
-                  * dyc(iy)/2.0_num)
-             flux_z(ix,iy) = - ((j_par_z * eta(ix,iy) + j_perp_z * (eta_perp(ix,iy)+eta(ix,iy))))
-          END DO
-       END DO
-    ENDIF
+          ! This isn't really curlb. It's actually heat flux
+          curlb(ix, iy) = eta(ix, iy) * magn_j_par**2 &
+              + (eta_perp(ix, iy) + eta(ix, iy)) * magn_j_perp**2
+
+          flux_x(ix, iy) = -((j_par_x * eta(ix, iy) &
+              + j_perp_x * (eta_perp(ix, iy) + eta(ix, iy)))&
+              * dxc(ix) / 2.0_num)
+          flux_y(ix, iy) = -((j_par_y * eta(ix, iy) &
+              + j_perp_y * (eta_perp(ix, iy) + eta(ix, iy)))&
+              * dyc(iy) / 2.0_num)
+          flux_z(ix, iy) = -((j_par_z * eta(ix, iy) &
+              + j_perp_z * (eta_perp(ix, iy) + eta(ix, iy))))
+        END DO
+      END DO
+    END IF
 
     DEALLOCATE (jx, jy, jz)
 
   END SUBROUTINE rkstep
 
 
-  !Calculate the effect of the Hall term on the magnetic field
-  !Uses the subroutine rkstep1
+
+  ! Calculate the effect of the Hall term on the magnetic field
+  ! Uses the subroutine rkstep1
   SUBROUTINE hall_effects
 
     REAL(num) :: jx, jy, jz, jxxp, jyyp, flux
     REAL(num) :: rho_v, half_dt, dt6
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1x,k2x,k3x,k4x
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1y,k2y,k3y,k4y
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1z,k2z,k3z,k4z
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1x, k2x, k3x, k4x
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1y, k2y, k3y, k4y
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1z, k2z, k3z, k4z
 
-    ALLOCATE(k1x(0:nx,0:ny),k2x(0:nx,0:ny),k3x(0:nx,0:ny),k4x(0:nx,0:ny))
-    ALLOCATE(k1y(0:nx,0:ny),k2y(0:nx,0:ny),k3y(0:nx,0:ny),k4y(0:nx,0:ny))
-    ALLOCATE(k1z(0:nx,0:ny),k2z(0:nx,0:ny),k3z(0:nx,0:ny),k4z(0:nx,0:ny))
+    ALLOCATE(k1x(0:nx, 0:ny), k2x(0:nx, 0:ny), k3x(0:nx, 0:ny), k4x(0:nx, 0:ny))
+    ALLOCATE(k1y(0:nx, 0:ny), k2y(0:nx, 0:ny), k3y(0:nx, 0:ny), k4y(0:nx, 0:ny))
+    ALLOCATE(k1z(0:nx, 0:ny), k2z(0:nx, 0:ny), k3z(0:nx, 0:ny), k4z(0:nx, 0:ny))
 
     dt = dt / 2.0_num
 
-    bx1 = bx(0:nx+1,0:ny+1)
-    by1 = by(0:nx+1,0:ny+1)
-    bz1 = bz(0:nx+1,0:ny+1)
+    bx1 = bx(0:nx+1, 0:ny+1)
+    by1 = by(0:nx+1, 0:ny+1)
+    bz1 = bz(0:nx+1, 0:ny+1)
 
     ! step 1
     CALL rkstep1
@@ -854,31 +906,34 @@ CONTAINS
     k1z = flux_z
 
     ! step 2
-    DO iy = 1, ny 
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k1z(ix,iy) - k1z(ix,iy-1)) * dt / dyb(iy)
-       END DO
-    END DO
-    DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k1z(ix,iy) + k1z(ix-1,iy)) * dt / dxb(ix)
-       END DO
-    END DO
     DO iy = 1, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k1x(ix,iy) - k1x(ixm,iy) + k1x(ixm,iym) + k1x(ix,iym)
-          w2 = w1 + k1y(ix,iy) + k1y(ix,iym) - k1y(ixm,iy) - k1y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) + (k1z(ix, iy) - k1z(ix, iy-1)) * dt / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) + (-k1z(ix, iy) + k1z(ix-1, iy)) * dt / dxb(ix)
+      END DO
+    END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k1x(ix, iy) - k1x(ixm, iy) + k1x(ixm, iym) + k1x(ix, iym)
+        w2 = w1 + k1y(ix, iy) + k1y(ix, iym) - k1y(ixm, iy) - k1y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
     CALL rkstep1
     k2x = flux_x
@@ -886,31 +941,34 @@ CONTAINS
     k2z = flux_z
 
     ! step 3
-    DO iy = 1, ny 
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k2z(ix,iy) - k2z(ix,iy-1)) * dt / dyb(iy)
-       END DO
-    END DO
-    DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k2z(ix,iy) + k2z(ix-1,iy)) * dt / dxb(ix)
-       END DO
-    END DO
     DO iy = 1, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k2x(ix,iy) - k2x(ixm,iy) + k2x(ixm,iym) + k2x(ix,iym)
-          w2 = w1 + k2y(ix,iy) + k2y(ix,iym) - k2y(ixm,iy) - k2y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) + (k2z(ix, iy) - k2z(ix, iy-1)) * dt / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) + (-k2z(ix, iy) + k2z(ix-1, iy)) * dt / dxb(ix)
+      END DO
+    END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k2x(ix, iy) - k2x(ixm, iy) + k2x(ixm, iym) + k2x(ix, iym)
+        w2 = w1 + k2y(ix, iy) + k2y(ix, iym) - k2y(ixm, iy) - k2y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
     CALL rkstep1
     k3x = flux_x
@@ -919,71 +977,80 @@ CONTAINS
 
     dt = 2.0_num * dt
 
-    !step 4
-    DO iy = 1, ny 
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k3z(ix,iy) - k3z(ix,iy-1)) * dt / dyb(iy)
-       END DO
-    END DO
-    DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k3z(ix,iy) + k3z(ix-1,iy)) * dt / dxb(ix)
-       END DO
-    END DO
+    ! step 4
     DO iy = 1, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k3x(ix,iy) - k3x(ixm,iy) + k3x(ixm,iym) + k3x(ix,iym)
-          w2 = w1 + k3y(ix,iy) + k3y(ix,iym) - k3y(ixm,iy) - k3y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) + (k3z(ix, iy) - k3z(ix, iy-1)) * dt / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 0, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt / dxb(ix)
+      END DO
+    END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k3x(ix, iy) - k3x(ixm, iy) + k3x(ixm, iym) + k3x(ix, iym)
+        w2 = w1 + k3y(ix, iy) + k3y(ix, iym) - k3y(ixm, iy) - k3y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
     CALL rkstep1
     k4x = flux_x
     k4y = flux_y
     k4z = flux_z
 
-    !full update
+    ! full update
     dt6 = dt / 6.0_num
     k3x = k1x + 2.0_num * k2x + 2.0_num * k3x + k4x
     k3y = k1y + 2.0_num * k2y + 2.0_num * k3y + k4y
     k3z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
+
     DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          by(ix,iy) = by1(ix,iy) + (- k3z(ix,iy) + k3z(ix-1,iy)) * dt6 / dxb(ix)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) &
+            + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt6 / dxb(ix)
+      END DO
     END DO
-    DO iy = 1, ny 
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          bx(ix,iy) = bx1(ix,iy) + (k3z(ix,iy) - k3z(ix,iy-1)) * dt6 / dyb(iy)
-       END DO
-    END DO
+
     DO iy = 1, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 1, nx
-          ixm = ix - 1
-          iym = iy - 1 
-          w1 = - k3x(ix,iy) - k3x(ixm,iy) + k3x(ixm,iym) + k3x(ix,iym)
-          w2 = w1 + k3y(ix,iy) + k3y(ix,iym) - k3y(ixm,iy) - k3y(ixm,iym)
-          bz(ix,iy) = bz1(ix,iy) + w2 * dt6 / cv(ix,iy)
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) &
+            + (k3z(ix, iy) - k3z(ix, iy-1)) * dt6 / dyb(iy)
+      END DO
     END DO
+
+    DO iy = 1, ny
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -k3x(ix, iy) - k3x(ixm, iy) + k3x(ixm, iym) + k3x(ix, iym)
+        w2 = w1 + k3y(ix, iy) + k3y(ix, iym) - k3y(ixm, iy) - k3y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt6 / cv(ix, iy)
+      END DO
+    END DO
+
     CALL bfield_bcs
 
-    DEALLOCATE(k1x,k2x,k3x,k4x,k1y,k2y,k3y,k4y,k1z,k2z,k3z,k4z)
+    DEALLOCATE(k1x, k2x, k3x, k4x, k1y, k2y, k3y, k4y, k1z, k2z, k3z, k4z)
 
   END SUBROUTINE hall_effects
 
@@ -991,32 +1058,34 @@ CONTAINS
 
   SUBROUTINE rkstep1
 
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx, jy, jz
-    REAL(num), DIMENSION(:,:), ALLOCATABLE  :: hxflux, hyflux, hzflux
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: jx, jy, jz
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: hxflux, hyflux, hzflux
     REAL(num) :: jx1, jy1, jz1, jx2, jy2
     REAL(num) :: bxv, byv, bzv, rho_v
     REAL(num) :: f1, f2, area
-    REAL(num) :: jadp,jadm
+    REAL(num) :: jadp, jadm
     INTEGER :: ixp2, iyp2
 
-    ALLOCATE(jx(-1:nx+1,-1:ny+1),jy(-1:nx+1,-1:ny+1),jz(-1:nx+1,-1:ny+1))
-    ALLOCATE(hxflux(-1:nx+1,-1:ny+1),hyflux(-1:nx+1,-1:ny+1),hzflux(-1:nx+1,-1:ny+1))
+    ALLOCATE(jx(-1:nx+1, -1:ny+1), jy(-1:nx+1, -1:ny+1), jz(-1:nx+1, -1:ny+1))
+    ALLOCATE(hxflux(-1:nx+1, -1:ny+1), hyflux(-1:nx+1, -1:ny+1), &
+        hzflux(-1:nx+1, -1:ny+1))
 
-    DO iy = -1, ny+1
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = -1, nx+1
-          ixp = ix + 1
-          iyp = iy + 1
-          jx1 = (bz(ix,iyp) - bz(ix,iy)) / dyc(iy)      
-          jx2 = (bz(ixp,iyp) - bz(ixp,iy)) / dyc(iy) 
-          jy1 = - (bz(ixp,iy) - bz(ix,iy)) / dxc(ix)   
-          jy2 = - (bz(ixp,iyp) - bz(ix,iyp)) / dxc(ix)
-          jx(ix,iy) = (jx1 + jx2) / 2.0_num    
-          jy(ix,iy) = (jy1 + jy2) / 2.0_num    
-          jz(ix,iy) = (by(ixp,iy) - by(ix,iy)) / dxc(ix)  &  
-               - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
-       END DO
+    DO iy = -1, ny + 1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = -1, nx + 1
+        ixp = ix + 1
+        iyp = iy + 1
+
+        jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
+        jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
+        jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
+        jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
+        jx(ix, iy) = (jx1 + jx2) / 2.0_num
+        jy(ix, iy) = (jy1 + jy2) / 2.0_num
+        jz(ix, iy) = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
+            - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
+      END DO
     END DO
 
     hxflux = 0.0_num
@@ -1024,136 +1093,165 @@ CONTAINS
     hzflux = 0.0_num
 
     DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          ixp = ix+1
-          ixp2 = ix+2
-          ixm = ix-1
-          iyp = iy+1
-          iyp2 = iy+2
-          iym = iy-1
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        ixp = ix + 1
+        ixp2 = ix + 2
+        ixm = ix - 1
+        iyp = iy + 1
+        iyp2 = iy + 2
+        iym = iy - 1
 
-          bxv = (bx(ix,iy)*dyb(iy) + bx(ix,iyp)*dyb(iyp)) / (dyb(iy)+dyb(iyp))
-          byv = (by(ix,iy)*dxb(ix) + by(ixp,iy)*dxb(ixp)) / (dxb(ix)+dxb(ixp)) 
-          bzv = (bz(ix,iy)*cv(ix,iy) + bz(ixp,iy)*cv(ixp,iy) &
-               + bz(ix,iyp)*cv(ix,iyp) +bz(ixp,iyp)*cv(ixp,iyp))
-          rho_v = (rho(ix,iy)*cv(ix,iy) + rho(ixp,iy)*cv(ixp,iy) &
-               + rho(ix,iyp)*cv(ix,iyp) +rho(ixp,iyp)*cv(ixp,iyp))
-          area = (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
-          bzv = bzv / area
-          rho_v = rho_v / area
-          ! Evaluate the flux due to the Hall term but upwind in direction of 
-          ! negative current density i.e. upwind in the direction of the 
-          ! effective advection velocity
-          f1 = MAX(0.0_num, jy(ix,iy)) * (bz(ix,iyp)+bz(ixp,iyp))/2.0_num  &
-               + MIN(0.0_num, jy(ix,iy)) * (bz(ix,iy)+bz(ixp,iy))/2.0_num
-          w1 = bz(ix,iyp) - bz(ix,iy) + bz(ixp,iyp) - bz(ixp,iy) 
-          w2 = bz(ix,iy) - bz(ix,iym) + bz(ixp,iy) - bz(ixp,iym) 
-          w3 = bz(ix,iyp2) - bz(ix,iyp) + bz(ixp,iyp2) - bz(ixp,iyp)
-          w1 = 0.5_num * w1
-          w2 = 0.5_num * w2
-          w3 = 0.5_num * w3
+        bxv = (bx(ix, iy) * dyb(iy) + bx(ix, iyp) * dyb(iyp)) &
+            / (dyb(iy) + dyb(iyp))
+        byv = (by(ix, iy) * dxb(ix) + by(ixp, iy) * dxb(ixp)) &
+            / (dxb(ix) + dxb(ixp))
+        bzv = (bz(ix, iy) * cv(ix, iy) + bz(ixp, iy) * cv(ixp, iy) &
+            + bz(ix, iyp) * cv(ix, iyp) + bz(ixp, iyp) * cv(ixp, iyp))
 
-	        jadm=-MIN(SIGN(1.0_num,jy(ix,iy)),0.0_num)
-          jadp=1.0_num-jadm
+        rho_v = (rho(ix, iy) * cv(ix, iy) + rho(ixp, iy) * cv(ixp, iy) &
+            + rho(ix, iyp) * cv(ix, iyp) + rho(ixp, iyp) * cv(ixp, iyp))
 
-          w5 = lambda_i(ix,iy) * ABS(jy(ix,iy)) * dt / dyb(iy) / rho_v *jadm + &
-               lambda_i(ix,iy) * ABS(jy(ix,iy)) * dt / dyb(iyp) /rho_v*jadp
-          w4 = ((2.0_num-w5)*ABS(w1)/dyc(iy) &
-               +(1.0_num+w5)*ABS(w2)/dyc(iym))*jadm + &
-               ((2.0_num-w5)*ABS(w1)/dyc(iy) &
-               + (1.0_num+w5)*ABS(w3)/dyc(iyp))*jadp
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num,w1) + SIGN(1.0_num,w2*jadm+w3*jadp))
-          w6 = -SIGN(1.0_num,jy(ix,iy)) * w8 * MIN(ABS(w4)*(dyb(iy)*jadm+dyb(iyp)*jadp)&
-               , ABS(w1), ABS(w2*jadm+w3*jadp))
-          f1 = f1 + jy(ix,iy) * w6 * (1.0_num - w5)
-          f2 = jz(ix,iy) * byv 
-          hxflux(ix,iy) = lambda_i(ix,iy) * (f1 - f2) / rho_v 
+        area = (cv(ix, iy) + cv(ixp, iy) + cv(ix, iyp) + cv(ixp, iyp))
+        bzv = bzv / area
+        rho_v = rho_v / area
 
-          f1 = jz(ix,iy) * bxv 
-          f2 = MAX(0.0_num, jx(ix,iy)) * (bz(ixp,iyp)+bz(ixp,iy))/2.0_num   &
-               + MIN(0.0_num, jx(ix,iy)) * (bz(ix,iy)+bz(ix,iyp))/2.0_num
-          w1 = bz(ixp,iy) - bz(ix,iy) + bz(ixp,iyp) - bz(ix,iyp) 
-          w2 = bz(ix,iy) - bz(ixm,iy) +  bz(ix,iyp) - bz(ixm,iyp) 
-          w3 = bz(ixp2,iy) - bz(ixp,iy) + bz(ixp2,iyp) - bz(ixp,iyp)
-          w1 = 0.5_num * w1
-          w2 = 0.5_num * w2
-          w3 = 0.5_num * w3
+        ! Evaluate the flux due to the Hall term but upwind in direction of
+        ! negative current density i.e. upwind in the direction of the
+        ! effective advection velocity
+        f1 = MAX(0.0_num, jy(ix, iy)) * (bz(ix, iyp) + bz(ixp, iyp)) / 2.0_num &
+            + MIN(0.0_num, jy(ix, iy)) * (bz(ix, iy) + bz(ixp, iy)) / 2.0_num
 
-	        jadm=-MIN(SIGN(1.0_num,jy(ix,iy)),0.0_num)
-          jadp=1.0_num-jadm
+        w1 = bz(ix, iyp) - bz(ix, iy) + bz(ixp, iyp) - bz(ixp, iy)
+        w2 = bz(ix, iy) - bz(ix, iym) + bz(ixp, iy) - bz(ixp, iym)
+        w3 = bz(ix, iyp2) - bz(ix, iyp) + bz(ixp, iyp2) - bz(ixp, iyp)
+        w1 = 0.5_num * w1
+        w2 = 0.5_num * w2
+        w3 = 0.5_num * w3
 
-          w5 = lambda_i(ix,iy) * ABS(jx(ix,iy)) * dt / &
-               (dxb(ix)*jadm+dxb(ixp)*jadp) / rho_v
-          w4 = (2.0_num-w5)*ABS(w1)/dxc(ix)  &
-               +(1.0_num+w5)*ABS(w2*jadm+w3*jadp)/(dxc(ixm)*jadm+dxc(ixp)*jadp)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num,w1) + SIGN(1.0_num,w2*jadm+w3*jadm))
-          w6 = -SIGN(1.0_num,jy(ix,iy)) * w8 * MIN(ABS(w4)*(dxb(ix)*jadm+dxb(ixp)*jadp)&
-               , ABS(w1), ABS(w2*jadm+w3*jadp))
-          f2 = f2 + jx(ix,iy) * w6 * (1.0_num - w5)
+        jadm = -MIN(SIGN(1.0_num, jy(ix, iy)), 0.0_num)
+        jadp = 1.0_num - jadm
 
-          hyflux(ix,iy) = lambda_i(ix,iy) * (f1 - f2) / rho_v
+        w5 = lambda_i(ix, iy) * ABS(jy(ix, iy)) * dt / dyb(iy) / rho_v * jadm &
+            + lambda_i(ix, iy) * ABS(jy(ix, iy)) * dt / dyb(iyp) / rho_v * jadp
+        w4 = ((2.0_num - w5) * ABS(w1) / dyc(iy) &
+            + (1.0_num + w5) * ABS(w2) / dyc(iym)) * jadm + &
+            ((2.0_num - w5) * ABS(w1) / dyc(iy) &
+            + (1.0_num + w5) * ABS(w3) / dyc(iyp)) * jadp
 
-          f1 = MAX(0.0_num, jx(ix,iy)) * by(ixp,iy) + MIN(0.0_num, jx(ix,iy)) * by(ix,iy)
-          w1 = by(ixp,iy) - by(ix,iy) 
-          w2 = by(ix,iy) - by(ixm,iy) 
-          w3 = by(ixp2,iy) - by(ixp,iy) 
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * jadm + w3 * jadp))
 
-	        jadm=-MIN(SIGN(1.0_num,jy(ix,iy)),0.0_num)
-          jadp=1.0_num-jadm
+        w6 = -SIGN(1.0_num, jy(ix, iy)) * w8 &
+            * MIN(ABS(w4) * (dyb(iy) * jadm + dyb(iyp) * jadp), &
+            ABS(w1), ABS(w2 * jadm + w3 * jadp))
 
-          w5 = lambda_i(ix,iy) * ABS(jx(ix,iy)) * dt &
-               / (dxb(ix) * jadm + dxb(ixp) * jadp) / rho_v 
-          w4 = (2.0_num-w5)*ABS(w1)/dxc(ix)  &
-               +(1.0_num+w5)*(ABS(w2)/dxc(ixm)*jadm + &
-               ABS(w3)/dxc(ixp)*jadp)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num,w1) + SIGN(1.0_num,w2*jadm + w3*jadp))
-          w6 = -SIGN(1.0_num,jy(ix,iy)) * w8 * MIN(ABS(w4)*(dxb(ix)*jadm+dxb(ixp)*jadp)&
-               , ABS(w1), ABS(w2*jadm+w3*jadp))
-          f1 = f1 + jx(ix,iy) * w6 * (1.0_num - w5)
+        f1 = f1 + jy(ix, iy) * w6 * (1.0_num - w5)
+        f2 = jz(ix, iy) * byv
+        hxflux(ix, iy) = lambda_i(ix, iy) * (f1 - f2) / rho_v
 
-          f2 = MAX(0.0_num, jy(ix,iy)) * bx(ix,iyp) + MIN(0.0_num, jy(ix,iy)) * bx(ix,iy)
-          w1 = bx(ix,iyp) - bx(ix,iy) 
-          w2 = bx(ix,iy) - bx(ix,iym) 
-          w3 = bx(ix,iyp2) - bx(ix,iyp)
-	        jadm=-MIN(SIGN(1.0_num,jy(ix,iy)),0.0_num)
-          jadp=1.0_num-jadm
+        f1 = jz(ix, iy) * bxv
+        f2 = MAX(0.0_num, jx(ix, iy)) * (bz(ixp, iyp) + bz(ixp, iy)) / 2.0_num &
+            + MIN(0.0_num, jx(ix, iy)) * (bz(ix, iy) + bz(ix, iyp)) / 2.0_num
 
-          w5 = lambda_i(ix,iy) * ABS(jy(ix,iy)) * dt &
-               / (dyb(iy)*jadm + dyb(iyp)*jadp) / rho_v 
-          w4 = (2.0_num-w5)*ABS(w1)/dyc(iy) &
-               +(1.0_num+w5)*(ABS(w2)/dyc(iym)*jadm + &
-               ABS(w3)/dyc(iy)*jadp)
-          w4 = w4 / 6.0_num
-          w8 = 0.5_num * (SIGN(1.0_num,w1) + SIGN(1.0_num,w2*jadm+w3*jadp))
-          w6 = -SIGN(1.0_num,jy(ix,iy)) *w8 * MIN(ABS(w4)*dyb(iy),&
-               ABS(w1), ABS(w2*jadm+w3*jadp))
-          f2 = f2 + jy(ix,iy) * w6 * (1.0_num - w5)
+        w1 = bz(ixp, iy) - bz(ix, iy) + bz(ixp, iyp) - bz(ix, iyp)
+        w2 = bz(ix, iy) - bz(ixm, iy) + bz(ix, iyp) - bz(ixm, iyp)
+        w3 = bz(ixp2, iy) - bz(ixp, iy) + bz(ixp2, iyp) - bz(ixp, iyp)
+        w1 = 0.5_num * w1
+        w2 = 0.5_num * w2
+        w3 = 0.5_num * w3
 
-          hzflux(ix,iy) = lambda_i(ix,iy) * (f1 - f2) / rho_v 
+        jadm = -MIN(SIGN(1.0_num, jy(ix, iy)), 0.0_num)
+        jadp = 1.0_num - jadm
 
-       END DO
+        w5 = lambda_i(ix, iy) * ABS(jx(ix, iy)) * dt / &
+            (dxb(ix) * jadm + dxb(ixp) * jadp) / rho_v
+        w4 = (2.0_num - w5) * ABS(w1) / dxc(ix) &
+            + (1.0_num + w5) * ABS(w2 * jadm + w3 * jadp) &
+            / (dxc(ixm) * jadm + dxc(ixp) * jadp)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * jadm + w3 * jadm))
+        w6 = -SIGN(1.0_num, jy(ix, iy)) * w8 &
+            * MIN(ABS(w4) * (dxb(ix) * jadm + dxb(ixp) * jadp), &
+            ABS(w1), ABS(w2 * jadm + w3 * jadp))
+
+        f2 = f2 + jx(ix, iy) * w6 * (1.0_num - w5)
+
+        hyflux(ix, iy) = lambda_i(ix, iy) * (f1 - f2) / rho_v
+
+        f1 = MAX(0.0_num, jx(ix, iy)) * by(ixp, iy) &
+            + MIN(0.0_num, jx(ix, iy)) * by(ix, iy)
+
+        w1 = by(ixp, iy) - by(ix, iy)
+        w2 = by(ix, iy) - by(ixm, iy)
+        w3 = by(ixp2, iy) - by(ixp, iy)
+
+        jadm = -MIN(SIGN(1.0_num, jy(ix, iy)), 0.0_num)
+        jadp = 1.0_num - jadm
+
+        w5 = lambda_i(ix, iy) * ABS(jx(ix, iy)) * dt &
+            / (dxb(ix) * jadm + dxb(ixp) * jadp) / rho_v
+
+        w4 = (2.0_num - w5) * ABS(w1) / dxc(ix) &
+            + (1.0_num + w5) * (ABS(w2) / dxc(ixm) * jadm + &
+            ABS(w3) / dxc(ixp) * jadp)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * jadm + w3 * jadp))
+
+        w6 = -SIGN(1.0_num, jy(ix, iy)) * w8 &
+            * MIN(ABS(w4) * (dxb(ix) * jadm + dxb(ixp) * jadp), &
+            ABS(w1), ABS(w2 * jadm + w3 * jadp))
+
+        f1 = f1 + jx(ix, iy) * w6 * (1.0_num - w5)
+
+        f2 = MAX(0.0_num, jy(ix, iy)) * bx(ix, iyp) &
+            + MIN(0.0_num, jy(ix, iy)) * bx(ix, iy)
+
+        w1 = bx(ix, iyp) - bx(ix, iy)
+        w2 = bx(ix, iy) - bx(ix, iym)
+        w3 = bx(ix, iyp2) - bx(ix, iyp)
+
+        jadm = -MIN(SIGN(1.0_num, jy(ix, iy)), 0.0_num)
+        jadp = 1.0_num - jadm
+
+        w5 = lambda_i(ix, iy) * ABS(jy(ix, iy)) * dt &
+            / (dyb(iy) * jadm + dyb(iyp) * jadp) / rho_v
+
+        w4 = (2.0_num - w5) * ABS(w1) / dyc(iy) &
+            + (1.0_num + w5) * (ABS(w2) / dyc(iym) * jadm + &
+            ABS(w3) / dyc(iy) * jadp)
+
+        w4 = w4 / 6.0_num
+        w8 = 0.5_num * (SIGN(1.0_num, w1) &
+            + SIGN(1.0_num, w2 * jadm + w3 * jadp))
+
+        w6 = -SIGN(1.0_num, jy(ix, iy)) * w8 * MIN(ABS(w4) * dyb(iy), &
+            ABS(w1), ABS(w2 * jadm + w3 * jadp))
+        f2 = f2 + jy(ix, iy) * w6 * (1.0_num - w5)
+
+        hzflux(ix, iy) = lambda_i(ix, iy) * (f1 - f2) / rho_v
+
+      END DO
     END DO
 
     DO iy = 0, ny
-          !DEC$ IVDEP
-          !DEC$ VECTOR ALWAYS
-       DO ix = 0, nx
-          flux_x(ix,iy) = - hxflux(ix,iy) * dxc(ix) / 2.0_num
-          flux_y(ix,iy) = - hyflux(ix,iy) * dyc(iy) / 2.0_num
-          flux_z(ix,iy) = - hzflux(ix,iy) 
-       END DO
+      !DEC$ IVDEP
+      !DEC$ VECTOR ALWAYS
+      DO ix = 0, nx
+        flux_x(ix, iy) = -hxflux(ix, iy) * dxc(ix) / 2.0_num
+        flux_y(ix, iy) = -hyflux(ix, iy) * dyc(iy) / 2.0_num
+        flux_z(ix, iy) = -hzflux(ix, iy)
+      END DO
     END DO
 
     DEALLOCATE (jx, jy, jz, hxflux, hyflux, hzflux)
 
   END SUBROUTINE rkstep1
 
-
-
 END MODULE lagran
-  
