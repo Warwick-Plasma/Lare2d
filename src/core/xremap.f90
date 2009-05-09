@@ -30,11 +30,11 @@ CONTAINS
     rho1 = rho ! store initial density in rho1
 
     DO iy = -1, ny+2
+      iym = iy - 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+2
         ixm = ix - 1
-        iym = iy - 1
 
         vxb = (vx1(ix, iy) + vx1(ix, iym)) / 2.0_num     ! vx at Ex(i, j)
         vxbm = (vx1(ixm, iy) + vx1(ixm, iym)) / 2.0_num  ! vx at Ex(i-1, j)
@@ -78,10 +78,10 @@ CONTAINS
     END DO
 
     DO iy = 1, ny
+      iym = iy - 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
-        iym = iy - 1
         bx(ix, iy) = bx(ix, iy) + flux(ix, iy) - flux(ix, iym)
       END DO
     END DO
@@ -125,11 +125,11 @@ CONTAINS
     ! in some of these calculations the flux variable is used as a
     ! temporary array
     DO iy = 0, ny
+      iyp = iy + 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+1
         ixp = ix + 1
-        iyp = iy + 1
 
         ! vertex density before remap
         rho_v(ix, iy) = rho1(ix, iy) * cv1(ix, iy) &
@@ -143,11 +143,11 @@ CONTAINS
     END DO
 
     DO iy = 0, ny
+      iyp = iy + 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
-        iyp = iy + 1
         flux(ix, iy) = cv1(ix, iy) + cv1(ixp, iy) + cv1(ix, iyp) + cv1(ixp, iyp)
       END DO
     END DO
@@ -155,11 +155,11 @@ CONTAINS
     cv1(0:nx, 0:ny) = flux(0:nx, 0:ny) / 4.0_num
 
     DO iy = 0, ny
+      iyp = iy + 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
-        iyp = iy + 1
         flux(ix, iy) = cv2(ix, iy) + cv2(ixp, iy) + cv2(ix, iyp) + cv2(ixp, iyp)
       END DO
     END DO
@@ -188,11 +188,11 @@ CONTAINS
     END DO
 
     DO iy = 0, ny
+      iyp = iy + 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = -1, nx
         ixp = ix + 1
-        iyp = iy + 1
         flux(ix, iy) = dm(ix, iy) + dm(ixp, iy) + dm(ix, iyp) + dm(ixp, iyp)
       END DO
     END DO
@@ -259,13 +259,13 @@ CONTAINS
     INTEGER :: ixp2
 
     DO iy = 0, ny
+      iyp = iy + 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
         ixp2 = ix + 2
-        iyp = iy + 1
 
         v_advect = vx1(ix, iy)
 
@@ -321,13 +321,13 @@ CONTAINS
     INTEGER :: ixp2
 
     DO iy = 1, ny
+      iym = iy - 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
         ixp2 = ix + 2
-        iym = iy - 1
 
         v_advect = (vx1(ix, iy) + vx1(ix, iym)) / 2.0_num
 
@@ -377,14 +377,13 @@ CONTAINS
     INTEGER :: ixp2
 
     DO iy = 0, ny+1
+      iym = iy - 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
         ixp2 = ix + 2
-        iym = iy - 1
-        iyp = iy + 1
 
         v_advect = (vx1(ix, iy) + vx1(ix, iym)) / 2.0_num
 
@@ -432,14 +431,13 @@ CONTAINS
     INTEGER :: ixp2
 
     DO iy = 0, ny
+      iym = iy - 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
         ixp2 = ix + 2
-        iym = iy - 1
-        iyp = iy + 1
 
         v_advect = (vx1(ix, iy) + vx1(ix, iym)) / 2.0_num
 
@@ -532,12 +530,12 @@ CONTAINS
 
     IF (rke) THEN
       DO iy = 0, ny
+        iyp = iy + 1
         !DEC$ IVDEP
         !DEC$ VECTOR ALWAYS
         DO ix = 0, nx-1
           ixm = ix - 1
           ixp = ix + 1
-          iyp = iy + 1
 
           m = rho_v1(ix, iy) * cv2(ix, iy)
           mp = rho_v1(ixp, iy) * cv2(ixp, iy)
@@ -617,12 +615,12 @@ CONTAINS
 
     IF (rke) THEN
       DO iy = 0, ny
+        iyp = iy + 1
         !DEC$ IVDEP
         !DEC$ VECTOR ALWAYS
         DO ix = 0, nx-1
           ixm = ix - 1
           ixp = ix + 1
-          iyp = iy + 1
 
           m = rho_v1(ix, iy) * cv2(ix, iy)
           mp = rho_v1(ixp, iy) * cv2(ixp, iy)
@@ -701,12 +699,12 @@ CONTAINS
 
     IF (rke) THEN
       DO iy = 0, ny
+        iyp = iy + 1
         !DEC$ IVDEP
         !DEC$ VECTOR ALWAYS
         DO ix = 0, nx-1
           ixm = ix - 1
           ixp = ix + 1
-          iyp = iy + 1
 
           m = rho_v1(ix, iy) * cv2(ix, iy)
           mp = rho_v1(ixp, iy) * cv2(ixp, iy)
