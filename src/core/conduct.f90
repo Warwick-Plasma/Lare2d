@@ -46,10 +46,6 @@ CONTAINS
     ALLOCATE(ux(0:nx+1, 0:ny+1), uy(0:nx+1, 0:ny+1))
     ALLOCATE(e2temp(-1:nx+1, -1:ny+1), kp(-1:nx+1, -1:ny+1), energy0(-1:nx+2, -1:ny+2))
             
-kappa_0 = 1.0_num
-energy = energy + 4.0_num * kappa_0 * dt / 7.0_num
-CALL energy_bcs
-
 		! find factor reuired to convert between energy and temperature
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1
