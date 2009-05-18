@@ -102,10 +102,10 @@ CONTAINS
     by1 = by1 * cv1(0:nx+1, 0:ny+1)
     bz1 = bz1 * cv1(0:nx+1, 0:ny+1)
 
-    DO iy = -1, ny + 2
+    DO iy = 0, ny + 1
       !DEC$ IVDEP
       !DEC$ VECTOR ALWAYS
-      DO ix = -1, nx + 2
+      DO ix = 0, nx + 1
         dv = cv1(ix, iy) / cv(ix, iy) - 1.0_num
         ! predictor energy
         e1 = energy(ix, iy) - pressure(ix, iy) * dv / rho(ix, iy)

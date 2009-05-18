@@ -316,7 +316,7 @@ CONTAINS
 
         ! Hall MHD CFL limit
         dt4 = 0.75_num * rho(ix, iy) * MIN(dxb(ix), dyb(iy))**2 &
-            / MAX(lambda_i(ix, iy), none_zero) / MAX(SQRT(w1), none_zero)
+            / MAX(lambda_i(ix, iy) * SQRT(w1), none_zero)
 
         ! adjust to accomodate resistive effects
         dtr_local = MIN(dtr_local, dt3)
