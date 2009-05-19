@@ -43,8 +43,8 @@ CONTAINS
 
     IF (xbc_left == BC_OTHER) periods(2) = .FALSE.
     IF (ybc_up == BC_OTHER) periods(1) = .FALSE.
-    IF (xbc_left == BC_OTHER) periods(2) = .FALSE.
-    IF (ybc_up == BC_OTHER) periods(1) = .FALSE.
+    IF (xbc_left == BC_OPEN) periods(2) = .FALSE.
+    IF (ybc_up == BC_OPEN) periods(1) = .FALSE.
 
     CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, &
         reorder, comm, errcode)
