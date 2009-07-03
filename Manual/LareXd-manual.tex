@@ -25,7 +25,7 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK\\ \\
-\bfseries\itshape Chris Brady\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
+\bfseries\itshape Chris Brady\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
 \date{}
 \maketitle
@@ -754,7 +754,7 @@ From now on the easiest way to learn how to use visit is to experiment.
 
 Thermal conduction in LARE is based on the Braginskii thermal conduction in the presence of a magnetic field and is of the form\\
 \[
-\frac{\partial \epsilon}{\partial t} = \nabla . \left(\vec{k} . \nabla T \vec{n} \right) +  \nabla . \left(  \frac{B_{min}^2}{B^2+B_{min}^2} \kappa \nabla T \right)
+\rho \frac{\partial \epsilon}{\partial t} = \nabla . \left(\vec{k} . \nabla T \vec{n} \right) +  \nabla . \left(  \frac{B_{min}^2}{B^2+B_{min}^2} \kappa \nabla T \right)
 \]
 where $\vec{k} = \kappa \vec{n}$, $\vec{n} = \vec{B}/(B^2+B_{min}^2)^\frac{1}{2}$ and $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. Finite $b_{min}$ is used to prevent divide by zero and turn the conductivity into isotropic when $B=0$. The notes below cover the most obscure elements of the notation used in the code but should make sense when read in conjunction with the source code in {\tt src/core/conduct.f90}. It is presented here as these routines are not documented in any of the references.
 
