@@ -506,7 +506,7 @@ CONTAINS
 
         w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
 
-        w7 = vy(ix, iy) * vad_p + vy(ix, iyp) * vad_m
+        w7 = vx(ix, iy) * vad_p + vx(ix, iyp) * vad_m
 
         w6 = ABS(dm(ix, iy)) / ((rho_v(ix, iy) * dyb1(ix, iy) * vad_p + &
             rho_v(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxc(ix))
