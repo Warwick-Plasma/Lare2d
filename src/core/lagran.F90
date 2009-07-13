@@ -366,9 +366,9 @@ CONTAINS
         case1 = -MIN(flip, 0.0_num) ! (flip < 0) ? 1:0
         case2 =  MAX(flip, 0.0_num) ! (flip > 0) ? 1:0
 
-        w2 = dxb(ix)**2 * w1 / MAX(fx**2, none_zero) * case1 &
-            + dyb(iy)**2 * w1 / MAX(fy**2, none_zero) * case2 &
-            + dxb(ix)**2 + dyb(iy)**2 * (1.0_num - case1) * (1.0_num - case2)
+        w2 =  dxb(ix)**2 * w1 * case1 / MAX(fx**2, none_zero) &
+            + dyb(iy)**2 * w1 * case2 / MAX(fy**2, none_zero) &
+            + (dxb(ix)**2 + dyb(iy)**2) * (1.0_num - case1) * (1.0_num - case2)
 
         flip = -MIN(SIGN(1.0_num, w1 - 1.e-6_num), 0.0_num) ! (w1 < 1.e-6) ? 1:0
 
