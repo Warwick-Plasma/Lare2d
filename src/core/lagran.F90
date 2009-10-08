@@ -108,19 +108,14 @@ CONTAINS
       DO ix = 0, nx + 1
         dv = cv1(ix, iy) / cv(ix, iy) - 1.0_num
         ! predictor energy
-        e1 = energy(ix, iy) - pressure(ix, iy) * dv / rho(ix, iy)
-
-#ifndef Q_MONO
-        e1 = e1 + visc_heat(ix, iy) * dt2 / rho(ix, iy)
-#else
-        IF (visc3 > 1.e-6_num) &
-            e1 = e1 + visc_heat(ix, iy) * dt2 / rho(ix, iy)
-        e1 = e1 - p_visc(ix, iy) * dv / rho(ix, iy)
+#ifdef Q_MONO
+        ! add shock viscosity
+        pressure(ix, iy) = pressure(ix, iy) + p_visc(ix, iy)
 #endif
+        e1 = energy(ix, iy) - pressure(ix, iy) * dv / rho(ix, iy)
+        e1 = e1 + visc_heat(ix, iy) * dt2 / rho(ix, iy)
 
         ! now define the predictor step pressures
-!!$     pressure(ix, iy) = e1 * (gamma - 1.0_num) &
-!!$        * rho(ix, iy) * cv(ix, iy) / cv1(ix, iy)
         CALL get_pressure(rho(ix, iy) * cv(ix, iy) / cv1(ix, iy), &
             e1, eos_number, ix, iy, pressure(ix, iy))
 #ifdef Q_MONO
@@ -148,33 +143,29 @@ CONTAINS
         w2 = (pressure(ix, iyp) + pressure(ixp, iyp)) / 2.0_num
         fy = -(w2 - w1) / dyc(iy)
         fz = 0.0_num
-#ifdef Q_MONO
-        IF (visc3 > 1.e-6_num) THEN
-#endif
-          ! add parallel component of viscosity
-          w1 = (qxx(ix, iy) + qxx(ix, iyp)) / 2.0_num
-          w2 = (qxx(ixp, iy) + qxx(ixp, iyp)) / 2.0_num
-          fx = fx + (w2 - w1) / dxc(ix)
-          w1 = (qyy(ix, iy) + qyy(ixp, iy)) / 2.0_num
-          w2 = (qyy(ix, iyp) + qyy(ixp, iyp)) / 2.0_num
-          fy = fy + (w2 - w1) / dyc(iy)
 
-          ! add shear forces
-          w1 = (qxy(ix, iy) + qxy(ixp, iy)) / 2.0_num
-          w2 = (qxy(ix, iyp) + qxy(ixp, iyp)) / 2.0_num
-          fx = fx + (w2 - w1) / dyc(iy)
-          w1 = (qxy(ix, iy) + qxy(ix, iyp)) / 2.0_num
-          w2 = (qxy(ixp, iy) + qxy(ixp, iyp)) / 2.0_num
-          fy = fy + (w2 - w1) / dxc(ix)
-          w1 = (qxz(ix, iy) + qxz(ix, iyp)) / 2.0_num
-          w2 = (qxz(ixp, iy) + qxz(ixp, iyp)) / 2.0_num
-          fz = (w2 - w1) / dxc(ix)
-          w1 = (qyz(ix, iy) + qyz(ixp, iy)) / 2.0_num
-          w2 = (qyz(ix, iyp) + qyz(ixp, iyp)) / 2.0_num
-          fz = fz + (w2 - w1) / dyc(iy)
-#ifdef Q_MONO
-        END IF
-#endif
+        ! add parallel component of viscosity
+        w1 = (qxx(ix, iy) + qxx(ix, iyp)) / 2.0_num
+        w2 = (qxx(ixp, iy) + qxx(ixp, iyp)) / 2.0_num
+        fx = fx + (w2 - w1) / dxc(ix)
+        w1 = (qyy(ix, iy) + qyy(ixp, iy)) / 2.0_num
+        w2 = (qyy(ix, iyp) + qyy(ixp, iyp)) / 2.0_num
+        fy = fy + (w2 - w1) / dyc(iy)
+
+        ! add shear forces
+        w1 = (qxy(ix, iy) + qxy(ixp, iy)) / 2.0_num
+        w2 = (qxy(ix, iyp) + qxy(ixp, iyp)) / 2.0_num
+        fx = fx + (w2 - w1) / dyc(iy)
+        w1 = (qxy(ix, iy) + qxy(ix, iyp)) / 2.0_num
+        w2 = (qxy(ixp, iy) + qxy(ixp, iyp)) / 2.0_num
+        fy = fy + (w2 - w1) / dxc(ix)
+        w1 = (qxz(ix, iy) + qxz(ix, iyp)) / 2.0_num
+        w2 = (qxz(ixp, iy) + qxz(ixp, iyp)) / 2.0_num
+        fz = (w2 - w1) / dxc(ix)
+        w1 = (qyz(ix, iy) + qyz(ixp, iy)) / 2.0_num
+        w2 = (qyz(ix, iyp) + qyz(ixp, iyp)) / 2.0_num
+        fz = fz + (w2 - w1) / dyc(iy)
+
         cvx = cv1(ix, iy) + cv1(ix, iyp)
         cvxp = cv1(ixp, iy) + cv1(ixp, iyp)
         cvy = cv1(ix, iy) + cv1(ixp, iy)
@@ -226,13 +217,8 @@ CONTAINS
     END DO
 
     CALL remap_v_bcs
-#ifdef Q_MONO
-    IF (visc3 > 1.e-6_num) THEN
-#endif
-      CALL visc_heating
-#ifdef Q_MONO
-    END IF
-#endif
+
+    CALL visc_heating
 
     ! finally correct density and energy to final values
     DO iy = 1, ny
@@ -249,35 +235,23 @@ CONTAINS
         dv = ((vxb - vxbm) / dxb(ix) + (vyb - vybm) / dyb(iy)) * dt
         cv1(ix, iy) = cv(ix, iy) * (1.0_num + dv)
 
-        IF (p_visc(ix, iy) .LT. 0.0_num) p_visc(ix, iy) = 0.0_num
         ! energy at end of Lagrangian step
-#ifdef Q_MONO
-        pressure(ix, iy) = pressure(ix, iy) - p_visc(ix, iy)
-#endif
         energy(ix, iy) = energy(ix, iy) &
             - pressure(ix, iy) * dv / rho(ix, iy)
-#ifdef Q_MONO
-        IF (visc3 > 1.e-6_num) THEN
-#endif
-          energy(ix, iy) = energy(ix, iy) &
-              + dt * visc_heat(ix, iy) / rho(ix, iy)
-#ifdef Q_MONO
-        END IF
+
         energy(ix, iy) = energy(ix, iy) &
-            - p_visc(ix, iy) * dv / rho(ix, iy)
-#endif
+              + dt * visc_heat(ix, iy) / rho(ix, iy)
 
         rho(ix, iy) = rho(ix, iy) / (1.0_num + dv)
-#ifdef Q_MONO
-        IF (visc3 > 1.e-6_num) THEN
-#endif
-          total_visc_heating = total_visc_heating &
+
+        total_visc_heating = total_visc_heating &
               + dt * visc_heat(ix, iy) * cv(ix, iy)
+
 #ifdef Q_MONO
-        END IF
         total_visc_heating = total_visc_heating &
             - p_visc(ix, iy) * dv * cv(ix, iy)
 #endif
+
       END DO
     END DO
 
@@ -402,23 +376,14 @@ CONTAINS
         qyy(ix, iy) = syy * (L2 * rho(ix, iy) &
             * (visc1 * cf + L2 * visc2 * ABS(s)))
 #endif
+        qxy(ix, iy) = qxy(ix, iy) + sxy * rho(ix, iy) * visc3 
+        qxz(ix, iy) = qxz(ix, iy) + sxz * rho(ix, iy) * visc3 
+        qyz(ix, iy) = qyz(ix, iy) + syz * rho(ix, iy) * visc3 
+        qxx(ix, iy) = qxx(ix, iy) + sxx * rho(ix, iy) * visc3 
+        qyy(ix, iy) = qyy(ix, iy) + syy * rho(ix, iy) * visc3 
 
-        ! (visc3 < 1.e-6) ? 1:0
-        flip = -MIN(SIGN(1.0_num, 1.e-6_num - visc3), 0.0_num)
-        qxy(ix, iy) = qxy(ix, iy) + sxy * rho(ix, iy) * visc3 * flip
-        qxz(ix, iy) = qxz(ix, iy) + sxz * rho(ix, iy) * visc3 * flip
-        qyz(ix, iy) = qyz(ix, iy) + syz * rho(ix, iy) * visc3 * flip
-        qxx(ix, iy) = qxx(ix, iy) + sxx * rho(ix, iy) * visc3 * flip
-        qyy(ix, iy) = qyy(ix, iy) + syy * rho(ix, iy) * visc3 * flip
-
-#ifdef Q_MONO
-        IF (visc3 > 1.e-6_num) THEN
-#endif
-          visc_heat(ix, iy) = qxy(ix, iy) * dvxy + qxz(ix, iy) * dvzdx &
+        visc_heat(ix, iy) = qxy(ix, iy) * dvxy + qxz(ix, iy) * dvzdx &
               + qyz(ix, iy) * dvzdy + qxx(ix, iy) * dvxdx + qyy(ix, iy) * dvydy
-#ifdef Q_MONO
-        END IF
-#endif
 
         w3 = bx1(ix, iy) * dvxdx + by1(ix, iy) * dvxdy
         w4 = bx1(ix, iy) * dvydx + by1(ix, iy) * dvydy
