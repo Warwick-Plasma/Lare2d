@@ -13,7 +13,7 @@ MODULE setup
   PUBLIC :: before_control, after_control
   PUBLIC :: grid
   PUBLIC :: open_files, close_files, restart_data
-  PUBLIC :: normalise_code
+  PUBLIC :: normalise_code, normalise_neutral
 
   REAL(num), DIMENSION(:), ALLOCATABLE :: dxnew, dynew
 
@@ -147,7 +147,11 @@ CONTAINS
     REAL(num) :: eta_bar_0
 
     MASS0 = RHO0 * L0**2
-
+    PRESSURE0 = B0**2 / MU0 ! Pressure 
+    ENERGY0 = B0**2 / (MU0 * RHO0)   
+    RES0 = 1.0_num
+    TEMP0 = MBAR * PRESSURE0 / (KB * RHO0) ! Temperature in K
+    
     f_bar = f_bar * L0**2 * TEMP0**(3.0_num / 2.0_num)
 
     ! Normalise tbar
