@@ -45,7 +45,8 @@ CONTAINS
     ! Calculate tbar in (K)
     t_bar = ionise_pot / kb
 
-    ! Calculate rbar in (kg^-1)
+    ! Calculate rbar in (kg^-1) 
+    MBAR = mh * mf
     r_bar = 4.0_num / MBAR
 
     ! Calculate eta_bar in (m^4 / (k s kg^2))
