@@ -376,11 +376,11 @@ CONTAINS
         qyy(ix, iy) = syy * (L2 * rho(ix, iy) &
             * (visc1 * cf + L2 * visc2 * ABS(s)))
 #endif
-        qxy(ix, iy) = qxy(ix, iy) + sxy * rho(ix, iy) * visc3 
-        qxz(ix, iy) = qxz(ix, iy) + sxz * rho(ix, iy) * visc3 
-        qyz(ix, iy) = qyz(ix, iy) + syz * rho(ix, iy) * visc3 
-        qxx(ix, iy) = qxx(ix, iy) + sxx * rho(ix, iy) * visc3 
-        qyy(ix, iy) = qyy(ix, iy) + syy * rho(ix, iy) * visc3 
+        qxy(ix, iy) = qxy(ix, iy) + 2.0_num * sxy * rho(ix, iy) * visc3 
+        qxz(ix, iy) = qxz(ix, iy) + 2.0_num * sxz * rho(ix, iy) * visc3 
+        qyz(ix, iy) = qyz(ix, iy) + 2.0_num * syz * rho(ix, iy) * visc3 
+        qxx(ix, iy) = qxx(ix, iy) + 2.0_num * sxx * rho(ix, iy) * visc3 
+        qyy(ix, iy) = qyy(ix, iy) + 2.0_num * syy * rho(ix, iy) * visc3 
 
         visc_heat(ix, iy) = qxy(ix, iy) * dvxy + qxz(ix, iy) * dvzdx &
               + qyz(ix, iy) * dvzdy + qxx(ix, iy) * dvxdx + qyy(ix, iy) * dvydy
