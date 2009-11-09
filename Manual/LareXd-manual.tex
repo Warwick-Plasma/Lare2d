@@ -77,7 +77,7 @@ where $\mu_m$ is the reduced mass, i.e. the average mass of all particles in the
 
  {\it LareXd} can either be set to accept an initialisation with variables in S.I. units or using dimensionless variables. The output always matches the input type. If you plan to setup your initial conditions in S.I. units then you do not need to know about the code normalisation to run and use the code. There are two occasions when you will need to understand the normalisation. The first is if you input your variables in dimensionless form. To do this of course you must have chosen a normalisation. For some additional physics packages to work correctly you must tell {\it LareXd} the numerical values of your normalising length, magnetic field and mass density (more on this below). The additional physics packages that require this are thermal conduction and the inclusion of neutrals. If you are only running resistive MHD then these are not needed. The second reason you may need to understand the normalisation is that all of the core code works on the normalised equations so that should you want to edit the code, e.g. to change the resistivity, you must do this on normalised equations.  
  
-The normalisation is through the choice of normalising magnetic field $B_0$, density $\rho_0$ and length $L_0$. Thus we define dimensionless quanitities as
+The normalisation is through the choice of normalising magnetic field $B_0$, density $\rho_0$ and length $L_0$. Thus we define dimensionless quantities as
 \begin{eqnarray*}
 x&=&L_0 \hat{x}\\
 \mathbf{B}&=&B_0\hat{\mathbf{B}} \\
@@ -94,7 +94,9 @@ T_0&=&\frac{\epsilon_0 \bar{m}}{k_B}\\
 \mu_{m0}&=&\bar{m}\\
 \epsilon_0&=&v_0^2
 \end{eqnarray*}
-so that $\mathbf{v}=v_0\hat{\mathbf{v}}$, $\mathbf{j}=j_0\hat{\mathbf{j}}$, $t=t_0\hat{t}$ and $P=P_0\hat{P}$ etc. In these equations $\bar{m}$ is the average mass of ions in the plasma, i.e. $\bar{m}=m_p$ for pure hydrogen but  $\bar{m}=1.2 m_p$ is typical for the Solar corona. Applying this normalisation to the ideal MHD equations simply removes the vacuum permeability $\mu_0$. For resistive MHD substitute equation \ref{ohm} into \ref{faraday} and apply the normalisation to get
+so that $\mathbf{v}=v_0\hat{\mathbf{v}}$, $\mathbf{j}=j_0\hat{\mathbf{j}}$, $t=t_0\hat{t}$ and $P=P_0\hat{P}$ etc. In these equations $\bar{m}$ is the average mass of ions in the plasma, i.e. $\bar{m}=m_p$ for pure hydrogen but  $\bar{m}=1.2 m_p$ is typical for the Solar corona. Applying this normalisation to the ideal MHD equations simply removes the vacuum permeability $\mu_0$. Note if you would like to fix a normalising temperature this means that you must choose $L_0,\rhp_0, B_0$ so that the calculated $T_0$ gives the required temperature normalisation.
+
+For resistive MHD substitute equation \ref{ohm} into \ref{faraday} and apply the normalisation to get
 \begin{displaymath}
  \frac{\partial \hat{\mathbf{B}}}{\partial \hat{t}}=\hat{\nabla}\times(\hat{\mathbf{v}}\times\hat{\mathbf{B}})
 	-\frac{1}{\mu_0 L_0 v_0}\hat{\nabla}\times(\eta\hat{\nabla}\times\hat{\mathbf{B}}) 
@@ -138,14 +140,21 @@ and an associated heating term
 \end{displaymath}
 In order to ensure that the stress tensor is zero under uniform rotation or compression it must be isotropic and traceless
 \begin{eqnarray*}
-\sigma_{ij} &=& \nu \left(\varepsilon_{ij}-\frac{1}{3}\delta_{ij}\nabla\cdot\mathbf{v}\right) \\
+\sigma_{ij} &=& 2 \nu \left(\varepsilon_{ij}-\frac{1}{3}\delta_{ij}\nabla\cdot\mathbf{v}\right) \\
 \varepsilon_{ij} &=& \frac{1}{2}\left(\frac{\partial v_i}{\partial x_j} + \frac{\partial v_j}{\partial x_i} \right)
 \end{eqnarray*}
 As with the normalisation of the resistivity when the normalisation proceedure above is applied the viscosity $\nu$ above is replaced by $\hat{\nu}$ such that
 \begin{displaymath}
  \hat{\nu}=\frac{\nu}{\rho_0 L_0 v_0}
 \end{displaymath}
-Since $v_0$ is the normalised Alfv\'en speed this means that $\hat{\nu}=1/R$ where $R$ is the Reynolds number defined using the Alfv\'en speed. Note that in {\it LareXd}  $\hat{\nu}$ is called {\it visc3}. In practice $\nu$ is often limited by the numerical resolution but should you wish to calculate a real $\nu$ for a real physical problem remember not to confuse viscosity and kinematic viscosity. The kinematic viscosity is defined as $\nu/\rho$. Note that for incompressible flows this viscosity reduces to $-\hat{\nu} \nabla^2 \mathbf{v}$. 
+Since $v_0$ is the normalised Alfv\'en speed this means that $\hat{\nu}=1/R$ where $R$ is the Reynolds number defined using the Alfv\'en speed. Note that in {\it LareXd}  $\hat{\nu}$ is called {\it visc3}. In practice $\nu$ is often limited by the numerical resolution but should you wish to calculate a real $\nu$ for a real physical problem remember not to confuse viscosity and kinematic viscosity. The kinematic viscosity is defined as $\nu/\rho$. 
+
+For fully ionised plasma with no magnetic field the bulk plasma viscosity is proportional to $\rho T \tau_i$ \cite{nrl} where $\tau_i$ is the ion collisions time. Since $\tau_i \propto T^{3/2}/\rho$ this means the real viscosity, in the absence of a magnetic field, should vary as 
+\begin{displaymath}
+  \nu \propto T^{5/2}
+\end{displaymath} 
+and therefore does not depend on density. However the majority of people working in MHD for space and astrophysics never want to use the real viscosity but instead have an equation of the form $\partial_t v = - \nu \nabla^2 v$, suitable for incompressible flows, with constant $\nu$. So that the viscosity in {\it Lare} reduces to this form the viscosity internally is defined to be proportional to density. Since this is divided by density in the momentum equation this will reduce to the simple incompressible form if the density is uniform. Should you wish to use real viscosity then you must make {\it visc} a function of space and include the correct density and temperature dependence. To do this note that the stress tensor is labelled as, for example, \texttt{sxy} with the \texttt{s} read as $\sigma$ so that $\sigma_{x,y}$ in the code is \texttt{sxy}. These are defined inside \texttt{SUBROUTINE viscosity\_and\_b\_update} in \texttt{lagran.F90}. 
+ 
 
 \subsection{Shock viscosity}
 At shocks the gradients become singular and the differential equations are not defined. Instead we can use the integrated form of the equations to get jump conditions across shocks. To keep things simple let's just consider the 1D Euler equations, i.e. ideal MHD with $\mathbf{B}=0$! The jump condition for the pressure across the shock is 
@@ -209,6 +218,7 @@ P&=&\frac{\rho k_{B}T}{\mu_m}\\
 \epsilon&=&\frac{P}{\rho(\gamma-1)}\\
 \mu_m&=&\frac{\bar{m}}{2}
 \end{eqnarray*}
+Note that this assumes a fully ionised plasma in which the averaged ion species is only singly ionised. The reduced mass is then just the average of the ion and electron masses. This is suitable for much solar and space physics but ought to be checked for other applications.
 
 \item \texttt{eos\_number=EOS\_PI}: Here the effect of neutrals on the partial pressures is included 
 \begin{eqnarray*}
@@ -832,6 +842,8 @@ where $e2T = T / \epsilon$ is the conversion factor by which specific internal e
 \bibitem{hall} T. D. Arber and M. Haynes, \textit{Physics of Plasmas} \textbf{13} 112105 (2006)
 
 \bibitem{brown} J. Brown, \textit{Solar Physics} \textbf{29} 421 (1973)
+
+\bibitem{nrl} NRL Plasma Formulary, J. D. Huba (2002)
 
 \end{thebibliography}
 
