@@ -88,7 +88,7 @@ CONTAINS
       WRITE(filename, filename_desc) TRIM(data_dir), output_file
 
       CALL cfd_open(filename, rank, comm, MPI_MODE_CREATE + MPI_MODE_WRONLY)
-      CALL cfd_write_snapshot_data(time * T0, i, 0)
+      CALL cfd_write_snapshot_data(REAL(time * T0, dbl), i, 0)
 
       ALLOCATE(data(0:nx, 0:ny))
       CALL cfd_write_2d_cartesian_grid("Grid", "Grid", &

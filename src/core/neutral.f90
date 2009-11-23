@@ -39,7 +39,7 @@ CONTAINS
     tr_bar = 1.0_num / tr
 
     ! Calculate fbar^(2 / 3) in (k^-1 m^-2)
-    f_bar = (pi * me_0 * kb_0) / h_0**2
+    f_bar = pi * (me_0 / h_0) * (kb_0 / h_0)
     f_bar = f_bar**(3.0_num / 2.0_num)
 
     ! Calculate tbar in (K)
@@ -60,12 +60,7 @@ CONTAINS
   SUBROUTINE perpendicular_resistivity
 
     ! This subroutine calculates the cross field resistivity at the current
-    ! temperature. If you're not using the "neutral_fraction" subroutine and
-    ! the "Saha" equation of state, then this routine will give VERY strange
-    ! results which are probably meaningless.
-
-    ! normalising values are L0 = 150km, v0 = 6.5km / s, rho0 = 2.7e-4 kg / m3
-    ! t0 = 23s, T0 = 6420K, P0 = 1.2e4 Pa, B0 = 1200G (0.12T)
+    ! temperature. 
 
     REAL(num) :: f, xi_v, bxv, byv, bzv, bfieldsq, rho_v, T_v, T
     INTEGER :: ixp, iyp
@@ -227,37 +222,37 @@ CONTAINS
 
   SUBROUTINE newton_relax
 
-!!$    INTEGER, DIMENSION(1) :: ref_index, z0(1) = 1
-!!$    LOGICAL :: first_call = .TRUE., run_loop = .TRUE.
-!!$
-!!$    ! This should only be run above the photosphere so first call sets up
-!!$    ! the lowest value of iz to use if at all, the -2 is due to zc starting
-!!$    ! at -1
-!!$    IF (first_call) THEN
-!!$      z0 = MINLOC(ABS(zc - 0.0_num)) - 2
-!!$      ! This process doesn't have any cells in the corona
-!!$      IF (z0(1) > nz) run_loop = .FALSE.
-!!$      IF (z0(1) < 1) z0(1) = 1 ! only need to run over the internal domain
-!!$      first_call = .FALSE.
-!!$    END IF
-!!$
-!!$    ! For every point need to find the reference density value and hence
-!!$    ! the tau and temperature
-!!$    IF (run_loop) THEN
-!!$      DO iz = z0(1), nz
-!!$        DO iy = 1, ny
-!!$          DO ix = 1, nx
-!!$            ! the 2 is subtracted due to rho_ref starting at -1
-!!$            ref_index = MINLOC(ABS(rho(ix, iy) - rho_ref)) - 2
-!!$            energy(ix, iy) = (energy(ix, iy) + dt / tau_ref(ref_index(1)) * &
-!!$                T_ref(ref_index(1)) / (gamma - 1.0_num)) &
-!!$                / (1.0_num + dt / tau_ref(ref_index(1)))
-!!$          END DO
-!!$        END DO
-!!$      END DO
-!!$    END IF
-
-    CALL energy_bcs
+!     INTEGER, DIMENSION(1) :: ref_index, z0(1) = 1
+!     LOGICAL :: first_call = .TRUE., run_loop = .TRUE.
+! 
+!     ! This should only be run above the photosphere so first call sets up
+!     ! the lowest value of iz to use if at all, the -2 is due to zc starting
+!     ! at -1
+!     IF (first_call) THEN
+!       z0 = MINLOC(ABS(zc - 0.0_num)) - 2
+!       ! This process doesn't have any cells in the corona
+!       IF (z0(1) > nz) run_loop = .FALSE.
+!       IF (z0(1) < 1) z0(1) = 1 ! only need to run over the internal domain
+!       first_call = .FALSE.
+!     END IF
+! 
+!     ! For every point need to find the reference density value and hence
+!     ! the tau and temperature
+!     IF (run_loop) THEN
+!       DO iz = z0(1), nz
+!         DO iy = 1, ny
+!           DO ix = 1, nx
+!             ! the 2 is subtracted due to rho_ref starting at -1
+!             ref_index = MINLOC(ABS(rho(ix, iy) - rho_ref)) - 2
+!             energy(ix, iy) = (energy(ix, iy) + dt / tau_ref(ref_index(1)) * &
+!                 T_ref(ref_index(1)) / (gamma - 1.0_num)) &
+!                 / (1.0_num + dt / tau_ref(ref_index(1)))
+!           END DO
+!         END DO
+!       END DO
+!     END IF
+! 
+!     CALL energy_bcs   
 
   END SUBROUTINE newton_relax
 

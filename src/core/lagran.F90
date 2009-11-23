@@ -522,6 +522,12 @@ CONTAINS
     k1z = flux_z
     c1 = curlb
 
+#ifdef Q_FIRSTORDER
+    dt6 = dt 
+    k3x = k1x 
+    k3y = k1y 
+    k3z = k1z 
+#else
     ! step 2
     DO iy = 1, ny
       !DEC$ IVDEP
@@ -638,6 +644,7 @@ CONTAINS
     k3y = k1y + 2.0_num * k2y + 2.0_num * k3y + k4y
     k3z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
     c1 = c1 + 2.0_num * c2 + 2.0_num * c3 + c4
+#endif
 
     DO iy = 0, ny
       !DEC$ IVDEP

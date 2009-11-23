@@ -457,7 +457,8 @@ CONTAINS
     CHARACTER(LEN = 20+data_dir_max_length) :: filename
     CHARACTER(LEN = 20) :: name, class, mesh_name, mesh_class
     INTEGER :: nblocks, type, nd, sof, snap
-    INTEGER, DIMENSION(2) :: dims
+    INTEGER, DIMENSION(2) :: dims 
+    REAL(dbl) :: time_d
     REAL(num), DIMENSION(2) :: extent
     REAL(num), DIMENSION(2) :: stagger
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: data
@@ -483,7 +484,8 @@ CONTAINS
       IF (rank == 0) PRINT *, ix, name, class, type
 
       IF (type == TYPE_SNAPSHOT) THEN
-        CALL cfd_get_snapshot(time, snap)
+        CALL cfd_get_snapshot(time_d, snap)
+        time = time_d
       END IF
 
       IF (type == TYPE_MESH) THEN

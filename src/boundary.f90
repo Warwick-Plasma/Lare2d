@@ -8,7 +8,6 @@ MODULE boundary
 
   USE shared_data
   USE mpiboundary
-  USE openboundary
 
   IMPLICIT NONE
 
@@ -50,9 +49,33 @@ CONTAINS
     CALL density_bcs
     CALL velocity_bcs
 
-    CALL damp_boundaries ! in openboundary.f90
+    CALL damp_boundaries 
 
   END SUBROUTINE boundary_conditions
+
+
+
+  SUBROUTINE damp_boundaries
+  
+    REAL(num) :: a, d
+  
+    IF (damping) THEN
+      ! right boundary
+      d = 3.0_num * length_x / 4.0_num
+      DO iy = -1, ny + 1
+        DO ix = -1, nx + 1
+          IF (xb(ix) > d) THEN
+            a = dt * damp_rate * (xb(ix) - d) / (length_x - d)
+            vx(ix, iy) = vx(ix, iy) / (1.0_num + a)
+            vy(ix, iy) = vy(ix, iy) / (1.0_num + a)
+            vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
+          END IF
+        END DO
+      END DO
+  
+    END IF
+  
+  END SUBROUTINE damp_boundaries
 
 
 

@@ -10,13 +10,14 @@ FFLAGS = -O1
 # Set some of the build parameters
 TARGET = lare2d
 
-# Uncomment one of the following lines if on a cluster.
-#COPSON = -compiler intel
-#MHDCLUSTER = -f90=pgf90 -DMHDCLUSTER -fpic
-
 #Uncomment the following line to use Qmono viscosity
 #QMONO = -DQ_MONO
 
+#Uncomment the following line to run in single precision
+#QSINGLE = -DQ_SINGLE
+
+#Uncomment the following line to use first order scheme for resistive update
+#QFIRSTORDER = -DQ_FIRSTORDER
 
 # --------------------------------------------------
 # Shouldn't need to touch below here
@@ -26,9 +27,8 @@ SRCDIR = src
 OBJDIR = obj
 BINDIR = bin
 MODULEFLAG = -module
-MACHINEFLAGS = $(COPSON) $(MHDCLUSTER)
-OPFLAGS = $(QMONO)
-FC = mpif90 $(MACHINEFLAGS) $(OPFLAGS)
+OPFLAGS = $(QMONO) $(QSINGLE) $(QFIRSTORDER)
+FC = mpif90 $(OPFLAGS)
 PREPROFLAGS = $(NONMPIIO)
 
 OBJFILES = shared_data.o mpi_routines.o openboundary.o mpiboundary.o boundary.o normalise.o conduct.o diagnostics.o setup.o lagran.o  \
@@ -81,7 +81,7 @@ normalise.o:normalise.f90 shared_data.o
 setup.o:setup.F90 shared_data.o normalise.o iocommon.o iocontrol.o input.o input_cartesian.o
 mpiboundary.o: mpiboundary.f90 shared_data.o
 openboundary.o: openboundary.f90 shared_data.o
-boundary.o:boundary.f90 shared_data.o mpiboundary.o openboundary.o
+boundary.o:boundary.f90 shared_data.o mpiboundary.o 
 xremap.o:xremap.f90 shared_data.o boundary.o
 yremap.o:yremap.f90 shared_data.o boundary.o
 zremap.o:zremap.f90 shared_data.o boundary.o
