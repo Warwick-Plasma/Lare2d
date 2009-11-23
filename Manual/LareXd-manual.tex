@@ -365,22 +365,26 @@ CONTAINS
 The lines with \texttt{USE} list all the other modules that are required by this module. \texttt{IMPLICIT NONE} means that all variables must be declared, failure to do this will give an error message. Thinking this is a bad idea or a nuisance is a sign of madness - just do it! \texttt{PRIVATE} means all the routines below the \texttt{CONTAINS} line are private to this module and cannot be called from another module. The exceptions to this are routines listed in the \texttt{PUBLIC} line which can be called by other modules. The three lines of type declarations define variables that are global to all routines in this module but invisible to other modules. Below the \texttt{CONTAINS} is where all the subroutines go. Note that reals are not defined just as \texttt{REAL} but as \texttt{REAL(num)}. This means all reals are of type \texttt{num} which is defined in {\texttt{shared\_data.F90:}} the top of which is
 \begin{verbatim}
 MODULE constants
-  IMPLICIT NONE
-  INTEGER, PARAMETER :: num = KIND(1.D0)
+
+#ifdef Q_SINGLE
+  INTEGER, PARAMETER :: num = KIND(1.0) 
+#else
+  INTEGER, PARAMETER :: num = KIND(1.D0) 
+#endif
   INTEGER, PARAMETER :: dbl = KIND(1.D0)
   REAL(num), PARAMETER :: pi = 3.14159265358979323_num
-  REAL(num), PARAMETER :: none_zero = TINY(1.0_num)
+  REAL(num), PARAMETER :: none_zero = TINY(1.0_num) * 1000.0_num
   REAL(num), PARAMETER :: largest_number = HUGE(1.0_num)
 \end{verbatim}
-Here we see that \texttt{num} is the same kind of number as 1.D0. This means that everything defined such as 1.234\_num will be double precision, just as the definition of $\pi$ (pi) is above. The advantage of this is that to change the code from double to single precision all you need to do is change \texttt{INTEGER, PARAMETER :: num = KIND(1.D0)} to \texttt{INTEGER, PARAMETER :: num = KIND(1.0)} or visa versa. The disadvantage is that whenever you define a real it must be as \texttt{REAL(num)} and all real literal constants must end in \_num. Many people think that compilers can take care of this. My experience is that this isn't true and the above proceedure gaurentees you will get double precision when you want it by only changing one line of code.
+Here we see that \texttt{num} is the same kind of number as 1.D0. This means that everything defined such as 1.234\_num will be double precision, just as the definition of $\pi$ (pi) is above. The exception to this is if \texttt{Q\_SINGLE} is set in the Makefile in which case the code uses single precision. The advantage of this is only one line needs changing in the Makefile to change from single to double precision. Many people think that compilers can take care of this. My experience is that this isn't true and the above procedure guarantees you will get double precision when you want it by only changing one line of code.
 
-All files with an \texttt{F90} extention will first be passed through a precompiler. This essentially checks flags set in the Makefile and based on this either includes or removes lines of source code before compiling. This is a bit messy but is worth the trouble. For example inside a big loop you do not want to keep checking conditionals which do not change. These precompiler options are always of the form \texttt{ifdef ...endif} or \texttt{ifndef...endif} to either include or exclude lines of code. Doing things this way just makes the code faster. Another set of commands you will see are compiler directives such as \texttt{!DEC\$ IVDEP} and \texttt{!DEC\$ VECTOR ALWAYS} whose function is to tell the compiler that loops can be vectorised safeley, again making the code faster. 
+All files with an \texttt{F90} extension will first be passed through a pre-compiler. This essentially checks flags set in the Makefile and based on this either includes or removes lines of source code before compiling. This is a bit messy but is worth the trouble. For example inside a big loop you do not want to keep checking conditionals which do not change. These pre-compiler options are always of the form \texttt{ifdef ...endif} or \texttt{ifndef...endif} to either include or exclude lines of code. Doing things this way just makes the code faster. Another set of commands you will see are compiler directives such as \texttt{!DEC\$ IVDEP} and \texttt{!DEC\$ VECTOR ALWAYS} whose function is to tell the compiler that loops can be vectorised safely, again making the code faster. 
 
 \section{Setting up the Domain and Control Variables}
 The control of the number of grid points, domain size and all other initialisation parameters is set in \texttt{control.f90}. Since this routine must be edited for each new simulation the documentation for each of the control variables is included in the source code. Careful reading of this manual and those comments ought to be all that is needed to fully understand how to setup and run \textit{LareXd}.
 
 \section{Initial Conditions}
-All that remains to get the code ready to run is to fill the primary arrays. This is done in the file \texttt{initial\_conditions.f90} and an example is shown below.  
+All that remains to get the code ready to run is to fill the primary arrays. This is done in the file \texttt{initial\_conditions.f90} and an example is shown below. Note this is about the most complicated possible initial condition in that it is stratified and includes neutrals. It is used here to hopefully cover all possible initial conditions a user may want.  
 \begin{verbatim}
 MODULE initial_conditions
   USE shared_data
@@ -391,71 +395,165 @@ MODULE initial_conditions
   PUBLIC:: Set_Initial_Conditions
 CONTAINS
 
-  SUBROUTINE Set_Initial_Conditions
-  ! This example sets up a stratified atmosphere in S.I. units
-    INTEGER:: ix, iy
-    REAL(num) :: dg, m=1.5_num, a=1.0_num
-    REAL(num) :: y_cor=3.75e6, t_ph=6420.0_num
-    REAL(num) :: t_cor=963000.0_num, wtr=7.5e5_num, T
-    REAL(num) :: yt, q, r, bphi, b1, pb, b, b_0
+SUBROUTINE set_initial_conditions
 
-    vx = 0.0_num
-    vy = 0.0_num
-    vz = 0.0_num
-    bx = 0.0_num
-    by = 0.0_num
-    bz = 0.0_num
+  INTEGER :: ix, iy, iz, loop
+  REAL(num) :: rc, x1, y1, b_theta, amp, k, r0, a=1.1_num, r1, mu, m=1.5
+  REAL(num):: b0, bz0, t_ph=1.0_num, t_cor=150.0_num, z_cor=25.0_num, wtr=5.0_num
+  REAL(num) :: dg, w, q, lambda, r, bphi, b1, p0, p1, rho1, r_a, a1, a2, b 
+  REAL(num) :: maxerr, xi_v
+  REAL(num), DIMENSION(:), ALLOCATABLE :: dzb_global, dzc_global
+  REAL(num), DIMENSION(:), ALLOCATABLE :: zc_global,grav_global   
+  REAL(num), DIMENSION(:), ALLOCATABLE :: rho_ref, energy_ref, t_ref, mu_m
+  
+  ALLOCATE(dzb_global(-1:nz_global+1), dzc_global(-1:nz_global))
+  ALLOCATE(grav_global(-1:nz_global+2), mu_m(-1:nz_global+2))
+  ALLOCATE(rho_ref(-1:nz_global+2),energy_ref(-1:nz_global+2))
+  ALLOCATE(t_ref(-1:nz_global+2), zc_global(-1:nz_global+1))
+  
+  ! Changed from James's version to remove the need for a seperate routine setting
+  ! up the newton cooling arrays and the MPI calls.
+  
+  ! Set up the initial 1D hydrostatic equilibrium
+  
+  grav_global = 0.9727_num
+  
+  ! example of lowering g to zero in corona
+  a1 = 60.0_num
+  a2 = 80.0_num
+  WHERE (zb_global > a1) grav_global = grav_global(0)  &
+      *(1.0_num+COS(pi*(zb_global-a1)/(a2-a1))) /2.0_num
+  WHERE (zb_global > a2) grav_global = 0.0_num
+  
+  !Y.Fan atmosphere temp profile
+  DO iz = -1, nz_global+1 ! needs to be +1 for the dzc calculation
+     zc_global(iz) = 0.5_num * (zb_global(iz) + zb_global(iz-1))
+     IF (zc_global(iz) < 0.0_num) THEN
+        t_ref(iz) = t_ph - (t_ph * a * zc_global(iz) * grav_global(iz) &
+          / (m+1.0_num))
+     ELSE
+        t_ref(iz) = t_ph + ((t_cor-t_ph) * 0.5_num &
+          * (TANH((zc_global(iz)-z_cor)/wtr)+1.0_num))
+     ENDIF
+  ENDDO
+  t_ref(nz_global+2) = t_ref(nz_global+1)
 
-    gamma = 5.0_num / 3.0_num
-
-    grav = 274.0_num
-    IF (coordinates(1) .EQ. 0) grav(0) = 0.0_num
-    IF (coordinates(1) .EQ. nprocy-1) grav(ny) = 0.0_num
-
-    !define energy profile
-    DO ix = -1,nx+2
-    DO iy = -1,ny+2
-      IF (yc(iy) < 0.0_num) THEN
-        T = t_ph - (a * grav(iy) * yc(iy) * mbar/kb/(m+1.0_num))
-      ELSE 
-        T = t_ph + ((t_cor-t_ph)*0.5_num * &
-          (TANH((yc(iy)-y_cor)/wtr)+1.0_num))
+  !solve HS eqn to get rho profile
+  !density at bottom of domain
+  rho_ref = 1.0_num
+  
+  DO iz = -1, nz_global
+     dzb_global(iz) = zb_global(iz) - zb_global(iz-1)
+     dzc_global(iz) = zc_global(iz+1) - zc_global(iz)
+  ENDDO
+                      
+  !solve for density
+  mu_m = 0.5_num    ! the reduced mass in units of proton mass
+  IF (include_neutrals) xi_n = 0.0_num 
+  DO loop = 1, 100
+     maxerr = 0.0_num    
+    DO iz = nz_global, 0, -1
+      IF (zc_global(iz) < 0.0_num) THEN
+        dg = 1.0_num / (dzb_global(iz)+dzb_global(iz-1))
+        rho_ref(iz-1) = rho_ref(iz) * (T_ref(iz)/dzc_global(iz-1)/mu_m(iz)& 
+             +grav_global(iz-1)*dzb_global(iz)*dg)
+        rho_ref(iz-1) = rho_ref(iz-1) / (T_ref(iz-1)/dzc_global(iz-1)/mu_m(iz-1) & 
+             -grav_global(iz-1)*dzb_global(iz-1)*dg)
       END IF
-      CALL Get_Energy(rho(ix,iy),T,EOS_IDEAL,ix,iy,energy(ix,iy))
+    END DO   
+    !Now move from the photosphere up to the corona
+    DO iz = 0, nz_global
+      IF (zc_global(iz) > 0.0_num) THEN
+        dg = 1.0_num / (dzb_global(iz)+dzb_global(iz-1))
+        rho_ref(iz) = rho_ref(iz-1) * (T_ref(iz-1)/dzc_global(iz-1)/mu_m(iz-1)& 
+             -grav_global(iz-1)*dzb_global(iz-1)*dg)
+        rho_ref(iz) = rho_ref(iz) / (T_ref(iz)/dzc_global(iz-1)/mu_m(iz) & 
+             +grav_global(iz-1)*dzb_global(iz)*dg)
+      END IF
     END DO
+    IF (include_neutrals) THEN     !note this always assumes EOS_PI
+        DO iz = 0, nz_global 
+           xi_v = get_neutral(t_ref(iz), rho_ref(iz)) 
+           r1 = mu_m(iz)
+           mu_m(iz) = 1.0_num / (2.0_num - xi_v)  
+           maxerr = MAX(maxerr, ABS(mu_m(iz) - r1))
+        END DO
+     END IF 
+     IF (maxerr < 1.e-10_num) EXIT
+  END DO
+  rho_ref(nz_global+1:nz_global+2) = rho_ref(nz_global)
+  
+  ! Convert into the local 3D arrays
+  vx = 0.0_num
+  vy = 0.0_num
+  vz = 0.0_num
+  
+  grav = grav_global(coordinates(1)*nz-1:coordinates(1)*nz+nz+2)
+  
+  DO iy = -1, ny + 2
+     DO ix = -1, nx + 2
+        !store temperature in energy array for a few lines    
+        energy(ix,iy,:) = t_ref(coordinates(1)*nz-1:coordinates(1)*nz+nz+2) 
+        rho(ix,iy,:) = rho_ref(coordinates(1)*nz-1:coordinates(1)*nz+nz+2)
+     ENDDO
+  ENDDO  
+  
+  DO iz = -1, nz + 2
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2                
+        r1 = energy(ix,iy,iz)
+        CALL get_energy(rho(ix,iy,iz),r1,eos_number,ix,iy,iz,energy(ix,iy,iz))
+      END DO
     END DO
+  END DO   
+  
+  !add magnetic flux tube at (0,0,-10) and change pressure, dens, energy over it
+  !grad(p1) matches lorentz force
+  !MEQ at end of tube
+  !pressure match at apex
+  !seee Fan 2001 for details of initialisation
+  !w = width of tube
+  w = 2.0_num
+  q = -(1.0_num/w)
+  b0 = 5.0_num
+  lambda = 20.0_num
+  DO ix = -1,nx+2
+     DO iy = -1,ny+2
+        DO iz = -1,nz+2
+           !define bx,by,bz at correct points
+           r = SQRT(yc(iy)**2 + (zc(iz)+10.0_num)**2)
+           bx(ix,iy,iz) =  b0 * EXP(-(r/w)**2)
+           bphi =  bx(ix,iy,iz) * q * r
+  
+           r = SQRT(yb(iy)**2 + (zc(iz)+10.0_num)**2)
+           b1 = b0 * EXP(-(r/w)**2)
+           by(ix,iy,iz) = -b1 * q * (zc(iz)+10.0_num)
+  
+           r = SQRT(yc(iy)**2 + (zb(iz)+10.0_num)**2)
+           b1 =  b0 * EXP(-(r/w)**2)
+           bz(ix,iy,iz) =  b1 * q * yc(iy)
+  
+           !define gas pressure and magnetic pressure
+           p0 =  rho(ix,iy,iz)*energy(ix,iy,iz)*(gamma-1.0_num)
+           p1 =  -0.25_num * bx(ix,iy,iz)**2 - 0.5_num * bphi**2
+           !change density and energy
+           r1 = xc(ix)/lambda
+           rho1 =  (p1/p0)*rho(ix,iy,iz)*EXP(-(r1**2))
+           rho(ix,iy,iz)   =  rho(ix,iy,iz) + rho1
+           energy(ix,iy,iz)= (p0 + p1) / (rho(ix,iy,iz) * (gamma - 1.0_num))
+  
+        END DO
+     END DO
+  END DO              
+  
+  DEALLOCATE(dzb_global, dzc_global, zc_global)
+  DEALLOCATE(grav_global, mu_m)
+  DEALLOCATE(rho_ref, energy_ref, t_ref)
 
-    !solve HS eqn to get rho profile
-    rho = 0.0135_num
-
-    !wait for lower process
-    IF (coordinates(1)/=0) THEN
-      CALL MPI_RECV(rho(:,-1),nx+4,mpireal,down,tag,comm, &
-        status,errcode)
-    END IF
-    !calculate the density profile in y 
-    DO ix = -1,nx+2
-    DO iy = 0,ny+2
-      dg = 1.0_num/(dyb(iy)+dyb(iy-1))
-      rho(ix,iy) = &
-        rho(ix,iy-1)*(energy(ix,iy-1)/dyc(iy-1)* &
-              (gamma-1.0_num)-grav(iy-1)*dyb(iy-1)*dg)
-        rho(ix,iy) = &
-            rho(ix,iy)/(energy(ix,iy)/dyc(iy-1)*&
-              (gamma-1.0_num)+grav(iy-1)*dyb(iy)*dg)
-    END DO
-    END DO
-    !now send to higher process
-    IF (coordinates(1)/=nprocy-1) THEN
-      CALL MPI_SEND(rho(:,ny-1),nx+4,mpireal,up,tag,comm, &
-        errcode)
-    END IF
-
-  END SUBROUTINE Set_Initial_Conditions
-
+END SUBROUTINE set_initial_conditions
 \end{verbatim}
 
-This example sets all of the velocity and magnetic field components to zero throughout the whole domain. It then defines the ratio of specific heats (\texttt{gamma}) and gravity (\texttt{grav}). Note that this example is for the Sun so the gravitational acceleration is $g = 274\ ms^{-2}$ and the example above uses this value, i.e. this example is setting the initial conditions in S.I. units not normalised units. Gravity is then turned off at the top and bottom of the domain to make the boundary conditions easier. Since it is often easier to specify temperature this is done in the next loop. However, the code needs the specific energy density and this is taken care of by calling subroutine \texttt{Get\_Energy} which is documented in the source code. This routine will work with either S.I. or normalised initial conditions. Finally based on the temperature profile the density is calculated so that the initial atmosphere is in equilibrium.  
+This example sets all of the velocity and magnetic field components to zero throughout the whole domain. It then defines the ratio of specific heats (\texttt{gamma}) and gravity (\texttt{grav}). Gravity is then turned off at the top and bottom of the domain to make the boundary conditions easier. Since it is often easier to specify temperature this is done in the next loop. However, the code needs the specific energy density and this is taken care of by calling subroutine \texttt{Get\_Energy} which is documented in the source code. This routine will work with either S.I. or normalised initial conditions. Finally based on the temperature profile the density is calculated so that the initial atmosphere is in equilibrium.  
 
 This example initial condition hides a few tricky issues by defining some arrays as uniform. If you want to specify more complicated fields, densities and flows then you need to know the ranges of the arrays and exactly what must be set. To be complete the 3D initial conditions need to specify the variables everywhere inside the computational domain. Due to the staggered grid these arrays are not all the same size so that the computational domain is defined by
 \begin{itemize}
@@ -467,8 +565,27 @@ This example initial condition hides a few tricky issues by defining some arrays
 \item \texttt{bx(0:nx,1:ny,1:nz)}
 \item \texttt{by(1:nx,0:ny,1:nz)}
 \item \texttt{bz(1:nx,1:ny,0:nz)}
-\item \texttt{grav(0:nz)}
-\end{itemize}
+\item \texttt{grav(0:nz)}  
+\end{itemize}              
+
+The simplest possible initial condition is therefore something like
+\begin{verbatim}
+  SUBROUTINE set_initial_conditions
+
+    vx = 0.0_num
+    vy = 0.0_num
+    vz = 0.0_num
+    bx = 0.0_num
+    by = 0.0_num
+    bz = 0.0_num
+    energy = 1.0_num
+    rho = 1.0_num
+
+    grav = 0.0_num
+
+  END SUBROUTINE set_initial_conditions  
+\end{verbatim}  
+
 Becuase the code is an MPI code the different processes need to be able to swap information. This is done by each process having a set of `ghost' cells defined around the real cells. These act as a buffer for the exchange of boundary information through MPI and are how the real boundary conditions are applied. In order to cut down on the number of times that processes have to communicate there are two ghost cells in this buffer zone. As a result the initial conditions should set
 \begin{itemize}
 \item \texttt{rho(-1:nx+2,-1:ny+2,-1:nz+2)}
@@ -529,15 +646,16 @@ TARGET = lare3d
 \texttt{TARGET} controls the name of the output binary
 file in the \texttt{bin} subdirectory. Normally, there is no need to change this.
 \begin{verbatim}
+  #Uncomment the following line to use Qmono viscosity
+  #QMONO = -DQ_MONO
 
-# Uncomment one of the following lines if on a cluster.
-#COPSON = -compiler intel
-#MHDCLUSTER = -f90=pgf90 -DMHDCLUSTER -fpic
+  #Uncomment the following line to run in single precision
+  #QSINGLE = -DQ_SINGLE
 
-#Uncomment the following line to use Qmono viscosity
-#QMONO = -DQ_MONO
+  #Uncomment the following line to use first order scheme for resistive update
+  #QFIRSTORDER = -DQ_FIRSTORDER
 \end{verbatim}
-The above section controls optional flags which can be passed to the code or compiler.  The \texttt{COPSON} and \texttt{MHDCLUSTER} flags are designed to make the code work properly on the named machines, uncomment the correct one for the machine that you're running on. If you're running on another machine then comment both of them out.\\
+The above section controls optional flags which can be passed to the code or compiler. \texttt{QSINGLE} forces the code to run in single precision. This is much faster an is recommended for preparatory work but the full double precision should always be checked for publications. \texttt{QFIRSTORDER} runs the resistive routines in first order instead of the default fourth order Runge-Kutta. Use in the same way as you would \texttt{QSINGLE}.
 The \texttt{QMONO} flag is the only one which directly changes the way that the code works. In order to allow vector optimisation of the code all \texttt{IF} statements were removed from the main loop. This meant that allowing the change between using tensor shock viscosity and simple Wilkins Q\_MONO shock viscosity had to be moved out to the makefile. To run the code with tensor shock viscosity comment this flag out, to run with the Wilkins viscosity uncomment it.
 \subsection{Further Optimisation}
 The {\it LareXd} codes are fairly robust with regard to compiler flags, so you can normally use your favourite optimisations. An example would be
