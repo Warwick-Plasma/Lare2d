@@ -13,7 +13,8 @@ PROGRAM lare2d
   USE normalise
   USE eos
   USE neutral
-  USE control
+  USE control 
+  USE conduct
 
   IMPLICIT NONE
 
@@ -68,9 +69,10 @@ PROGRAM lare2d
 
   DO
     IF ((i >= nsteps .AND. nsteps >= 0) .OR. (time >= t_end)) EXIT
-    i = i + 1
+    i = i + 1                                           
+    IF (conduction) CALL conduct_heat         
     CALL eta_calc                    ! lagran.f90
-    CALL set_dt                      ! diagnostics.f90
+    CALL set_dt                      ! diagnostics.f90  
     CALL lagrangian_step             ! lagran.f90
     CALL eulerian_remap(i)           ! remap.f90
     IF (rke) CALL energy_correction  ! diagnostics.f90
