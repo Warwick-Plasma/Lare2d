@@ -94,7 +94,7 @@ input.o: input.f90 shared_data.o iocommon.o inputfunctions.o
 inputfunctions.o: inputfunctions.f90 shared_data.o iocommon.o 
 input_cartesian.o: input_cartesian.f90 iocommon.o inputfunctions.o
 conduct.o:conduct.f90 shared_data.o boundary.o eos.o
-lagran.o:lagran.F90 shared_data.o boundary.o diagnostics.o conduct.o normalise.o eos.o neutral.o
+lagran.o:lagran.F90 shared_data.o boundary.o diagnostics.o normalise.o eos.o neutral.o
 remap.o:remap.f90 shared_data.o xremap.o yremap.o zremap.o
 initial_conditions.o:initial_conditions.f90 shared_data.o normalise.o eos.o neutral.o
 eos.o:eos.F90 shared_data.o normalise.o
