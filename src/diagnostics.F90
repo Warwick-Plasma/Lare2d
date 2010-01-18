@@ -95,31 +95,31 @@ CONTAINS
           xb_global(0:nx_global) * L0, yb_global(0:ny_global) * L0, 0)
 
       IF (dump_mask(1)) THEN
-        data = rho(0:nx, 0:ny) * RHO0
+        data = rho(0:nx, 0:ny) * rho0
         CALL cfd_write_2d_cartesian_variable_parallel("Rho", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(2)) THEN
-        data = energy(0:nx, 0:ny) * ENERGY0
+        data = energy(0:nx, 0:ny) * energy0
         CALL cfd_write_2d_cartesian_variable_parallel("Energy", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(3)) THEN
-        data = vx(0:nx, 0:ny) * VEL0
+        data = vx(0:nx, 0:ny) * vel0
         CALL cfd_write_2d_cartesian_variable_parallel("Vx", "Velocity", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(4)) THEN
-        data = vy(0:nx, 0:ny) * VEL0
+        data = vy(0:nx, 0:ny) * vel0
         CALL cfd_write_2d_cartesian_variable_parallel("Vy", "Velocity", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(5)) THEN
-        data = vz(0:nx, 0:ny) * VEL0
+        data = vz(0:nx, 0:ny) * vel0
         CALL cfd_write_2d_cartesian_variable_parallel("Vz", "Velocity", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -149,7 +149,7 @@ CONTAINS
                 data(ix, iy))
           END DO
         END DO
-        data = data * TEMP0
+        data = data * temp0
         CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -161,7 +161,7 @@ CONTAINS
                 data(ix, iy))
           END DO
         END DO
-        data = data * PRESSURE0
+        data = data * pressure0
         CALL cfd_write_2d_cartesian_variable_parallel("Pressure", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -173,19 +173,19 @@ CONTAINS
                 data(ix, iy))
           END DO
         END DO
-        data = data * VEL0
+        data = data * vel0
         CALL cfd_write_2d_cartesian_variable_parallel("cs", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(12)) THEN
-        data = parallel_current(0:nx, 0:ny) * J0
+        data = parallel_current(0:nx, 0:ny) * j0
         CALL cfd_write_2d_cartesian_variable_parallel("j_par", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(13)) THEN
-        data = perp_current(0:nx, 0:ny) * J0
+        data = perp_current(0:nx, 0:ny) * j0
         CALL cfd_write_2d_cartesian_variable_parallel("j_perp", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -197,31 +197,31 @@ CONTAINS
       END IF
 
       IF (dump_mask(15)) THEN
-        data = eta_perp(0:nx, 0:ny) * RES0
+        data = eta_perp(0:nx, 0:ny) * res0
         CALL cfd_write_2d_cartesian_variable_parallel("eta_perp", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(16)) THEN
-        data = eta(0:nx, 0:ny) * RES0
+        data = eta(0:nx, 0:ny) * res0
         CALL cfd_write_2d_cartesian_variable_parallel("eta", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(17)) THEN
-        data = jx_r(0:nx, 0:ny) * J0
+        data = jx_r(0:nx, 0:ny) * j0
         CALL cfd_write_2d_cartesian_variable_parallel("jx", "current", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(18)) THEN
-        data = jy_r(0:nx, 0:ny) * J0
+        data = jy_r(0:nx, 0:ny) * j0
         CALL cfd_write_2d_cartesian_variable_parallel("jy", "current", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(19)) THEN
-        data = jz_r(0:nx, 0:ny) * J0
+        data = jz_r(0:nx, 0:ny) * j0
         CALL cfd_write_2d_cartesian_variable_parallel("jz", "current", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -234,7 +234,7 @@ CONTAINS
     END IF
 
     IF (last_call .AND. rank == 0) THEN ! output energy diagnostics etc
-      WRITE(20, *) 'final nsteps / time = ', i, time * T0
+      WRITE(20, *) 'final nsteps / time = ', i, time * t0
     END IF
 
   END SUBROUTINE output_routines
@@ -415,19 +415,19 @@ CONTAINS
 
   SUBROUTINE output_log ! writes basic data to 'lare2d.dat'
 
-    WRITE(20, *) 'Density normalisation = ', RHO0, ' kg m^(-3)'
-    WRITE(20, *) 'Specific energy density normalisation = ', ENERGY0, ' K'
-    WRITE(20, *) 'Velocity normalisation = ', VEL0, ' m s^(-1)'
+    WRITE(20, *) 'Density normalisation = ', rho0, ' kg m^(-3)'
+    WRITE(20, *) 'Specific energy density normalisation = ', energy0, ' K'
+    WRITE(20, *) 'Velocity normalisation = ', vel0, ' m s^(-1)'
     WRITE(20, *) 'Magnetic field normalisation = ', B0, ' T'
     WRITE(20, *) 'Length normalisation = ', L0, ' m'
-    WRITE(20, *) 'Time normalisation = ', T0, ' s'
-    WRITE(20, *) 'Viscosity normalisation = ', VISC0, ' m^2s^(-1)'
-    WRITE(20, *) 'Gravity normalisation = ', GRAV0, ' ms^(-2)'
-    WRITE(20, *) 'Resistivity normalisation = ', RES0, ' m^2s^(-1)'
-    WRITE(20, *) 'Thermal conductivity normalisation = ', KAPPA0, &
+    WRITE(20, *) 'Time normalisation = ', t0, ' s'
+    WRITE(20, *) 'Viscosity normalisation = ', visc0, ' m^2s^(-1)'
+    WRITE(20, *) 'Gravity normalisation = ', grav0, ' ms^(-2)'
+    WRITE(20, *) 'Resistivity normalisation = ', res0, ' m^2s^(-1)'
+    WRITE(20, *) 'Thermal conductivity normalisation = ', kappa0, &
         ' kgm^(-1)s^(-1) '
-    WRITE(20, *) 'Temperature normalisation =', TEMP0, 'K'
-    WRITE(20, *) 'Pressure normalisation =', PRESSURE0, 'Pa'
+    WRITE(20, *) 'Temperature normalisation =', temp0, 'K'
+    WRITE(20, *) 'Pressure normalisation =', pressure0, 'Pa'
 
     WRITE(20, *) 'nprocx, nprocy = ', nprocx, nprocy
     WRITE(20, *) 'nx, ny = ', nx, ny
@@ -442,14 +442,14 @@ CONTAINS
 #endif
     WRITE(20, *) 'linear viscosity coeff = ', visc1
     WRITE(20, *) 'quadratic viscosity coeff = ', visc2
-    WRITE(20, *) 'uniform tensor viscosity coeff = ', visc3 * VISC0
+    WRITE(20, *) 'uniform tensor viscosity coeff = ', visc3 * visc0
     WRITE(20, *) 'j_max = ', j_max * B0 / L0
     WRITE(20, *) 'vc = ', vc * B0 / L0
-    WRITE(20, *) 'eta0 = ', eta0 * RES0
-    WRITE(20, *) 'eta_background = ', eta_background * RES0
-    WRITE(20, *) 'kappa = ', kappa_0 * KAPPA0
+    WRITE(20, *) 'eta0 = ', eta0 * res0
+    WRITE(20, *) 'eta_background = ', eta_background * res0
+    WRITE(20, *) 'kappa = ', kappa_0 * kappa0
     WRITE(20, *)
-    WRITE(20, *) 't_start, t_end = ', time * T0, t_end * T0
+    WRITE(20, *) 't_start, t_end = ', time * t0, t_end * t0
     WRITE(20, *) 'nsteps =', nsteps
     WRITE(20, *)
 

@@ -34,8 +34,8 @@ CONTAINS
     REAL(num) :: kxx, kyx, kpx
     REAL(num) :: kxy, kyy, kpy
     REAL(num) :: uxx, uyy
-    REAL(num) :: a1, a2, error, q, errmax, errmax_prev = 0.0_num
-    REAL(num) :: w 
+    REAL(num) :: a1, a2, error, errmax, errmax_prev = 0.0_num
+    REAL(num) :: w, residual 
 
     INTEGER :: loop
 
@@ -43,28 +43,28 @@ CONTAINS
     REAL(num), PARAMETER :: fractional_error = 1.0e-5_num
     REAL(num), PARAMETER :: b_min = 1.0e-4_num
 
-    ALLOCATE(kx(0:nx+1, 0:ny+1), ky(0:nx+1, 0:ny+1))
-    ALLOCATE(ux(0:nx+1, 0:ny+1), uy(0:nx+1, 0:ny+1))
-    ALLOCATE(e2temp(-1:nx+1, -1:ny+1), kp(-1:nx+1, -1:ny+1), energy0(-1:nx+2, -1:ny+2))
+    ALLOCATE(kx(-1:nx+2, -1:ny+2), ky(-1:nx+2, -1:ny+2))
+    ALLOCATE(ux(-1:nx+2, -1:ny+2), uy(-1:nx+2, -1:ny+2))
+    ALLOCATE(e2temp(-1:nx+2, -1:ny+2), kp(-1:nx+2, -1:ny+2), energy0(-1:nx+2, -1:ny+2))
             
 		! find factor reuired to convert between energy and temperature
-    DO iy = -1, ny + 1
-      DO ix = -1, nx + 1
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
         e = energy(ix, iy)
         CALL get_temp(rho(ix, iy), e, eos_number, ix, iy, T)
-        e2temp(ix, iy) = T / e
+        e2temp(ix, iy) = T / MAX(e, none_zero)
       END DO
     END DO
 
-    DO iy = 0, ny + 1
-      DO ix = 0, nx + 1
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
         bxc = (bx(ix, iy) + bx(ix-1, iy)) / 2.0_num
         byc = (by(ix, iy) + by(ix, iy-1)) / 2.0_num
-        b = SQRT(bxc**2 + byc**2 + bz(ix, iy)**2)
+        b = SQRT(bxc**2 + byc**2 + bz(ix, iy)**2 + B_min**2)
 
         ! Direction of magnetic field
-        ux(ix, iy) = bxc / SQRT(B**2 + b_min**2)
-        uy(ix, iy) = byc / SQRT(B**2 + b_min**2)
+        ux(ix, iy) = bxc / b
+        uy(ix, iy) = byc / b
 
         ! Kappa along magnetic field, now a vector 
 				T = (e2temp(ix, iy) * energy(ix, iy))**pow
@@ -72,7 +72,7 @@ CONTAINS
         ky(ix, iy) = kappa_0 * T * uy(ix, iy) 
 
 				! Kappa isotropic
-				kp(ix,iy) = kappa_0 * T * b_min**2 / (B**2 + b_min**2)
+				kp(ix,iy) = kappa_0 * T * b_min**2 / b**2 
       END DO
     END DO
      
@@ -85,24 +85,21 @@ CONTAINS
       errmax = 0.0_num
       error = 0.0_num
       DO iy = 1, ny
+        qpy = dyc(iy-1) / (dyc(iy) * (dyc(iy) + dyc(iy-1)))
+        qmy = dyc(iy) / (dyc(iy-1) * (dyc(iy) + dyc(iy-1)))
+        q0y = (dyc(iy)**2 - dyc(iy-1)**2) &
+            / (dyc(iy) * dyc(iy-1) * (dyc(iy) + dyc(iy-1)))
+        mpy = 1.0_num / (dyc(iy) * dyb(iy))
+        mmy = 1.0_num / (dyc(iy-1) * dyb(iy))
+        m0y = (dyc(iy) + dyc(iy-1)) / (dyc(iy) * dyc(iy-1) * dyb(iy))          
         DO ix = 1, nx
           qpx = dxc(ix-1) / (dxc(ix) * (dxc(ix) + dxc(ix-1)))
           qmx = dxc(ix) / (dxc(ix-1) * (dxc(ix) + dxc(ix-1)))
           q0x = (dxc(ix)**2 - dxc(ix-1)**2) &
               / (dxc(ix) * dxc(ix-1) * (dxc(ix) + dxc(ix-1)))
-
-          qpy = dyc(iy-1) / (dyc(iy) * (dyc(iy) + dyc(iy-1)))
-          qmy = dyc(iy) / (dyc(iy-1) * (dyc(iy) + dyc(iy-1)))
-          q0y = (dyc(iy)**2 - dyc(iy-1)**2) &
-              / (dyc(iy) * dyc(iy-1) * (dyc(iy) + dyc(iy-1)))
-
           mpx = 1.0_num / (dxc(ix) * dxb(ix))
           mmx = 1.0_num / (dxc(ix-1) * dxb(ix))
           m0x = (dxc(ix) + dxc(ix-1)) / (dxc(ix) * dxc(ix-1) * dxb(ix))
-
-          mpy = 1.0_num / (dyc(iy) * dyb(iy))
-          mmy = 1.0_num / (dyc(iy-1) * dyb(iy))
-          m0y = (dyc(iy) + dyc(iy-1)) / (dyc(iy) * dyc(iy-1) * dyb(iy))
 
           rx = qpx * e2temp(ix+1, iy) * energy(ix+1, iy) &
               - qmx * e2temp(ix-1, iy) * energy(ix-1, iy)
@@ -171,12 +168,13 @@ CONTAINS
           a1 = a1 * dt * e2temp(ix, iy) / rho(ix, iy) 
           a2 = a2 * dt / rho(ix, iy) 
 
-          Q = energy(ix, iy)
-          energy(ix, iy) = (1.0_num-w) * energy(ix, iy) &
-              + w * (energy0(ix, iy)  + a2) / (1.0_num + a1)
-          Q = (Q - energy(ix, iy)) / Q
-
-          errmax = MAX(errmax, ABS(Q))
+          residual = energy(ix, iy) &
+                - (energy0(ix, iy)  + a2) / (1.0_num + a1) 
+!          residual = MIN(energy(ix, iy) / w, residual)      
+          energy(ix, iy) = MAX(energy(ix, iy) - w * residual, 0.0_num) 
+          error = ABS(residual / MAX(energy(ix, iy), energy0(ix, iy), none_zero))     
+          errmax = MAX(errmax, error)
+                
         END DO
       END DO 
 
