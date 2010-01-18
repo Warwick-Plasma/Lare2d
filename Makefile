@@ -101,4 +101,4 @@ eos.o:eos.F90 shared_data.o normalise.o
 neutral.o: neutral.f90 shared_data.o boundary.o normalise.o eos.o
 control.o: control.f90 shared_data.o normalise.o
 welcome.o: welcome.f90 shared_data.o
-lare2d.o:lare2d.f90 shared_data.o setup.o boundary.o diagnostics.o lagran.o remap.o mpi_routines.o welcome.o initial_conditions.o openboundary.o eos.o control.o
+lare2d.o:lare2d.f90 shared_data.o setup.o boundary.o diagnostics.o lagran.o remap.o mpi_routines.o welcome.o initial_conditions.o openboundary.o eos.o control.o conduct.o 
