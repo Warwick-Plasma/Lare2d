@@ -114,6 +114,10 @@ CONTAINS
 
     ! Turn on or off the Braginskii thermal conduction term in
     ! the MHD equations
+    ! WARNING: this is not robust. It is known to have problems 
+    ! with steep temperature gradients and very hot regions with
+    ! large thermal conductivity. For many problems it is however
+    ! fine. An improved version which will be robust is on its way.
     conduction = .FALSE.
 
     ! Remap kinetic energy correction. LARE does not
