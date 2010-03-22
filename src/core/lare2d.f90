@@ -14,7 +14,10 @@ PROGRAM lare2d
   USE eos
   USE neutral
   USE control 
+<<<<<<< HEAD:src/core/lare2d.f90
   USE conduct
+=======
+>>>>>>> conduction:src/core/lare2d.f90
 
   IMPLICIT NONE
 
@@ -66,11 +69,11 @@ PROGRAM lare2d
   IF (rank .EQ. 0) PRINT *, "Initial conditions setup OK. Running Code"
 
   CALL output_routines(i)        ! diagnostics.f90
+  CALL set_dt                      ! diagnostics.f90  
 
   DO
     IF ((i >= nsteps .AND. nsteps >= 0) .OR. (time >= t_end)) EXIT
     i = i + 1                                           
-    IF (conduction) CALL conduct_heat         
     CALL eta_calc                    ! lagran.f90
     CALL set_dt                      ! diagnostics.f90  
     CALL lagrangian_step             ! lagran.f90
@@ -78,7 +81,7 @@ PROGRAM lare2d
     IF (rke) CALL energy_correction  ! diagnostics.f90
     IF (any_open) THEN
       CALL open_bcs                  ! openboundary.f90
-    END IF
+    END IF        
     CALL output_routines(i)          ! diagnostics.f90
   END DO
 

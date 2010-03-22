@@ -4,7 +4,8 @@ MODULE lagran
   USE boundary
   USE neutral
   USE normalise
-  USE eos
+  USE eos 
+  USE conduct
 
   IMPLICIT NONE
 
@@ -31,7 +32,7 @@ CONTAINS
         visc_heat(-1:nx+2, -1:ny+2), pressure(-1:nx+2, -1:ny+2), &
         flux_x(0:nx, 0:ny), flux_y(0:nx, 0:ny), flux_z(0:nx, 0:ny), &
         curlb(0:nx, 0:ny))
-
+      
     IF (resistive_mhd .OR. hall_mhd) THEN
       ! if subcycling isn't wanted set dt = dtr in set_dt, don't just
       ! set substeps to 1.
@@ -48,7 +49,7 @@ CONTAINS
       actual_dt = dt
       dt = dt / REAL(substeps, num)
 
-      DO subcycle = 1, substeps
+      DO subcycle = 1, squbsteps
         CALL eta_calc
         IF (include_neutrals) CALL neutral_fraction(eos_number)
         IF (cowling_resistivity) CALL perpendicular_resistivity
@@ -57,26 +58,28 @@ CONTAINS
       END DO
 
       dt = actual_dt
-    END IF
-
+    END IF               
+    
+    IF (conduction) CALL conduct_heat  
+     
     DO iy = 0, ny + 1
-      DO ix = 0, nx + 1
-        ixm = ix - 1
-        iym = iy - 1
-        bx1(ix, iy) = (bx(ix, iy) + bx(ixm, iy)) / 2.0_num
-        by1(ix, iy) = (by(ix, iy) + by(ix, iym)) / 2.0_num
-      END DO
-    END DO
-    bz1 = bz(0:nx+1, 0:ny+1) ! bz1 = bz at C
-
-    CALL predictor_corrector_step
-
-    DEALLOCATE (bx1, by1, bz1, qxy, qxz, qyz, qxx, qyy, visc_heat, pressure, &
-        flux_x, flux_y, flux_z, curlb)
-
-    CALL energy_bcs
-    CALL density_bcs
-    CALL velocity_bcs
+       DO ix = 0, nx + 1
+         ixm = ix - 1
+         iym = iy - 1
+         bx1(ix, iy) = (bx(ix, iy) + bx(ixm, iy)) / 2.0_num
+         by1(ix, iy) = (by(ix, iy) + by(ix, iym)) / 2.0_num
+       END DO
+     END DO
+     bz1 = bz(0:nx+1, 0:ny+1) ! bz1 = bz at C
+ 
+     CALL predictor_corrector_step
+ 
+     DEALLOCATE (bx1, by1, bz1, qxy, qxz, qyz, qxx, qyy, visc_heat, pressure, &
+         flux_x, flux_y, flux_z, curlb)
+ 
+     CALL energy_bcs
+     CALL density_bcs
+     CALL velocity_bcs       
 
   END SUBROUTINE lagrangian_step
 

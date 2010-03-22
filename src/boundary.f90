@@ -312,13 +312,9 @@ CONTAINS
       rho(:, ny+1) = rho(:, ny  )
       rho(:, ny+2) = rho(:, ny-1)
     END IF
-    a = 1.0_num / dyc(0)
-    b = grav(0) / (gamma - 1.0_num)
     IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OTHER) THEN
-      rho(:, 0) = rho(:, 1) &
-          * (a + 2.0_num * b / (energy(:, 0) + energy(:, 1))) &
-          / (a - 2.0_num * b / (energy(:, 0) + energy(:, 1)))
-      rho(:, -1) = rho(:, 0)
+      rho(:, 0) = rho(:, 1) 
+      rho(:, -1) = rho(:, 2)
     END IF
 
   END SUBROUTINE density_bcs

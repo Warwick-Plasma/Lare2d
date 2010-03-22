@@ -16,14 +16,14 @@ CONTAINS
     ! Modules which are coded in SI units
 
     ! Should the code use SI units
-    SI = .TRUE.
+    SI = .FALSE.
 
     ! Gamma is the ratio of specific heat capacities
     gamma = 5.0_num / 3.0_num
 
     ! Average mass of an ion in proton masses
     ! The code assumes a single ion species with this mass
-    mf = 1.4_num
+    mf = 1.0_num
 
     ! The equations describing the normalisation in LARE
     ! Have three free parameters which must be specified by
@@ -32,12 +32,12 @@ CONTAINS
     ! they are arbitrary.
 
     ! Magnetic field normalisation in Tesla
-    B0 = 0.12_num
+    B0 = 0.005_num
     ! Length normalisation in m
-    L0 = 150.0e3_num
+    L0 = 1.e6_num
     ! Density normalisation in kg / m^3
-    RHO0 = 2.7e-4_num
-
+    RHO0 = 1.67e-13_num
+    
   END SUBROUTINE user_normalisation
 
 
@@ -45,16 +45,16 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 4
-    ny_global = 20
+    nx_global = 64
+    ny_global = 64
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
-    nsteps = 1
+    nsteps = -1
 
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
-    t_end = 100.0_num
+    t_end = 30.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
@@ -73,15 +73,15 @@ CONTAINS
 
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
-    x_start = -4.0e6_num
-    x_end = 4.0e6_num
+    x_start = -2.0_num
+    x_end = 2.0_num
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
     ! The length of the domain in the y direction
     ! If SI_Input is true then this is in metres
-    y_start = 0.0_num
-    y_end = 8.0e6_num
+    y_start = -2.0_num
+    y_end = 2.0_num
     ! Should the y grid be stretched of uniform
     y_stretch = .FALSE.
 
@@ -91,15 +91,15 @@ CONTAINS
     ! The background resistivity expressed as the inverse Lundquist number,
     ! i.e. the
     ! same for normalised and SI input
-    eta_background = 0.00_num
+    eta_background = 1.e-4_num
 
     ! The critical current for triggering anomalous resistivity
     ! and the resistivity when above the critical current
     ! The resistivity is expressed as the inverse Lundquist number, i.e. the
     ! same for normalised and SI input, bit the j_max must be in SI
     ! if using SI units
-    j_max = 0.0_num
-    eta0 = 0.0_num
+    j_max = 5.0_num
+    eta0 = 1.e-3_num
 
     ! Turn on or off the hall_mhd term in the MHD equations
     hall_mhd = .FALSE.
@@ -118,7 +118,11 @@ CONTAINS
     ! with steep temperature gradients and very hot regions with
     ! large thermal conductivity. For many problems it is however
     ! fine. An improved version which will be robust is on its way.
-    conduction = .FALSE.
+    conduction = .FALSE.  
+    ! Apply a flux limiter to stop heat flows exceeding free streaming limit
+    heat_flux_limiter = .TRUE.
+    ! Fraction of free streaming heat flux used in limiter
+    flux_limiter = 0.05_num 
 
     ! Remap kinetic energy correction. LARE does not
     ! perfectly conserve kinetic energy during the remap step
@@ -142,7 +146,7 @@ CONTAINS
 
     ! If cowling_resistivity is true then the code calculates and
     ! applies the Cowling Resistivity to the MHD equations
-    cowling_resistivity = .TRUE.
+    cowling_resistivity = .FALSE.
 
     ! Set the boundary conditions on the four edges of the simulation domain
     ! Valid constants are
@@ -174,7 +178,7 @@ CONTAINS
 
     ! The interval between output snapshots. If SI_Input is true
     ! Then this is in seconds
-    dt_snapshots = 20.0_num
+    dt_snapshots = 1.0_num
 
     ! dump_mask is an array which specifies which quantities the
     ! code should output to disk in a data dump.
@@ -203,6 +207,7 @@ CONTAINS
     ! N.B. if dump_mask(1:8) not true then the restart will not work
     dump_mask = .FALSE.
     dump_mask(1:10) = .TRUE.
+    dump_mask(17:19) = .TRUE.
 
   END SUBROUTINE set_output_dumps
 

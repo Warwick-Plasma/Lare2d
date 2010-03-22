@@ -40,13 +40,21 @@ CONTAINS
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num
-    bx = 0.0_num
-    by = 0.0_num
+    bx = 0.0_num  
+    by = 0.0_num 
     bz = 0.0_num
-    energy = 1.0_num
+    energy = 1.e-5_num
     rho = 1.0_num
 
-    grav = 0.0_num
+    grav = 0.0_num  
+
+    DO iy = -1, ny+2
+      DO ix = -1, nx+2 
+        energy(ix,iy) = 1.e-4_num + 1.0_num * EXP(-((xc(ix)+1.0_num)**2+(yc(iy)-1.0_num)**2)/0.001_num)   
+        bx(ix,iy) = -xc(ix) 
+        by(ix,iy) = yc(iy) 
+      END DO
+    END DO
 
   END SUBROUTINE set_initial_conditions
 
