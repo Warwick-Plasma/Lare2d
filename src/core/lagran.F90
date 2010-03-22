@@ -353,7 +353,7 @@ CONTAINS
         IF (s > 0.0_num .OR. dv > 0.0_num) L = 0.0_num
 
         w1 = (bx1(ix, iy)**2 + by1(ix, iy)**2 + bz1(ix, iy)**2) / rho(ix, iy)
-        CALL get_cs(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, cs)
+        cs = SQRT(gamma*(gamma-1.0_num)*energy(ix,iy))
         cf = SQRT(cs**2 + w1)
 
         p_visc(ix, iy) = visc1 * ABS(s) * L * cf * rho(ix, iy) &
