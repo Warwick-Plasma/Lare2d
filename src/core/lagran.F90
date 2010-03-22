@@ -49,7 +49,7 @@ CONTAINS
       actual_dt = dt
       dt = dt / REAL(substeps, num)
 
-      DO subcycle = 1, squbsteps
+      DO subcycle = 1, substeps
         CALL eta_calc
         IF (include_neutrals) CALL neutral_fraction(eos_number)
         IF (cowling_resistivity) CALL perpendicular_resistivity

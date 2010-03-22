@@ -14,10 +14,6 @@ PROGRAM lare2d
   USE eos
   USE neutral
   USE control 
-<<<<<<< HEAD:src/core/lare2d.f90
-  USE conduct
-=======
->>>>>>> conduction:src/core/lare2d.f90
 
   IMPLICIT NONE
 
