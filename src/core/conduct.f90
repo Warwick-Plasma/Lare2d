@@ -70,7 +70,7 @@ CONTAINS
         uxkx(ix, iy) = ux * ux * kappa_0 * (e2t * exb)**pow 
         uxky(ix, iy) = ux * uy * kappa_0 * (e2t * exb)**pow 
         ! add symmetic conduction near b=0 points 
-        uxkx(ix,iy) = uxkx(ix,iy) + b_min**2 / (bpx**2 + b_min**2) * kappa_0 * (e2t * exb)**pow
+        uxkx(ix,iy) = uxkx(ix,iy) + b_min**2 * kappa_0 * (e2t * exb)**pow / bpx**2
 
         ! y face centred B field
         bxc = (bx(ix, iy) + bx(ix, iy+1) + bx(ix-1, iy) + bx(ix-1, iy+1) ) / 4.0_num
@@ -87,7 +87,7 @@ CONTAINS
         uykx(ix, iy) = uy * ux * kappa_0 * (e2t * eyb)**pow 
         uyky(ix, iy) = uy * uy * kappa_0 * (e2t * eyb)**pow    
         ! add symmetic conduction near b=0 points 
-        uyky(ix,iy) = uyky(ix,iy) + b_min**2 / (bpy**2 + b_min**2) * kappa_0 * (e2t * eyb)**pow   
+        uyky(ix,iy) = uyky(ix,iy) + b_min**2 * kappa_0 * (e2t * eyb)**pow / bpy**2  
 
       END DO
     END DO  
