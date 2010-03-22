@@ -108,7 +108,7 @@ CONTAINS
 			kappa_0 = 1.e-11_num / kappa0   
 			
 			!find the normalised temperature corresponding to 100MK
-      temp0 = mbar * B0**2 / (kb * mu0 * rho0) ! Temperature in K
+      temp0 = (mbar / kb) * B0**2 / (mu0 * rho0) ! Temperature in K
 			temperature_100mk = 1.e8_num / temp0
 
       ! If not running as an SI code then force normalisation off
