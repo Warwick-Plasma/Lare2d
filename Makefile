@@ -3,7 +3,7 @@
 #FFLAGS = -r8 -fast -fastsse -O3 -Mipa=fast -Minline -Munroll	#PGI optimised
 #FFLAGS = -Mbounds -g 				#PGI Debug
 #FFLAGS = -O3 -fast                            	#Intel
-#FFLAGS = -fpe0 -nothreads -traceback -fltconsistency -CB -g -inline_debug_info #Intel Debug
+#FFLAGS = -fpe0 -nothreads -traceback -fltconsistency -CB -g #Intel Debug
 
 FFLAGS = -O1
 

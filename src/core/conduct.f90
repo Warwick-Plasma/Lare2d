@@ -35,8 +35,8 @@ CONTAINS
     REAL(num), PARAMETER :: fractional_error = 1.0e-2_num
     REAL(num), PARAMETER :: b_min = 1.0e-3_num
 
-    ALLOCATE(uxkx(-1:nx+1, 0:ny+1), uxky(-1:nx+1, 0:ny+1))
-    ALLOCATE(uykx(-1:nx+1, 0:ny+1), uyky(-1:nx+1, 0:ny+1))
+    ALLOCATE(uxkx(-1:nx+1, -1:ny+1), uxky(-1:nx+1, -1:ny+1))
+    ALLOCATE(uykx(-1:nx+1, -1:ny+1), uyky(-1:nx+1, -1:ny+1))
     ALLOCATE(energy0(-1:nx+2, -1:ny+2))
     ALLOCATE(limiter(-1:nx+2, -1:ny+2))
             
