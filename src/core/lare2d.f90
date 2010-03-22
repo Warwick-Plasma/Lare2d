@@ -65,7 +65,6 @@ PROGRAM lare2d
   IF (rank .EQ. 0) PRINT *, "Initial conditions setup OK. Running Code"
 
   CALL output_routines(i)        ! diagnostics.f90
-  CALL set_dt                      ! diagnostics.f90  
 
   DO
     IF ((i >= nsteps .AND. nsteps >= 0) .OR. (time >= t_end)) EXIT

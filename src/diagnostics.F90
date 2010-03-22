@@ -284,9 +284,9 @@ CONTAINS
         iym = iy - 1
 
         w1 = bx(ix, iy)**2 + by(ix, iy)**2 + bz(ix, iy)**2
-        cs = SQRT(cons * energy(ix,iy))
+        cs = cons * energy(ix,iy)    ! sound speed squared
         
-        w2 = SQRT(cs**2 + w1 / MAX(rho(ix, iy), none_zero)) &
+        w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero)) &
             + 2.0_num * SQRT(p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))
 
         w2 = w2 * (1.0_num + visc1)
