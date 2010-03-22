@@ -167,13 +167,7 @@ CONTAINS
       END IF
 
       IF (dump_mask(11)) THEN
-        DO iy = 0, ny
-          DO ix = 0, nx
-            CALL get_cs(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
-                data(ix, iy))
-          END DO
-        END DO
-        data = data * vel0
+        data = SQRT(gamma*(gamma-1.0_num)*energy(0:nx,0:ny)) * vel0
         CALL cfd_write_2d_cartesian_variable_parallel("cs", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -290,8 +284,8 @@ CONTAINS
         iym = iy - 1
 
         w1 = bx(ix, iy)**2 + by(ix, iy)**2 + bz(ix, iy)**2
-        CALL get_cs(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, cs)
-
+        cs = SQRT(cons * energy(ix,iy))
+        
         w2 = SQRT(cs**2 + w1 / MAX(rho(ix, iy), none_zero)) &
             + 2.0_num * SQRT(p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))
 
