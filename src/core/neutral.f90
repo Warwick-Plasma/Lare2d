@@ -30,39 +30,38 @@ CONTAINS
       ALLOCATE(parallel_current(0:nx, 0:ny))
       ALLOCATE(perp_current(0:nx, 0:ny))
     END IF
-
+    
     ! Ionisation potential of hydrogen(J)
     ionise_pot = ionise_pot_0
-
+    
     ! Temperature of the photospheric radiation field
     tr = 7230.85_num
-    tr_bar = 1.0_num / tr
-
+    
     ! Calculate fbar^(2 / 3) in (k^-1 m^-2)
     f_bar = pi * (me_0 / h_0) * (kb_0 / h_0)
-    f_bar = f_bar**(3.0_num / 2.0_num)
-
+    f_bar = SQRT(2.0_num) * f_bar**(3.0_num / 2.0_num)
+    
     ! Calculate tbar in (K)
-    t_bar = ionise_pot / kb
-
-    ! Calculate rbar in (kg^-1) 
-    mbar = mh * mf
+    t_bar = ionise_pot / kb_0
+    
+    ! Calculate rbar in (kg^-1)
+    mbar = mh * mf                     
     r_bar = 4.0_num / mbar
-
+    
     ! Calculate eta_bar in (m^4 / (k s kg^2))
-    eta_bar = (0.5_num / mbar &
-        * SQRT(16.0_num * kb_0 / (pi * mbar)) * sigma_in)**(-1)
-
+    eta_bar = 2.0_num * mbar &
+        / (SQRT(16.0_num * kb_0 / (pi * mbar)) * sigma_in)
+    
   END SUBROUTINE setup_neutral
 
 
-
+                                        
   SUBROUTINE perpendicular_resistivity
 
     ! This subroutine calculates the cross field resistivity at the current
     ! temperature. 
 
-    REAL(num) :: f, xi_v, bxv, byv, bzv, bfieldsq, rho_v, T_v, T
+    REAL(num) :: f, xi_v, bxv, byv, bzv, bfieldsq, rho_v, t_v, T
     INTEGER :: ixp, iyp
 
     DO iy = 0, ny
@@ -83,24 +82,24 @@ CONTAINS
         bfieldsq = bxv**2 + byv**2 + bzv**2
 
         ! Get the vertex temperature
-        CALL get_temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, T_v)
+        CALL get_temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, t_v)
         CALL get_temp(rho(ixp, iy), energy(ixp, iy), eos_number, ix, iy, T)
 
-        T_v = T_v + T
+        t_v = t_v + T
         CALL get_temp(rho(ix, iyp), energy(ix, iyp), eos_number, ix, iy, T)
 
-        T_v = T_v + T
+        t_v = t_v + T
         CALL get_temp(rho(ixp, iyp), energy(ixp, iyp), eos_number, ix, iy, T)
 
-        T_v = T_v + T
-        T_v = T_v / 4.0_num
+        t_v = t_v + T
+        t_v = t_v / 4.0_num
 
-        xi_v = get_neutral(T_v, rho_v)
+        xi_v = get_neutral(t_v, rho_v)
 
         f = MAX(1.0_num - xi_v, none_zero)
         IF (f .GT. 0) THEN
           eta_perp(ix, iy) = eta_bar * xi_v / f * bfieldsq &
-              / rho_v**2 / SQRT(T_v)
+              / rho_v**2 / SQRT(t_v)
         ELSE
           eta_perp(ix, iy) = 0.0_num
         END IF
@@ -113,17 +112,18 @@ CONTAINS
 
 
 
-  FUNCTION get_neutral(T_v, rho_v)
-
-    REAL(num), INTENT(IN) :: T_V, rho_v
+  FUNCTION get_neutral(t_v, rho_v)
+    
+    REAL(num), INTENT(IN) :: t_v, rho_v
     REAL(num) :: get_neutral
-    REAL(num) :: f, b, r
-
-    f = f_bar * SQRT(T_v) * EXP(-t_bar / T_v) ! T from b has been cancelled
-    b = tr_bar * EXP(0.25_num * t_bar / T_v * (tr_bar * T_v - 1.0_num))
-    r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho_v * b / f))
+    REAL(num) :: bof, r
+    
+    bof = 1.0_num / (f_bar * tr * SQRT(t_v)) &
+        * EXP((0.25_num * (t_v / tr - 1.0_num) + 1.0_num) &
+        * T_bar / t_v)
+    r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho_v * bof))
     get_neutral = r / (1.0_num + r)
-
+    
   END FUNCTION  get_neutral
 
 
@@ -156,25 +156,19 @@ CONTAINS
         END IF
 
         dx = ta(2) - ta(1)
-        T = ta(1)
+        t = ta(1)
 
         DO loop = 1, 100
           dx = dx / 2.0_num
-          x = T  + dx
-          bof = tr_bar / (f_bar * SQRT(x)) &
-              * EXP((0.25_num * (tr_bar * x - 1.0_num) + 1.0_num) * t_bar / x)
-          r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho0 * bof))
-          xi_a(1) = r / (1.0_num + r)
+          x = t  + dx
+          xi_a(1) = get_neutral(x, rho0)   
           fa(1) = x - (gamma - 1.0_num) * (e0 &
               - (1.0_num - xi_a(1)) * ionise_pot_local) / (2.0_num - xi_a(1))
-          IF (fa(1) <= 0.0_num) T = x
+          IF (fa(1) <= 0.0_num) t = x
           IF (ABS(dx) < 1.e-8_num .OR. fa(1) == 0.0_num) EXIT
         END DO
 
-        bof = tr_bar / (f_bar * SQRT(T)) &
-            * EXP((0.25_num * (tr_bar * T - 1.0_num) + 1.0_num) * t_bar / T)
-        r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho0 * bof))
-        xi_n(ix, iy) = r / (1.0_num + r)
+        xi_n(ix, iy) = get_neutral(x, rho0)   
       END DO
     END DO
 
@@ -201,7 +195,7 @@ CONTAINS
       ! calculated is correct here, calculate it straight from the temperature
       xi_local = get_neutral(temp_in, rho_in)  
       en_out = (kb * temp_in * (2.0_num - xi_local)) &
-          / (MBAR * (gamma - 1.0_num))
+          / (mbar * (gamma - 1.0_num))
       RETURN
     END IF
   
@@ -211,7 +205,7 @@ CONTAINS
       xi_local = get_neutral(temp_in, rho_in) 
       en_out = (kb * temp_in * (2.0_num - xi_local) &
           + (1.0_num - xi_local) * ionise_pot * (gamma - 1.0_num)) &
-          / (MBAR * (gamma - 1.0_num))
+          / (mbar * (gamma - 1.0_num))
       RETURN
     END IF
   
