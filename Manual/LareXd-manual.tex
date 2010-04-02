@@ -127,7 +127,7 @@ The fact that the thermal pressure is normalised to the reference magnetic press
  \frac{\mathrm{D}\mathbf{v}}{Dt}=\frac{1}{\rho}(\nabla\times\mathbf{B})\times\mathbf{B}
 -\frac{1}{\rho}\nabla P-\hat{g}
 \end{displaymath} 
-where $\hat{g}=L_0 g / v_0^2$. In {\it LareXd} $\hat{g}$ is only a function of $z$, i.e. it is a 1D array, and it does not change in time.
+where $\hat{g}=L_0 g / v_0^2$. In {\it LareXd} $\hat{g}$ is only a function of $z$, i.e. it is a 1D array, and it does not change in time. Note also that gravity is defined on the cell vertex, i.e. the same location as all components of velocity.
 
 \subsection{Viscosity}
 Viscosity is added through the stress tensor $\sigma_{ij}$ and strain rate $\varepsilon_{ij}$ which add an additional force onto the $i$ component of the momentum equation
@@ -249,9 +249,9 @@ where $\eta_c$ is the Cowling resistivity which may be orders of magnitude large
 \label{sec:thermal_conduction}
 Thermal conduction in LARE is based on the Braginskii thermal conduction in the presence of a magnetic field and is of the form\\
 \[
-\frac{\partial \epsilon}{\partial t} = \nabla . \left(\left(\kappa \frac{\vec{B}}{B^2+B_{min}^2}. \nabla T\right) \vec{B} \right) +  \nabla . \left(\kappa  \frac{B_{min}^2}{B^2+B_{min}^2}  \nabla T \right)
+\frac{\partial \epsilon}{\partial t} = \nabla . \left(\left(\kappa \frac{\vec{B}}{B^2}. \nabla T\right) \vec{B} \right) +  \nabla . \left(\kappa  \frac{B_{min}^2}{B^2+B_{min}}  \nabla T \right)
 \]
-where $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. Finite $b_{min}$ is used to prevent divide by zero and turn the conductivity into isotropic when $B=0$.  How this is implemented is described in the Appendix. Note that $\kappa_0$ is hard coded to $10^{-11}$ and therefore this routine only works if the code is run in S.I. units or you have set {\tt B0, L0, RHO0} in {\tt control.f90} correctly. If you want to run without S.I. units and just pick the thermal conductivity, i.e. make it up and generate unphysical results, then you can do this by editing where $\kappa_0$ which is set in {\tt SUBROUTINE set\_normalisation} in {\tt src/core/normalise.f90}.    
+where $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. Finite $b_{min}$ is used to turn the conductivity into isotropic when $B=0$.  How this is implemented is described in the Appendix. Note that $\kappa_0$ is hard coded to $10^{-11}$ and therefore this routine only works if the code is run in S.I. units or you have set {\tt B0, L0, RHO0} in {\tt control.f90} correctly. If you want to run without S.I. units and just pick the thermal conductivity, i.e. make it up and generate unphysical results, then you can do this by editing where $\kappa_0$ which is set in {\tt SUBROUTINE set\_normalisation} in {\tt src/core/normalise.f90}.    
 
 Depending on your problem you may need to change $b_{min}$ which is set as a constant (parameter) in {\tt src/core/conduct.f90}. It is also possible to control the fractional accuracy of the SOR Guass-Seidel scheme that is used to update the temperature, this is also in {\tt src/core/conduct.f90} and a value of $10^{-5}$ is known to reproduce analytic results well. If runtime becomes an issue this can be reduced but then you will need to test more carefully.
 
@@ -884,66 +884,56 @@ Thermal conduction in LARE is based on the Braginskii thermal conduction in the 
 \[
 \rho \frac{\partial \epsilon}{\partial t} = \nabla . \left(\vec{k} . \nabla T \vec{n} \right) +  \nabla . \left(  \frac{B_{min}^2}{B^2+B_{min}^2} \kappa \nabla T \right)
 \]
-where $\vec{k} = \kappa \vec{n}$, $\vec{n} = \vec{B}/(B^2+B_{min}^2)^\frac{1}{2}$ and $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. Finite $b_{min}$ is used to prevent divide by zero and turn the conductivity into isotropic when $B=0$. The notes below cover the most obscure elements of the notation used in the code but should make sense when read in conjunction with the source code in {\tt src/core/conduct.f90}. It is presented here as these routines are not documented in any of the references.
+where $\vec{k} = \kappa \vec{n}$, $\vec{n} = \vec{B}/B$ and $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. The notes below cover the most obscure elements of the notation used in the code but should make sense when read in conjunction with the source code in {\tt src/core/conduct.f90}. It is presented here as these routines are not documented in any of the references. 
 
-All the terms are then expressed as second order centred differences taking account of the grid stretching, but moving $B$ so that it is cell centred. This is fairly messy, so there is a specific notation which is used to describe it. Normally a given point on a spatial grid is represented by three numbers $U^{i,j,k}$ which are the array indices for the element being considered, but since so many elements appear in these calculations which are of the form $U^{i+1,j,k}$ it is more convenient to just write $U^{i+1,j,k}=U^{1,0,0}$ or $U^{i+1,j+1,k}=U^{1,1,0}$. Using this notation, it is possible to write all the derivatives required for the solver in the following form\\
+Firstly the conduction is written in terms of the heat flux vector $\vec{q}$ so that
 \[
-\frac{\partial U}{\partial x} = Q^x_+ U^{1,0,0} - Q^x_- U^{-1,0,0} + Q^x_0 U^{0,0,0}    
+\vec{q}= \left(\vec{k} . \nabla T \right) \vec{n} +    \frac{B_{min}^2}{B^2+B_{min}^2} \kappa \nabla T
 \]
 
+Using centre differencing, and assuming the grid stretching is modest,  then gives
 \[
-\frac{\partial^2 U}{\partial x^2} = M^x_+ U^{1,0,0} + M^x_- U^{-1,0,0} - M^x_0 U^{0,0,0}
-\]
-
+\rho_{i,j,k}^n \frac{\epsilon_{i,j,k}^{n+1}- \epsilon_{i,j,k}^{n}}{\Delta t}  =  
+\frac{qx_{i,j,k}- qx_{i-1,j,k}}{\Delta x} + ...
+\]      
+here terms in y and z derivatives have been dropped for simplicity. To avoid using nx as the x component of $\vec{n}$ (not allowed as nx is the number of grid points) the code defines $\vec{u}=\vec{B}/B$ so that $\vec{k} = \kappa \vec{u}$. The vector $\vec{u}$ is face centred the same as the magnetic field. The x component of the heat flux is therefore
 \begin{eqnarray*}
-  \frac{\partial^2 U}{\partial x \partial y} = Q^y_+\bigl(Q^x_+U^{1,1,0} - Q^x_- U^{-1,1,0} + Q^x_0 U^{0,1,0} \bigr) -\\
-  Q^y_-\bigl(Q^x_+U^{1,-1,0} - Q^x_- U^{-1,-1,0} + Q^x_0 U^{0,-1,0} \bigr) +\\
-  Q^y_0\bigl(Q^x_+U^{1,0,0} - Q^x_- U^{-1,0,0} + Q^x_0 U^{0,0,0} \bigr)  
+qx_{i,j,k}&=&\left(uxkx_{i,j,k} + \frac{B_{min}^2}{B^2+B_{min}^2}\kappa \right)\left(\frac{T_{i+1,j,k}-T_{i,j,k}}{dxc_i} 
+    \right) \\
+    &+& uxky_{i,j,k}\left(\frac{T_{i,j+1,k}+T_{i+1,j+1,k}-T_{i,j-1,k}+T_{i+1,j-1,k}}{2(dyc_j+dyc_{j-1})} \right) \\
+    &+& uxkz_{i,j,k}\left(\frac{T_{i,j,k+1}+T_{i+1,j,k+1}-T_{i,j,k-1}+T_{i+1,j,k-1}}{2(dzc_k+dzc_{k-1})} \right)
 \end{eqnarray*}
+In this equation $uxkx_{i,j,k}=ux_{i,j,k}kx_{i,j,k}$ and all quantities are defined at the x surface. The temperature used to determine $\kappa$ is fixed as $T^n$, i.e. the currently know value of temperature. All appearances of $T$ in the equations above are treated as either $T^n$ or $T^{n+1}$ as required for Gauss-Seidel iteration. In this way the update of specific internal energy density is through
+\[
+\rho_{i,j,k}^n \frac{\epsilon_{i,j,k}^{n+1}- \epsilon_{i,j,k}^{n}}{\Delta t}  =  a_1\ T_{i,j,k} + a_2
+\]
+Here $a_2$ is all the terms not containing $T_{i,j,k}$ and $a_1$ is the sum of coefficients in front of all terms contain 
+$T_{i,j,k}$.
+The variable $e2T$ is used in the code to convert $\epsilon$ into $T$ so that $T=e2t \ T$ hence the Gauss-Seidel update of $\epsilon$ is through
+\[
+\epsilon_{i,j,k}^{n+1}=\frac{\epsilon_{i,j,k}^{n} + a_2 \Delta t /\rho_{i,j,k}^n}{1+e2t\ a_1 \Delta t /\rho_{i,j,k}^n}
+\]
 
+This is iterated to convergence using SOR. The solution is deemed to have converged when the maximum residual error is less than \texttt{abs\_error} where \texttt{fractional\_error * MAXVAL(energy)} and \texttt{fractional\_error} is a specified constant. 
 
-Where 
-\[Q^x_+ = \frac{dxc(ix-1)}{dxc(ix)\  (dxc(ix) + dxc(ix-1)) }\]
-\[Q^x_- = \frac{dxc(ix)}{ dxc(ix-1)\  (dxc(ix) + dxc(ix-1)) } \] 
-\[Q^x_0 = \frac{dxc(ix)^2 - dxc(ix-1)^2} 
-    {dxc(ix) \ dxc(ix-1)\  (dxc(ix) + dxc(ix-1))}\] 
-\[M^x_+ = \frac{1}{dxc(ix)\  dxb(ix)} \] 
-\[M^x_- = \frac{1}{dxc(ix-1) \ dxb(ix)} \] 
- and 
-\[M^x_0=\frac{dxc(ix)+dxc(ix-1)}{dxc(ix)\ dxc(ix-1)\ dxb(ix)} \] 
+Note that the normalising constants \texttt{B0, L0, RHO0} must be set in \texttt{control.f90} for the conduction to work as it uses the real Braginskii thermal conductivity. Thus if \texttt{B0 = 0.005}, \texttt{L0 = 1.e6} and \texttt{RHO0 = 1.67e-13}, i.e. typical coronal values, then the normalising unit temperature is \texttt{T0 = 6.92e10} and as a result the normalised temperatures will all be much less than one for coronal temperatures.  
 
-In the limit of $dxc=dxb$=constant these reduce down to the normal expressions for 1st and second order derivatives on a uniform grid. To make the code easier to read, and since the implicit formulation requires that $T^{0,0,0}$ is kept separate from all other terms, the derivatives are usually rewritten as
-
-\begin{equation}
-\frac{\partial U}{\partial x} = R^x + Q^x_0 U^{0,0,0}
-\end{equation}
-
-\begin{equation}
-\frac{\partial^2 U}{\partial x^2} = R^{xx} + M^x_0 U^{0,0,0}
-\end{equation}
-
-\begin{equation}
-\frac{\partial^2 U}{\partial x \partial y} = R^{xy} + Q^x_0Q^y_0 U^{0,0,0}
-\end{equation}
-
-where the $R$ terms are the remaining terms which are calculated separately. With all this notation it should be easy to follow the code and we can then write 
-\[ \frac{\partial \epsilon}{\partial t}=\frac{\epsilon_{i,j}^{n+1} - \epsilon_{i,j}^n}{\Delta t} \]
-and treat all occurrences of   $\epsilon_{i,j} $ as at the advanced time, i.e.  $\epsilon_{i,j}^{n+1} $. This then gives
-\[ \epsilon_{i,j}^{n+1} = \frac{\epsilon_{i,j}^{n} + a_2}{1+e2T_{i,j}\ a_1} \]
-where $e2T = T / \epsilon$ is the conversion factor by which specific internal energy density must be multiplied to give the temperature at that grid point. In this equation $a_1$ and $a_2$ are both functions of $\epsilon^{n+1}$ so this equation must be solved iteratively. This could be iterated to solution but to speed up the process an over-relaxation parameter $\omega$ is introduced so that the final iterative solution is given by
-\[ \epsilon_{i,j}^{n+1} = (1-\omega) \epsilon_{i,j}^{n+1} + 
-\omega\left(\frac{\epsilon_{i,j}^n + a_2}{1+e2T_{i,j}\ a_1} \right)\] 
-
-
-
-% section thermal_conduction (end)
+It is possible that sufficient heating occurs so that $qx$ exceeds the free streaming heat flux $q_f=v_{the} k_B T$. In this case the Braginskii flux needs to be limited. This is done by calculating the components of the Braginskii (Spitzer-Harn) heat flux , e.g. $qsh_x$ and the free streaming limit $q_f$ and then finding the non-linear limited flux through
+\[
+q_{nl} = \frac{1}{(1/q_sh + 1/q_f)}
+\] 
+The vectors components $uxkx$ etc. are them replaced with limited values defined by 
+\[
+uxkx=uxkx\frac{q_{nl}}{qsh_x}
+\]
+Experience from measured heat fluxes in laser plasma experiments suggest that actually the heat flux must be limited not to $q_f=v_{the} k_B T$ but to $q_f=F_L v_{the} k_B T$  where $F_L$ is a flux limiter which is usually set to 0.05. The parameter $F_L$ is set in the input \texttt{control.f90} file as \texttt{flux\_limiter}. If flux limiters are unfamiliar you should read papers from the laser plasma community where these are measured and used in codes.
 
 \newpage
 \begin{thebibliography}{}
 
 \bibitem{jcp} T. D. Arber, A. W. Longbottom, C. L. Gerrard, A. M. and Milne. \textit{J. Comput. Phys.} \textbf{171}, 151-181 (2001)
 
-\bibitem{visit} {\tt http://www.llnl.gov/visit/}
+\bibitem{visit} \texttt{http://www.llnl.gov/visit/}
 
 \bibitem{benson} D. J. Benson, \textit{Comput. Methods Appl. Mech. Eng.} \textbf{99} 148 (1992) 
 
