@@ -176,17 +176,17 @@ CONTAINS
 
 
 
-  SUBROUTINE get_energy(rho_in, temp_in, m_in, ix, iy, en_out)
+  SUBROUTINE get_energy(rho_in, temp_in, m_in, en_out)
     ! this routine is only used by initial conditions and must be in SI
     ! with variables as defined with kb etc. The routine needs to be here to call 
     ! get_neutral above
     REAL(num), INTENT(IN) :: rho_in, temp_in
-    INTEGER, INTENT(IN) :: m_in, ix, iy
+    INTEGER, INTENT(IN) :: m_in
     REAL(num), INTENT(OUT) :: en_out
     REAL(num) :: xi_local
   
     IF (m_in .EQ. EOS_IDEAL) THEN
-      en_out = temp_in * kb / ((gamma - 1.0_num) * mbar / 2.0_num)
+      en_out = temp_in * kb / ((gamma - 1.0_num) * mbar * reduced_mass)
       RETURN
     END IF
   

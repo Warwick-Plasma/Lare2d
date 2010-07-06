@@ -44,7 +44,10 @@ MODULE normalise
   REAL(num) :: mf
 
   ! Average mass of a particle (assuming even mix of hydrogen ions & electrons)
-  REAL(num) :: mbar
+  REAL(num) :: mbar        
+  
+  !reduced mass in units of average ion mass
+  REAL(num) :: reduced_mass = 0.5_num  
 
   ! Magnetic field conversion factor (in T)
   REAL(num) :: B0 = 1.0_num

@@ -167,7 +167,13 @@ CONTAINS
     ! EOS_PI - Simple ideal gas for partially ionised plasma
     ! EOS_ION - EOS_PI plus the ionisation potential
     eos_number = EOS_IDEAL
-
+    ! EOS_IDEAL also requires that you specific a reduced mass factor
+    ! This is the reduced mass in units of the average ion mass
+    ! This has no meaning for other EOS choices
+    ! For fully ionised simple cases set to 0.5
+    ! For neutral hydrogen set to 1.0
+    reduced_mass = 0.5
+    
   END SUBROUTINE control_variables
 
 

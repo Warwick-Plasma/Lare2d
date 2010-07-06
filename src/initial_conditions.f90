@@ -23,17 +23,21 @@ CONTAINS
   ! There is a helper function Get_Energy which converts temperature to energy
   ! The syntax for this function is
   !
-  ! CALL Get_Energy(density, temperature, equation_of_state, ix, iy, &
+  ! CALL Get_Energy(density, temperature, equation_of_state,  &
   !     output_energy)
   !
   ! REAL(num) :: density - The density at point (ix, iy) on the grid
   ! REAL(num) :: temperature - The temperature at point (ix, iy) on the grid
   ! INTEGER :: equation_of_state - The code for the equation of state to use.
   !            The global equation of state for the code is eos_number
-  ! INTEGER :: ix - The current gridpoint in the x direction
-  ! INTEGER :: iy - The current gridpoint in the y direction
   ! REAL(num) :: output_energy - The specific internal energy returned by
   !              the routine
+  !
+  ! You may also need the neutral fraction. This can be calculated by a function
+  ! call to  get_neutral(temperature, rho). This routine is in core/neutral.f90
+  ! and requires the local temperature and mass density. For example to set
+  ! xi_n to the neutral fraction use
+  ! xi_n = get_neutral(temperature, rho)
   !---------------------------------------------------------------------------
   SUBROUTINE set_initial_conditions
 
