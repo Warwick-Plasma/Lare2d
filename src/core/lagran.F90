@@ -444,38 +444,40 @@ CONTAINS
   SUBROUTINE eta_calc
 
     REAL(num) :: jx, jy, jz, jx1, jx2, jy1, jy2
-    REAL(num) :: d
     INTEGER :: ixp, iyp
 
-    eta = 0.0_num
-    d = 6.66_num * eta0
-    lambda_i = lambda0
-
-    DO iy = -1, ny + 1
-      DO ix = -1, nx + 1
-        ixp = ix + 1
-        iyp = iy + 1
-
-        jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
-        jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
-        jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
-        jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
-        jx = (jx1 + jx2) / 2.0_num
-        jy = (jy1 + jy2) / 2.0_num
-        jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
-            - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
-
-        IF (SQRT(jx**2 + jy**2 + jz**2) .GT. j_max) THEN
-          eta(ix, iy) = eta_background + eta0
-        ELSE
-          eta(ix, iy) = eta_background
-        END IF
-
+    IF (resistive_mhd) THEN
+      DO iy = -1, ny + 1
+        DO ix = -1, nx + 1
+          ixp = ix + 1
+          iyp = iy + 1
+  
+          jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
+          jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
+          jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
+          jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
+          jx = (jx1 + jx2) / 2.0_num
+          jy = (jy1 + jy2) / 2.0_num
+          jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
+              - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
+  
+          IF (SQRT(jx**2 + jy**2 + jz**2) .GT. j_max) THEN
+            eta(ix, iy) = eta_background + eta0
+          ELSE
+            eta(ix, iy) = eta_background
+          END IF
+  
+        END DO
       END DO
-    END DO
+    ELSE
+        eta = 0.0_num        
+    END IF
 
-    IF (.NOT. resistive_mhd) eta = 0.0_num
-    IF (.NOT. hall_mhd) lambda_i = 0.0_num
+    IF (hall_mhd) THEN
+      lambda_i = lambda0 
+    ELSE
+      lambda_i = 0.0_num  
+    END IF
 
   END SUBROUTINE eta_calc
 
@@ -557,7 +559,9 @@ CONTAINS
       END DO
     END DO    
 #else
-    half_dt = dt / 2.0_num   
+    half_dt = dt / 2.0_num 
+    dt6 = dt / 6.0_num
+          
     k1x = flux_x
     k1y = flux_y
     k1z = flux_z
@@ -653,7 +657,6 @@ CONTAINS
     c4 = curlb
 
     ! full update
-    dt6 = dt / 6.0_num
     k3x = k1x + 2.0_num * k2x + 2.0_num * k3x + k4x
     k3y = k1y + 2.0_num * k2y + 2.0_num * k3y + k4y
     k3z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
