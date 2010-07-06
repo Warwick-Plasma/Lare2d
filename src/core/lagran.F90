@@ -485,8 +485,9 @@ CONTAINS
   ! Use the subroutine rkstep
   SUBROUTINE resistive_effects
 
-    REAL(num) :: dt6
+    REAL(num) :: dt6, half_dt
     REAL(num) :: jx1, jx2, jy1, jy2
+#ifdef Q_FOURTHORDER    
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1x, k2x, k3x, k4x
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1y, k2y, k3y, k4y
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1z, k2z, k3z, k4z
@@ -496,8 +497,7 @@ CONTAINS
     ALLOCATE(k1y(0:nx, 0:ny), k2y(0:nx, 0:ny), k3y(0:nx, 0:ny), k4y(0:nx, 0:ny))
     ALLOCATE(k1z(0:nx, 0:ny), k2z(0:nx, 0:ny), k3z(0:nx, 0:ny), k4z(0:nx, 0:ny))
     ALLOCATE(c1(0:nx, 0:ny), c2(0:nx, 0:ny), c3(0:nx, 0:ny), c4(0:nx, 0:ny))
-
-    dt = dt / 2.0_num
+#endif
 
     bx1 = bx(0:nx+1, 0:ny+1)
     by1 = by(0:nx+1, 0:ny+1)
@@ -505,27 +505,59 @@ CONTAINS
 
     ! step 1
     CALL rkstep
+
+#ifndef Q_FOURTHORDER
+    DO iy = 0, ny
+      DO ix = 1, nx
+        by(ix, iy) = by1(ix, iy) &
+            + (-flux_z(ix, iy) + flux_z(ix-1, iy)) * dt / dxb(ix)
+      END DO
+    END DO
+    
+    DO iy = 1, ny
+      DO ix = 0, nx
+        bx(ix, iy) = bx1(ix, iy) &
+            + (flux_z(ix, iy) - flux_z(ix, iy-1)) * dt / dyb(iy)
+      END DO
+    END DO
+    
+    DO iy = 1, ny
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        w1 = -flux_x(ix, iy) - flux_x(ixm, iy) + flux_x(ixm, iym) + flux_x(ix, iym)
+        w2 = w1 + flux_y(ix, iy) + flux_y(ix, iym) - flux_y(ixm, iy) - flux_y(ixm, iym)
+        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+      END DO
+    END DO
+    
+    CALL bfield_bcs
+    
+    DO iy = 1, ny
+      DO ix = 1, nx
+        ixm = ix - 1
+        iym = iy - 1
+        energy(ix, iy) = energy(ix, iy) &
+            + (c1(ix, iy) + c1(ixm, iy) + c1(ix, iym) + c1(ixm, iym)) &
+            * dt / (4.0_num * rho(ix, iy))
+      END DO
+    END DO
+#else
+    half_dt = dt / 2.0_num   
     k1x = flux_x
     k1y = flux_y
     k1z = flux_z
     c1 = curlb
-
-#ifdef Q_FIRSTORDER
-    dt6 = dt 
-    k3x = k1x 
-    k3y = k1y 
-    k3z = k1z 
-#else
     ! step 2
     DO iy = 1, ny
       DO ix = 0, nx
-        bx(ix, iy) = bx1(ix, iy) + (k1z(ix, iy) - k1z(ix, iy-1)) * dt / dyb(iy)
+        bx(ix, iy) = bx1(ix, iy) + (k1z(ix, iy) - k1z(ix, iy-1)) * half_dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
       DO ix = 1, nx
-        by(ix, iy) = by1(ix, iy) + (-k1z(ix, iy) + k1z(ix-1, iy)) * dt / dxb(ix)
+        by(ix, iy) = by1(ix, iy) + (-k1z(ix, iy) + k1z(ix-1, iy)) * half_dt / dxb(ix)
       END DO
     END DO
 
@@ -535,7 +567,7 @@ CONTAINS
         iym = iy - 1
         w1 = -k1x(ix, iy) - k1x(ixm, iy) + k1x(ixm, iym) + k1x(ix, iym)
         w2 = w1 + k1y(ix, iy) + k1y(ix, iym) - k1y(ixm, iy) - k1y(ixm, iym)
-        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+        bz(ix, iy) = bz1(ix, iy) + w2 * half_dt / cv(ix, iy)
       END DO
     END DO
 
@@ -549,13 +581,13 @@ CONTAINS
     ! step 3
     DO iy = 1, ny
       DO ix = 0, nx
-        bx(ix, iy) = bx1(ix, iy) + (k2z(ix, iy) - k2z(ix, iy-1)) * dt / dyb(iy)
+        bx(ix, iy) = bx1(ix, iy) + (k2z(ix, iy) - k2z(ix, iy-1)) * half_dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
       DO ix = 1, nx
-        by(ix, iy) = by1(ix, iy) + (-k2z(ix, iy) + k2z(ix-1, iy)) * dt / dxb(ix)
+        by(ix, iy) = by1(ix, iy) + (-k2z(ix, iy) + k2z(ix-1, iy)) * half_dt / dxb(ix)
       END DO
     END DO
 
@@ -565,7 +597,7 @@ CONTAINS
         iym = iy - 1
         w1 = -k2x(ix, iy) - k2x(ixm, iy) + k2x(ixm, iym) + k2x(ix, iym)
         w2 = w1 + k2y(ix, iy) + k2y(ix, iym) - k2y(ixm, iy) - k2y(ixm, iym)
-        bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
+        bz(ix, iy) = bz1(ix, iy) + w2 * half_dt / cv(ix, iy)
       END DO
     END DO
 
@@ -575,8 +607,6 @@ CONTAINS
     k3y = flux_y
     k3z = flux_z
     c3 = curlb
-
-    dt = 2.0_num * dt
 
     ! step 4
     DO iy = 1, ny
@@ -614,7 +644,6 @@ CONTAINS
     k3y = k1y + 2.0_num * k2y + 2.0_num * k3y + k4y
     k3z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
     c1 = c1 + 2.0_num * c2 + 2.0_num * c3 + c4
-#endif
 
     DO iy = 0, ny
       DO ix = 1, nx
@@ -651,6 +680,7 @@ CONTAINS
             * dt6 / (4.0_num * rho(ix, iy))
       END DO
     END DO
+#endif
 
     DO iy = 0, ny + 1
       DO ix = 0, nx + 1
@@ -686,8 +716,10 @@ CONTAINS
     ! Once more to get j_perp and j_par correct
     CALL rkstep
 
+#ifdef Q_FOURTHORDER
     DEALLOCATE(k1x, k2x, k3x, k4x, k1y, k2y, k3y, k4y, k1z, k2z, k3z, k4z)
     DEALLOCATE(c1, c2, c3, c4)
+#endif
 
   END SUBROUTINE resistive_effects
 
@@ -696,7 +728,7 @@ CONTAINS
   ! calculates 'k' values from b[xyz]1 values
   SUBROUTINE rkstep
 
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: jx, jy, jz
+    REAL(num) :: jx, jy, jz
     REAL(num) :: jx1, jy1, jx2, jy2
     REAL(num) :: bxv, byv, bzv
     REAL(num) :: magn_b
@@ -704,41 +736,43 @@ CONTAINS
     REAL(num) :: j_perp_x, j_perp_y, j_perp_z
     REAL(num) :: magn_j_perp, magn_j_par
 
-    ALLOCATE(jx(-1:nx+1, -1:ny+1), jy(-1:nx+1, -1:ny+1), jz(-1:nx+1, -1:ny+1))
-
-    DO iy = -1, ny + 1
-      DO ix = -1, nx + 1
-        ixp = ix + 1
-        iyp = iy + 1
-
-        jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
-        jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
-        jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
-        jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
-        jx(ix, iy) = (jx1 + jx2) / 2.0_num
-        jy(ix, iy) = (jy1 + jy2) / 2.0_num
-        jz(ix, iy) = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
-            - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
-      END DO
-    END DO
-
     IF (.NOT. cowling_resistivity) THEN
-      ! Use simple flux calculation
-      DO iy = 0, ny
-        DO ix = 0, nx
-          flux_x(ix, iy) = -jx(ix, iy) * eta(ix, iy) * dxc(ix) / 2.0_num
-          flux_y(ix, iy) = -jy(ix, iy) * eta(ix, iy) * dyc(iy) / 2.0_num
-          flux_z(ix, iy) = -jz(ix, iy) * eta(ix, iy)
-          curlb(ix, iy) = eta(ix, iy) &
-              * (jx(ix, iy)**2 + jy(ix, iy)**2 + jz(ix, iy)**2)
+      DO iy = 0, ny 
+        iyp = iy + 1
+        DO ix = 0, nx 
+          ixp = ix + 1
+
+          jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
+          jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
+          jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
+          jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
+          jx = (jx1 + jx2) / 2.0_num
+          jy = (jy1 + jy2) / 2.0_num
+          jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
+              - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy) 
+           
+          flux_x(ix, iy) = -jx * eta(ix, iy) * dxc(ix) / 2.0_num
+          flux_y(ix, iy) = -jy * eta(ix, iy) * dyc(iy) / 2.0_num
+          flux_z(ix, iy) = -jz * eta(ix, iy)
+          curlb(ix, iy) = eta(ix, iy) * (jx**2 + jy**2 + jz**2)                        
         END DO
       END DO
     ELSE
       ! Use partially ionised flux calculation
       DO iy = 0, ny
+        iyp = iy + 1
         DO ix = 0, nx
           ixp = ix + 1
-          iyp = iy + 1
+
+          jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
+          jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
+          jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
+          jy2 = -(bz(ixp, iyp) - bz(ix, iyp)) / dxc(ix)
+          jx = (jx1 + jx2) / 2.0_num
+          jy = (jy1 + jy2) / 2.0_num
+          jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
+              - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
+          
           ! B at vertices
           bxv = (bx(ix, iy) + bx(ix, iyp)) / 2.0_num
           byv = (by(ix, iy) + by(ixp, iy)) / 2.0_num
@@ -748,12 +782,12 @@ CONTAINS
           magn_b = bxv**2 + byv**2 + bzv**2
 
           ! Calculate parallel and perpendicular currents
-          j_par_x = (jx(ix, iy) * bxv + jy(ix, iy) * byv &
-              + jz(ix, iy) * bzv) * bxv / MAX(magn_b, none_zero)
-          j_par_y = (jx(ix, iy) * bxv + jy(ix, iy) * byv &
-              + jz(ix, iy) * bzv) * byv / MAX(magn_b, none_zero)
-          j_par_z = (jx(ix, iy) * bxv + jy(ix, iy) * byv &
-              + jz(ix, iy) * bzv) * bzv / MAX(magn_b, none_zero)
+          j_par_x = (jx * bxv + jy * byv &
+              + jz * bzv) * bxv / MAX(magn_b, none_zero)
+          j_par_y = (jx * bxv + jy * byv &
+              + jz * bzv) * byv / MAX(magn_b, none_zero)
+          j_par_z = (jx * bxv + jy * byv &
+              + jz * bzv) * bzv / MAX(magn_b, none_zero)
 
           ! If b = 0 then there is no parallel current
           IF (magn_b .LT. none_zero) THEN
@@ -763,9 +797,9 @@ CONTAINS
           END IF
 
           ! Calculate perpendicular current
-          j_perp_x = jx(ix, iy) - j_par_x
-          j_perp_y = jy(ix, iy) - j_par_y
-          j_perp_z = jz(ix, iy) - j_par_z
+          j_perp_x = jx - j_par_x
+          j_perp_y = jy - j_par_y
+          j_perp_z = jz - j_par_z
 
           magn_j_par = SQRT(j_par_x**2 + j_par_y**2 + j_par_z**2)
           magn_j_perp = SQRT(j_perp_x**2 + j_perp_y**2 + j_perp_z**2)
@@ -788,8 +822,6 @@ CONTAINS
         END DO
       END DO
     END IF
-
-    DEALLOCATE (jx, jy, jz)
 
   END SUBROUTINE rkstep
 
