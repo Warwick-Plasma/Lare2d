@@ -24,10 +24,8 @@
 \title{
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
-University of Warwick, Department of Physics, Coventry, CV4 7AL, UK\\ \\
-\bfseries\itshape Chris Brady\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{}
+\date{Version 2.3}
 \maketitle
 
 \thispagestyle{empty}
@@ -42,7 +40,7 @@ The Lagrangian remap code comes in 2D ({\it Lare2d}) and 3D ({\it Lare3d}). For 
 
 Without going into detail, see \cite{jcp} for complete algorithm, the main features of the code are:
 \begin{itemize}
- \item Solves the nonlinear MHD equations with user controlled viscosity and resistivity. Optional physics packages are: gravity, the Hall term, partially ionised hydrogen equation of state, Cowling resistivity and parallel thermal conductivity.
+ \item Solves the nonlinear MHD equations with user controlled viscosity and resistivity. Optional physics packages are: gravity, the Hall term (only in 2D), partially ionised hydrogen equation of state, Cowling resistivity and parallel thermal conductivity.
  \item Splits each timestep into a Lagragrian step followed by a remap onto the original grid. This allows all of the physics to be included into a simple Lagrangian step making it easy to add additional physics. The remap step includes gradient limiters to ensure the correct shock solution.
  \item Uses a staggered grid to prevent the checkerboard instability and to build conservation laws into the finite difference scheme.
  \item Parallelised via MPI and known to scale linearly up to 1000 cores of a cluster.
@@ -73,7 +71,7 @@ Where $\mathrm{D}/\mathrm{D}t$ is the advective derivative and all other terms h
 P&=&\frac{\rho k_{B}T}{\mu_m}\\
 \epsilon&=&\frac{P}{\rho(\gamma-1)}=\frac{k_B T}{\mu_m (\gamma-1)}
 \end{eqnarray*}
-where $\mu_m$ is the reduced mass, i.e. the average mass of all particles in the plasma. Hence $\mu_m=m_p$ for neutral hydrogen ($m_p$ is the proton mass) and $\mu_m=0.5 m_p$ for fully ionised hydrogen. 
+where $\mu_m$ is the reduced mass, i.e. the average mass of all particles in the plasma. Hence $\mu_m=m_p$ for neutral hydrogen atoms ($m_p$ is the proton mass) and $\mu_m=0.5 m_p$ for fully ionised hydrogen. 
 
  {\it LareXd} can either be set to accept an initialisation with variables in S.I. units or using dimensionless variables. The output always matches the input type. If you plan to setup your initial conditions in S.I. units then you do not need to know about the code normalisation to run and use the code. There are two occasions when you will need to understand the normalisation. The first is if you input your variables in dimensionless form. To do this of course you must have chosen a normalisation. For some additional physics packages to work correctly you must tell {\it LareXd} the numerical values of your normalising length, magnetic field and mass density (more on this below). The additional physics packages that require this are thermal conduction and the inclusion of neutrals. If you are only running resistive MHD then these are not needed. The second reason you may need to understand the normalisation is that all of the core code works on the normalised equations so that should you want to edit the code, e.g. to change the resistivity, you must do this on normalised equations.  
  
@@ -94,7 +92,7 @@ T_0&=&\frac{\epsilon_0 \bar{m}}{k_B}\\
 \mu_{m0}&=&\bar{m}\\
 \epsilon_0&=&v_0^2
 \end{eqnarray*}
-so that $\mathbf{v}=v_0\hat{\mathbf{v}}$, $\mathbf{j}=j_0\hat{\mathbf{j}}$, $t=t_0\hat{t}$ and $P=P_0\hat{P}$ etc. In these equations $\bar{m}$ is the average mass of ions in the plasma, i.e. $\bar{m}=m_p$ for pure hydrogen but  $\bar{m}=1.2 m_p$ is typical for the Solar corona. Applying this normalisation to the ideal MHD equations simply removes the vacuum permeability $\mu_0$. Note if you would like to fix a normalising temperature this means that you must choose $L_0,\rho_0, B_0$ so that the calculated $T_0$ gives the required temperature normalisation.
+so that $\mathbf{v}=v_0\hat{\mathbf{v}}$, $\mathbf{j}=j_0\hat{\mathbf{j}}$, $t=t_0\hat{t}$ and $P=P_0\hat{P}$ etc. In these equations $\bar{m}$ is the average mass of ions in the plasma, i.e. $\bar{m}=m_p$ for pure hydrogen but  $\bar{m}=1.2 m_p$ is typical for the Solar corona. Thus $\bar{m}$ is actually an input parameter to the code and is set in the \texttt{control.f90} file (see later). Applying this normalisation to the ideal MHD equations simply removes the vacuum permeability $\mu_0$. Note if you would like to fix a normalising temperature this means that you must choose $L_0,\rho_0, B_0$ so that the calculated $T_0$ gives the required temperature normalisation.
 
 For resistive MHD substitute equation \ref{ohm} into \ref{faraday} and apply the normalisation to get
 \begin{displaymath}
@@ -118,7 +116,7 @@ Dropping all of the hats on normalised variables the final normalised resistive 
 {\eta}{\rho}j^{2} \label{energy_eqn}
 \end{eqnarray}
 
-Where $\epsilon$ is the specific internal energy density, $P = \rho \epsilon(\gamma - 1)$ and $\gamma = 5/3$ is the ratio of specific heats.
+Where $\epsilon$ is the specific internal energy density, $P = \rho \epsilon(\gamma - 1)$ and $\gamma$ is the ratio of specific heats - again this is specified in \texttt{control.f90}.
 
 The fact that the thermal pressure is normalised to the reference magnetic pressure means that there is no plasma $\beta$ in the code. It does not mean that the code must have a magnetic field. $B_0$ is the normalising field. It is then perfectly acceptible to set $\mathbf{B}=0$ as this is really fixing $\hat{\mathbf{B}}$ and has no effect on  $B_0$. The temperature is not needed to solve the resistive MHD equations and as a result no explicit temperature normalisation is needed to solve the resistive MHD equations. However it is often convenient to specify initial conditions in terms of temperature and this must be converted to specific internal energy density before the first timestep. There are routines built into the code to help you do this and the normalisation of temperature set out above is just so you understand why this is necessary. 
 
@@ -153,7 +151,7 @@ For fully ionised plasma with no magnetic field the bulk plasma viscosity is pro
 \begin{displaymath}
   \nu \propto T^{5/2}
 \end{displaymath} 
-and therefore does not depend on density. However the majority of people working in MHD for space and astrophysics never want to use the real viscosity but instead have an equation of the form $\partial_t v = - \nu \nabla^2 v$, suitable for incompressible flows, with constant $\nu$. So that the viscosity in {\it Lare} reduces to this form the viscosity internally is defined to be proportional to density. Since this is divided by density in the momentum equation this will reduce to the simple incompressible form if the density is uniform. Should you wish to use real viscosity then you must make {\it visc} a function of space and include the correct density and temperature dependence. To do this note that the stress tensor is labelled as, for example, \texttt{sxy} with the \texttt{s} read as $\sigma$ so that $\sigma_{x,y}$ in the code is \texttt{sxy}. These are defined inside \texttt{SUBROUTINE viscosity\_and\_b\_update} in \texttt{lagran.F90}. 
+and therefore does not depend on density. However the majority of people working in MHD for space and astrophysics never want to use the real viscosity but instead have an equation of the form $\partial_t v = - \nu \nabla^2 v$, suitable for incompressible flows, with constant $\nu$. So that the viscosity in {\it Lare} reduces to this form the viscosity internally is defined to be proportional to density. Since this is divided by density in the momentum equation this will reduce to the simple incompressible form if the density is uniform. Should you wish to use real viscosity then you must make {\it visc} a function of space and include the correct density and temperature dependence. To do this note that the stress tensor is labelled as, for example, \texttt{qxy} with the \texttt{q} read as $\sigma$ so that $\sigma_{x,y}$ in the code is \texttt{qxy}. These are defined inside \texttt{SUBROUTINE viscosity\_and\_b\_update} in \texttt{lagran.F90}. 
  
 
 \subsection{Shock viscosity}
@@ -212,13 +210,13 @@ is the ion plasma frequency. Once the density is normalised, through the mass de
 \section{Partial Ionisation and Cowling Resistivity}
 {\it Lare3d} has an option to include partial ionisation. The equations this solves are documented in \cite{flux-emergence}. All of this physics is included in the file \texttt{neutral.f90}. Key to these routines is the calculation of the neutral fraction $\xi_n$ which is the ratio of the mass density of the neutral gas to the total mass density. For now let's assume that $\xi_n$ is know. $\xi_n$ affects the basic equations in a number of ways. At the simplest level it changes the partial pressures so that now the equation of state is different to that of ideal MHD. There are three options for the equations of state determined by setting \texttt{eos\_number} in \texttt{control.f90} 
 \begin{itemize}
-\item \texttt{eos\_number=EOS\_IDEAL}: These have been explain above and are repeated here for easy comparison
+\item \texttt{eos\_number=EOS\_IDEAL}: These have been explained above and are repeated here for easy comparison
 \begin{eqnarray*}
 P&=&\frac{\rho k_{B}T}{\mu_m}\\
 \epsilon&=&\frac{P}{\rho(\gamma-1)}\\
-\mu_m&=&\frac{\bar{m}}{2}
-\end{eqnarray*}
-Note that this assumes a fully ionised plasma in which the averaged ion species is only singly ionised. The reduced mass is then just the average of the ion and electron masses. This is suitable for much solar and space physics but ought to be checked for other applications.
+\mu_m&=&\bar{m}\ m_{reduced}
+\end{eqnarray*} 
+The reduced mass as a function of the ion mass $\bar{m}$ is defined as $m_{reduced}$ and can be specified in \texttt{control.f90} through the parameter \texttt{reduced\_mass}. Thus setting $m_{reduced}=1$ gives unionised atomic hydrogen while $m_{reduced}=0.5$ will give fully ionised hydrogen. 
 
 \item \texttt{eos\_number=EOS\_PI}: Here the effect of neutrals on the partial pressures is included 
 \begin{eqnarray*}
@@ -239,7 +237,7 @@ where $X_i$ is the ionisation energy for hydrogen.
 
 Note that we always assume an ideal gas so the first equation is the same for all options. For an ideal plasma we assume a single ionisation state so that the reduced mass is half the ion mass. If including the effect of neutrals fully one should always use \texttt{eos\_number=EOS\_ION} as the ionisation energy of hydrogen must be taken into account. The second option is therefore never formally correct. It is however retained as the energy equation used in MHD is often missing important sources and sinks and therefore to include $X_i$ is actually a mistake in simple formulations of the energy equation. This is explained in \cite{flux-emergence}.
 
-All of the above assumes that $\xi_n$ is known. This is specified in \texttt{neutral.f90} and \texttt{eos.f90}. In this version of the code $\xi_n$ is determined from a modified Saha equation based on a three level hydrogen model \cite{brown}. This is therefore only valid for the solar chromosphere. To change this the routines that need to return, or calculate, a different $\xi_n$ are \texttt{Get\_Neutral} and \texttt{neutral\_fraction} in \texttt{neutral.f90} and \texttt{Get\_Energy} in \texttt{eos.F90} where it is called \texttt{xi\_local}.
+All of the above assumes that $\xi_n$ is known. This is specified in \texttt{neutral.f90} and \texttt{eos.f90}. In this version of the code $\xi_n$ is determined from a modified Saha equation based on a three level hydrogen model \cite{brown}. This is therefore only valid for the solar chromosphere. To change this the routines that need to return, or calculate, a different $\xi_n$ are \texttt{Get\_Neutral} and \texttt{neutral\_fraction} and \texttt{Get\_Energy} in \texttt{neutral.f90}.
 
 As well as affecting the partial pressure the neutral fraction can alter the nature of resistive effects. The dominant term here is the introduction of an anisotropic resistivity so that the Ohm's law becomes 
 $\mathbf{E}+\mathbf{v}\times\mathbf{B}=\eta \mathbf{j_{\parallel}} + \eta_c \mathbf{j_{\perp}}$ 
@@ -653,9 +651,10 @@ file in the \texttt{bin} subdirectory. Normally, there is no need to change this
   #QSINGLE = -DQ_SINGLE
 
   #Uncomment the following line to use first order scheme for resistive update
-  #QFIRSTORDER = -DQ_FIRSTORDER
+  #QFOURTHORDER = -DQ_FOURTHORDER
 \end{verbatim}
-The above section controls optional flags which can be passed to the code or compiler. \texttt{QSINGLE} forces the code to run in single precision. This is much faster an is recommended for preparatory work but the full double precision should always be checked for publications. \texttt{QFIRSTORDER} runs the resistive routines in first order instead of the default fourth order Runge-Kutta. Use in the same way as you would \texttt{QSINGLE}.
+The above section controls optional flags which can be passed to the code or compiler. \texttt{QSINGLE} forces the code to run in single precision. This is much faster an is recommended for preparatory work but the full double precision should always be checked for publications. \texttt{QFOURTHORDER} runs the resistive routines in fourth order instead of the default first order. Usually first order if fine for diffusive terms but you should
+check for your problem.
 The \texttt{QMONO} flag is the only one which directly changes the way that the code works. In order to allow vector optimisation of the code all \texttt{IF} statements were removed from the main loop. This meant that allowing the change between using tensor shock viscosity and simple Wilkins Q\_MONO shock viscosity had to be moved out to the makefile. To run the code with tensor shock viscosity comment this flag out, to run with the Wilkins viscosity uncomment it.
 \subsection{Further Optimisation}
 The {\it LareXd} codes are fairly robust with regard to compiler flags, so you can normally use your favourite optimisations. An example would be
@@ -682,7 +681,9 @@ is executed. In order to delete the data, simply type\\
 \texttt{rm -rf \{Data\_Dir\}}\\
 where \texttt{\{Data\_Dir\}} should be replaced by the name of the directory
 holding the data that you no longer want. 
-
+\subsection*{How do I restart from an old snapshot?}
+You can specify to restart from any previous snapshot by setting \texttt{initial = IC\_RESTART} in
+\texttt{control.f90} and then specifying the restart file number with \texttt{restart\_snapshot}. Note this works fine except for en.dat, the energy diagnostics. You must keep the energy diagnostics from each run. For example if you run from $t=0$ to $t=100$ and want to restart from $t=100$ and run to $t=200$ then before the restart you must move en.dat which is stored in the Data directory, e.g. rename this en1.dat. After running from the restart you will then have an en1.dat and an en.dat file. Rename en.dat to en2.dat then to combine back into a single file first move en1.dat to en.dat then add en2.dat onto the end of this with '\texttt{cat en2.dat >> en.dat}'. Obviously this is messy and will be fixed in a later version when I get the time.            
 
 
 \section{Output}
@@ -857,7 +858,7 @@ Just remember to put the extra brackets round \texttt{getdata}!
 
 \subsection{VisIt}
 \subsubsection{Installation}
-VisIt can be downloaded from \cite{visit}. Installation is a case of extracting the tar ball somewhere convenient, it will create a ``visit'' directory and place all the files in there. You then need to include the directory ``visit/bin'' in your path. Once that's been done type ``visit'' in the \lare directory to both confirm that it has been set up correctly and also to create a ``.visit'' directory in your home directory where the plug-in will be installed.
+VisIt can be downloaded from \cite{visit}. This site lists the latest version (2.x) as well as older versions. These instructions are known to work for older versions of VisIt (1.x). A future release will enable the latest versions to work in the manner described below. Installation is a case of extracting the tar ball somewhere convenient, it will create a ``visit'' directory and place all the files in there. You then need to include the directory ``visit/bin'' in your path. Once that's been done type ``visit'' in the \lare directory to both confirm that it has been set up correctly and also to create a ``.visit'' directory in your home directory where the plug-in will be installed.
 
 To create the \lare plug-in type
 \begin{verbatim}
