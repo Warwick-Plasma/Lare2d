@@ -74,7 +74,6 @@ MODULE shared_data
   REAL(num) :: x_start, x_end, y_start, y_end
   REAL(num) :: gamma, eta0, j_max, dt_snapshots, lambda0, eta_background
   REAL(num) :: total_visc_heating = 0.0_num, total_ohmic_heating = 0.0_num
-  REAL(num) :: vc
 
   INTEGER :: xbc_right, ybc_up, xbc_left, ybc_down
   INTEGER :: ix, iy, ixp, iyp, ixm, iym, xpass, ypass

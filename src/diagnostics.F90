@@ -438,7 +438,6 @@ CONTAINS
     WRITE(20, *) 'quadratic viscosity coeff = ', visc2
     WRITE(20, *) 'uniform tensor viscosity coeff = ', visc3 * visc0
     WRITE(20, *) 'j_max = ', j_max * B0 / L0
-    WRITE(20, *) 'vc = ', vc * B0 / L0
     WRITE(20, *) 'eta0 = ', eta0 * res0
     WRITE(20, *) 'eta_background = ', eta_background * res0
     WRITE(20, *) 'kappa = ', kappa_0 * kappa0
