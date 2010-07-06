@@ -538,10 +538,24 @@ CONTAINS
         ixm = ix - 1
         iym = iy - 1
         energy(ix, iy) = energy(ix, iy) &
-            + (c1(ix, iy) + c1(ixm, iy) + c1(ix, iym) + c1(ixm, iym)) &
+            + (curlb(ix, iy) + curlb(ixm, iy) + curlb(ix, iym) + curlb(ixm, iym)) &
             * dt / (4.0_num * rho(ix, iy))
       END DO
-    END DO
+    END DO  
+    CALL energy_bcs
+
+    DO iy = 0, ny
+      DO ix = 0, nx
+        w1 = dt * dxc(ix) * dyc(iy) * curlb(ix, iy)
+        IF ((ix == 0) .OR. (ix == nx)) THEN
+          w1 = w1 * 0.5_num
+        END IF
+        IF ((iy == 0) .OR. (iy == ny)) THEN
+          w1 = w1 * 0.5_num
+        END IF
+        total_ohmic_heating = total_ohmic_heating + w1
+      END DO
+    END DO    
 #else
     half_dt = dt / 2.0_num   
     k1x = flux_x
@@ -680,6 +694,21 @@ CONTAINS
             * dt6 / (4.0_num * rho(ix, iy))
       END DO
     END DO
+
+    CALL energy_bcs
+
+    DO iy = 0, ny
+      DO ix = 0, nx
+        w1 = dt6 * dxc(ix) * dyc(iy) * c1(ix, iy)
+        IF ((ix == 0) .OR. (ix == nx)) THEN
+          w1 = w1 * 0.5_num
+        END IF
+        IF ((iy == 0) .OR. (iy == ny)) THEN
+          w1 = w1 * 0.5_num
+        END IF
+        total_ohmic_heating = total_ohmic_heating + w1
+      END DO
+    END DO
 #endif
 
     DO iy = 0, ny + 1
@@ -695,21 +724,6 @@ CONTAINS
         jy_r(ix, iy) = (jy1 + jy2) / 2.0_num
         jz_r(ix, iy) = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
             - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
-      END DO
-    END DO
-
-    CALL energy_bcs
-
-    DO iy = 0, ny
-      DO ix = 0, nx
-        w1 = dt6 * dxc(ix) * dyc(iy) * c1(ix, iy)
-        IF ((ix == 0) .OR. (ix == nx)) THEN
-          w1 = w1 * 0.5_num
-        END IF
-        IF ((iy == 0) .OR. (iy == ny)) THEN
-          w1 = w1 * 0.5_num
-        END IF
-        total_ohmic_heating = total_ohmic_heating + w1
       END DO
     END DO
 
