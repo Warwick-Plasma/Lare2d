@@ -103,8 +103,6 @@ CONTAINS
     bz1 = bz1 * cv1(0:nx+1, 0:ny+1)
 
     DO iy = 0, ny + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx + 1
         dv = cv1(ix, iy) / cv(ix, iy) - 1.0_num
         ! predictor energy
@@ -126,8 +124,6 @@ CONTAINS
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         iyp = iy + 1
@@ -222,8 +218,6 @@ CONTAINS
 
     ! finally correct density and energy to final values
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -272,8 +266,6 @@ CONTAINS
     p_visc = 0.0_num
 
     DO iy = -1, ny + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx + 2
         CALL get_pressure(rho(ix, iy), energy(ix, iy), eos_number, &
             ix, iy, pressure(ix, iy))
@@ -281,8 +273,6 @@ CONTAINS
     END DO
 
     DO iy = 0, ny + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx + 1
         ixp = ix + 1
         iyp = iy + 1
@@ -407,8 +397,6 @@ CONTAINS
     REAL(num) :: dvxdx, dvydy, dvxy, dvxz, dvyz
 
     DO iy = 0, ny + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx + 1
         ixp = ix + 1
         iyp = iy + 1
@@ -530,24 +518,18 @@ CONTAINS
 #else
     ! step 2
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) + (k1z(ix, iy) - k1z(ix, iy-1)) * dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) + (-k1z(ix, iy) + k1z(ix-1, iy)) * dt / dxb(ix)
       END DO
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -566,24 +548,18 @@ CONTAINS
 
     ! step 3
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) + (k2z(ix, iy) - k2z(ix, iy-1)) * dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) + (-k2z(ix, iy) + k2z(ix-1, iy)) * dt / dxb(ix)
       END DO
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -604,24 +580,18 @@ CONTAINS
 
     ! step 4
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) + (k3z(ix, iy) - k3z(ix, iy-1)) * dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt / dxb(ix)
       END DO
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -647,8 +617,6 @@ CONTAINS
 #endif
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) &
             + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt6 / dxb(ix)
@@ -656,8 +624,6 @@ CONTAINS
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) &
             + (k3z(ix, iy) - k3z(ix, iy-1)) * dt6 / dyb(iy)
@@ -665,8 +631,6 @@ CONTAINS
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -689,8 +653,6 @@ CONTAINS
     END DO
 
     DO iy = 0, ny + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx + 1
         ixp = ix + 1
         iyp = iy + 1
@@ -745,8 +707,6 @@ CONTAINS
     ALLOCATE(jx(-1:nx+1, -1:ny+1), jy(-1:nx+1, -1:ny+1), jz(-1:nx+1, -1:ny+1))
 
     DO iy = -1, ny + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx + 1
         ixp = ix + 1
         iyp = iy + 1
@@ -765,8 +725,6 @@ CONTAINS
     IF (.NOT. cowling_resistivity) THEN
       ! Use simple flux calculation
       DO iy = 0, ny
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           flux_x(ix, iy) = -jx(ix, iy) * eta(ix, iy) * dxc(ix) / 2.0_num
           flux_y(ix, iy) = -jy(ix, iy) * eta(ix, iy) * dyc(iy) / 2.0_num
@@ -778,8 +736,6 @@ CONTAINS
     ELSE
       ! Use partially ionised flux calculation
       DO iy = 0, ny
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           ixp = ix + 1
           iyp = iy + 1
@@ -866,24 +822,18 @@ CONTAINS
 
     ! step 2
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) + (k1z(ix, iy) - k1z(ix, iy-1)) * dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) + (-k1z(ix, iy) + k1z(ix-1, iy)) * dt / dxb(ix)
       END DO
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -901,24 +851,18 @@ CONTAINS
 
     ! step 3
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) + (k2z(ix, iy) - k2z(ix, iy-1)) * dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) + (-k2z(ix, iy) + k2z(ix-1, iy)) * dt / dxb(ix)
       END DO
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -938,24 +882,18 @@ CONTAINS
 
     ! step 4
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) + (k3z(ix, iy) - k3z(ix, iy-1)) * dt / dyb(iy)
       END DO
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt / dxb(ix)
       END DO
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -978,8 +916,6 @@ CONTAINS
     k3z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) &
             + (-k3z(ix, iy) + k3z(ix-1, iy)) * dt6 / dxb(ix)
@@ -987,8 +923,6 @@ CONTAINS
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) &
             + (k3z(ix, iy) - k3z(ix, iy-1)) * dt6 / dyb(iy)
@@ -996,8 +930,6 @@ CONTAINS
     END DO
 
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         iym = iy - 1
@@ -1030,8 +962,6 @@ CONTAINS
         hzflux(-1:nx+1, -1:ny+1))
 
     DO iy = -1, ny + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx + 1
         ixp = ix + 1
         iyp = iy + 1
@@ -1052,8 +982,6 @@ CONTAINS
     hzflux = 0.0_num
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         ixp2 = ix + 2
@@ -1200,8 +1128,6 @@ CONTAINS
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         flux_x(ix, iy) = -hxflux(ix, iy) * dxc(ix) / 2.0_num
         flux_y(ix, iy) = -hyflux(ix, iy) * dyc(iy) / 2.0_num

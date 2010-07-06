@@ -31,8 +31,6 @@ CONTAINS
 
     DO iy = -1, ny+2
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+2
         ixm = ix - 1
 
@@ -58,8 +56,6 @@ CONTAINS
     END DO
 
     DO iy = -1, ny+1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+1
         dyc1(ix, iy) = 0.5_num * (dyb1(ix, iy) + dyb1(ix, iy+1))
       END DO
@@ -70,16 +66,12 @@ CONTAINS
     CALL vy_bx_flux
     DO iy = 1, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx(ix, iy) - flux(ix, iy) + flux(ix, iym)
       END DO
     END DO
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         by(ix, iy) = by(ix, iy) + flux(ix, iy) - flux(ixm, iy)
@@ -89,8 +81,6 @@ CONTAINS
     CALL vy_bz_flux
     DO iy = 1, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         bz(ix, iy) = bz(ix, iy) - flux(ix, iy) + flux(ix, iym)
       END DO
@@ -101,8 +91,6 @@ CONTAINS
     CALL dm_y_bcs    ! need dm(-1:nx+1, 0:ny+1) for velocity remap
     DO iy = 1, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         rho(ix, iy) = (rho1(ix, iy) * cv1(ix, iy) &
             + dm(ix, iym) - dm(ix, iy)) / cv2(ix, iy)
@@ -113,8 +101,6 @@ CONTAINS
     CALL y_energy_flux
     DO iy = 1, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         energy(ix, iy) = (energy(ix, iy) * cv1(ix, iy) * rho1(ix, iy) &
             + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho(ix, iy))
@@ -126,8 +112,6 @@ CONTAINS
     ! temporary array
     DO iy = -1, ny+1
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
 
@@ -144,8 +128,6 @@ CONTAINS
 
     DO iy = 0, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         flux(ix, iy) = cv1(ix, iy) + cv1(ixp, iy) + cv1(ix, iyp) + cv1(ixp, iyp)
@@ -156,8 +138,6 @@ CONTAINS
 
     DO iy = 0, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         flux(ix, iy) = cv2(ix, iy) + cv2(ixp, iy) + cv2(ix, iyp) + cv2(ixp, iyp)
@@ -168,8 +148,6 @@ CONTAINS
 
     DO iy = -2, ny+1
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         flux(ix, iy) = (vy1(ix, iy) + vy1(ix, iyp)) / 2.0_num
       END DO
@@ -179,8 +157,6 @@ CONTAINS
 
     DO iy = -1, ny+1
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         dyb1(ix, iy) = dyc(iy) + (vy1(ix, iy) - vy1(ix, iym)) * dt
       END DO
@@ -188,8 +164,6 @@ CONTAINS
 
     DO iy = -1, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         flux(ix, iy) = dm(ix, iy) + dm(ixp, iy) + dm(ix, iyp) + dm(ixp, iyp)
@@ -200,8 +174,6 @@ CONTAINS
 
     DO iy = 0, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ! vertex density after remap
         rho_v1(ix, iy) = (rho_v(ix, iy) * cv1(ix, iy) &
@@ -212,8 +184,6 @@ CONTAINS
     CALL y_momz_flux
     DO iy = 0, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         vz(ix, iy) = (rho_v(ix, iy) * vz(ix, iy) * cv1(ix, iy) &
             + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho_v1(ix, iy))
@@ -223,8 +193,6 @@ CONTAINS
     CALL y_momx_flux
     DO iy = 0, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         vx(ix, iy) = (rho_v(ix, iy) * vx(ix, iy) * cv1(ix, iy) &
             + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho_v1(ix, iy))
@@ -234,8 +202,6 @@ CONTAINS
     CALL y_momy_flux
     DO iy = 0, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         vy(ix, iy) = (rho_v(ix, iy) * vy(ix, iy) * cv1(ix, iy) &
             + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho_v1(ix, iy))
@@ -261,8 +227,6 @@ CONTAINS
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
 
@@ -323,8 +287,6 @@ CONTAINS
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
 
@@ -379,8 +341,6 @@ CONTAINS
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx+1
         ixm = ix - 1
 
@@ -433,8 +393,6 @@ CONTAINS
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm = ix - 1
 
@@ -487,8 +445,6 @@ CONTAINS
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
 
         v_advect = vy1(ix, iy)
@@ -531,8 +487,6 @@ CONTAINS
       DO iy = 0, ny-1
         iym = iy - 1
         iyp = iy + 1
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           ixp = ix + 1
 
@@ -572,8 +526,6 @@ CONTAINS
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
 
         v_advect = vy1(ix, iy)
@@ -616,8 +568,6 @@ CONTAINS
       DO iy = 0, ny-1
         iym = iy - 1
         iyp = iy + 1
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           ixp = ix + 1
 
@@ -657,8 +607,6 @@ CONTAINS
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
 
         v_advect = vy1(ix, iy)
@@ -701,8 +649,6 @@ CONTAINS
       DO iy = 0, ny-1
         iym = iy - 1
         iyp = iy + 1
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx
           ixp = ix + 1
 

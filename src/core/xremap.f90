@@ -31,8 +31,6 @@ CONTAINS
 
     DO iy = -1, ny+2
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+2
         ixm = ix - 1
 
@@ -58,8 +56,6 @@ CONTAINS
     END DO
 
     DO iy = -1, ny+1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+1
         dxc1(ix, iy) = 0.5_num * (dxb1(ix, iy) + dxb1(ix+1, iy))
       END DO
@@ -69,8 +65,6 @@ CONTAINS
     ! constrained transport remap of magnetic fluxes
     CALL vx_by_flux
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         by(ix, iy) = by(ix, iy) - flux(ix, iy) + flux(ixm, iy)
@@ -79,8 +73,6 @@ CONTAINS
 
     DO iy = 1, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         bx(ix, iy) = bx(ix, iy) + flux(ix, iy) - flux(ix, iym)
       END DO
@@ -88,8 +80,6 @@ CONTAINS
 
     CALL vx_bz_flux
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         bz(ix, iy) = bz(ix, iy) - flux(ix, iy) + flux(ixm, iy)
@@ -100,8 +90,6 @@ CONTAINS
     CALL x_mass_flux ! calculates dm(0:nx, 0:ny+1)
     CALL dm_x_bcs    ! need dm(-1:nx+1, 0:ny+1) for velocity remap
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         rho(ix, iy) = (rho1(ix, iy) * cv1(ix, iy) &
@@ -112,8 +100,6 @@ CONTAINS
     ! remap specific energy density using mass coordinates
     CALL x_energy_flux
     DO iy = 1, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 1, nx
         ixm = ix - 1
         energy(ix, iy) = (energy(ix, iy) * cv1(ix, iy) * rho1(ix, iy) &
@@ -126,8 +112,6 @@ CONTAINS
     ! temporary array
     DO iy = 0, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+1
         ixp = ix + 1
 
@@ -144,8 +128,6 @@ CONTAINS
 
     DO iy = 0, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         flux(ix, iy) = cv1(ix, iy) + cv1(ixp, iy) + cv1(ix, iyp) + cv1(ixp, iyp)
@@ -156,8 +138,6 @@ CONTAINS
 
     DO iy = 0, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixp = ix + 1
         flux(ix, iy) = cv2(ix, iy) + cv2(ixp, iy) + cv2(ix, iyp) + cv2(ixp, iyp)
@@ -167,8 +147,6 @@ CONTAINS
     cv2(0:nx, 0:ny) = flux(0:nx, 0:ny) / 4.0_num
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -2, nx+1
         ixp = ix + 1
         flux(ix, iy) = (vx1(ix, iy) + vx1(ixp, iy)) / 2.0_num
@@ -178,8 +156,6 @@ CONTAINS
     vx1(-2:nx+1, 0:ny) = flux(-2:nx+1, 0:ny)
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx+1
         ixm = ix - 1
         ! dxb1 = width of vertex CV before remap
@@ -189,8 +165,6 @@ CONTAINS
 
     DO iy = 0, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx
         ixp = ix + 1
         flux(ix, iy) = dm(ix, iy) + dm(ixp, iy) + dm(ix, iyp) + dm(ixp, iyp)
@@ -200,8 +174,6 @@ CONTAINS
     dm(-1:nx, 0:ny) = flux(-1:nx, 0:ny) / 4.0_num
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm = ix - 1
         ! vertex density after remap
@@ -212,8 +184,6 @@ CONTAINS
 
     CALL x_momy_flux
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm = ix - 1
         vy(ix, iy) = (rho_v(ix, iy) * vy(ix, iy) * cv1(ix, iy) &
@@ -223,8 +193,6 @@ CONTAINS
 
     CALL x_momz_flux
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm = ix - 1
         vz(ix, iy) = (rho_v(ix, iy) * vz(ix, iy) * cv1(ix, iy) &
@@ -234,8 +202,6 @@ CONTAINS
 
     CALL x_momx_flux
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm = ix - 1
         vx(ix, iy) = (rho_v(ix, iy) * vx(ix, iy) * cv1(ix, iy) &
@@ -260,8 +226,6 @@ CONTAINS
 
     DO iy = 0, ny
       iyp = iy + 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
@@ -322,8 +286,6 @@ CONTAINS
 
     DO iy = 1, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
@@ -378,8 +340,6 @@ CONTAINS
 
     DO iy = 0, ny+1
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
@@ -432,8 +392,6 @@ CONTAINS
 
     DO iy = 0, ny
       iym = iy - 1
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = 0, nx
         ixm  = ix - 1
         ixp  = ix + 1
@@ -485,8 +443,6 @@ CONTAINS
     INTEGER :: ixp2
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx
         ixm  = ix - 1
         ixp  = ix + 1
@@ -531,8 +487,6 @@ CONTAINS
     IF (rke) THEN
       DO iy = 0, ny
         iyp = iy + 1
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx-1
           ixm = ix - 1
           ixp = ix + 1
@@ -570,8 +524,6 @@ CONTAINS
     INTEGER :: ixp2
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx
         ixm  = ix - 1
         ixp  = ix + 1
@@ -616,8 +568,6 @@ CONTAINS
     IF (rke) THEN
       DO iy = 0, ny
         iyp = iy + 1
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx-1
           ixm = ix - 1
           ixp = ix + 1
@@ -654,8 +604,6 @@ CONTAINS
     INTEGER :: ixp2
 
     DO iy = 0, ny
-      !DEC$ IVDEP
-      !DEC$ VECTOR ALWAYS
       DO ix = -1, nx
         ixm  = ix - 1
         ixp  = ix + 1
@@ -700,8 +648,6 @@ CONTAINS
     IF (rke) THEN
       DO iy = 0, ny
         iyp = iy + 1
-        !DEC$ IVDEP
-        !DEC$ VECTOR ALWAYS
         DO ix = 0, nx-1
           ixm = ix - 1
           ixp = ix + 1
