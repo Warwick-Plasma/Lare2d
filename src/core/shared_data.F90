@@ -56,7 +56,7 @@ MODULE shared_data
 
   REAL(num), DIMENSION(:, :), ALLOCATABLE :: delta_ke, p_visc
   REAL(num), DIMENSION(:, :), ALLOCATABLE :: eta, lambda_i
-  REAL(num), DIMENSION(:, :), ALLOCATABLE :: cv, cv1, bzone
+  REAL(num), DIMENSION(:, :), ALLOCATABLE :: cv, cv1
 
   REAL(num), DIMENSION(:), ALLOCATABLE :: xc, xb
   REAL(num), DIMENSION(:), ALLOCATABLE :: dxb, dxc
@@ -103,7 +103,6 @@ MODULE shared_data
   ! Damping boundary variables
 
   LOGICAL :: damping
-  REAL(num) :: damp_rate
 
   ! Partially ionised plasma
   REAL(num), DIMENSION(:, :), ALLOCATABLE :: eta_perp, xi_n, eta_perp0
