@@ -48,7 +48,7 @@ CONTAINS
     IF (damping) THEN
       ! right boundary
     IF (right == MPI_PROC_NULL) THEN   
-      d = 3.0_num * x_end / 4.0_num
+      d = 0.7_num * x_end 
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
           IF (xb(ix) > d) THEN
@@ -63,7 +63,7 @@ CONTAINS
 
       ! left boundary
     IF (left == MPI_PROC_NULL) THEN   
-      d = 3.0_num * x_start / 4.0_num
+      d = 0.7_num * x_start 
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
           IF (xb(ix) < d) THEN
@@ -78,7 +78,7 @@ CONTAINS
       
     ! top boundary
     IF (up == MPI_PROC_NULL) THEN   
-      d = 3.0_num * y_end / 4.0_num
+      d = 0.7_num * y_end 
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
           IF (yb(iy) > d) THEN
@@ -93,7 +93,7 @@ CONTAINS
 
       ! bottom boundary    
       IF(down == MPI_PROC_NULL) THEN
-      d = 3.0_num * y_start / 4.0_num
+      d = 0.7_num * y_start 
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
           IF (yb(iy) < d) THEN
@@ -132,16 +132,6 @@ CONTAINS
       bz( 0, :) = bz(1, :)
       bz(-1, :) = bz(2, :)
     END IF
-    IF (right == MPI_PROC_NULL .AND. xbc_right == BC_OPEN) THEN
-      bx(nx+1, :) = bx(nx-1, :)
-      by(nx+1, :) = by(nx  , :)
-      bz(nx+1, :) = bz(nx  , :)
-    END IF
-    IF (left == MPI_PROC_NULL .AND. xbc_left == BC_OPEN) THEN
-      bx(-1, :) = bx(0, :)
-      by( 0, :) = by(1, :)
-      bz( 0, :) = bz(1, :)
-    END IF
         
     IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OTHER) THEN
       bx(:, ny+1) = bx(:, ny  )
@@ -159,16 +149,7 @@ CONTAINS
       bz(:,  0) = bz(:, 1)
       bz(:, -1) = bz(:, 2)
     END IF
-    IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OPEN) THEN
-      bx(:, ny+1) = bx(:, ny  )
-      by(:, ny+1) = by(:, ny-1)
-      bz(:, ny+1) = bz(:, ny  )
-    END IF
-    IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OPEN) THEN
-      bx(:,  0) = bx(:, 1)
-      by(:, -1) = by(:, 0)
-      bz(:,  0) = bz(:, 1)
-    END IF
+
   END SUBROUTINE bfield_bcs
 
 
@@ -194,19 +175,6 @@ CONTAINS
       bz(:, -1) = bz(:, 2)
     END IF
 
-    IF (right == MPI_PROC_NULL .AND. xbc_right == BC_OPEN) THEN
-      bz(nx+1, :) = bz(nx  , :)
-    END IF
-    IF (left == MPI_PROC_NULL .AND. xbc_left == BC_OPEN) THEN
-      bz( 0, :) = bz(1, :)
-    END IF
-    IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OPEN) THEN
-      bz(:, ny+1) = bz(:, ny  )
-    END IF
-    IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OPEN) THEN
-      bz(:,  0) = bz(:, 1)
-    END IF
-
   END SUBROUTINE bz_bcs
 
 
@@ -223,12 +191,6 @@ CONTAINS
       energy( 0, :) = energy(1, :)
       energy(-1, :) = energy(2, :)
     END IF
-    IF (right == MPI_PROC_NULL .AND. xbc_right == BC_OPEN) THEN
-      energy(nx+1, :) = energy(nx  , :)
-    END IF
-    IF (left == MPI_PROC_NULL .AND. xbc_left == BC_OPEN) THEN
-      energy( 0, :) = energy(1, :)
-    END IF
     
     IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OTHER) THEN
       energy(:, ny+1) = energy(:, ny  )
@@ -237,12 +199,6 @@ CONTAINS
     IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OTHER) THEN
       energy(:,  0) = energy(:, 1)
       energy(:, -1) = energy(:, 2)
-    END IF
-    IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OPEN) THEN
-      energy(:, ny+1) = energy(:, ny  )
-    END IF
-    IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OPEN) THEN
-      energy(:,  0) = energy(:, 1)
     END IF
     
   END SUBROUTINE energy_bcs
@@ -261,10 +217,6 @@ CONTAINS
         vy(nx+2, :) = vy(nx-2, :)
         vz(nx+1, :) = vz(nx-1, :)
         vz(nx+2, :) = vz(nx-2, :)
-      ELSE IF (xbc_right == BC_OPEN) THEN
-        vx(nx+1, :) = vx(nx, :)
-        vy(nx+1, :) = vy(nx, :)
-        vz(nx+1, :) = vz(nx, :)
       END IF
     END IF
     IF (left == MPI_PROC_NULL) THEN
@@ -275,10 +227,6 @@ CONTAINS
         vy(-2, :) = vy(2, :)
         vz(-1, :) = vz(1, :)
         vz(-2, :) = vz(2, :)
-      ELSE IF (xbc_left == BC_OPEN) THEN
-        vx(-1, :) = vx(0, :)
-        vy(-1, :) = vy(0, :)
-        vz(-1, :) = vz(0, :)
       END IF
     END IF
   
@@ -290,10 +238,6 @@ CONTAINS
         vy(:, ny+2) = vy(:, ny-2)
         vz(:, ny+1) = vz(:, ny-1)
         vz(:, ny+2) = vz(:, ny-2)
-      ELSE IF (ybc_up == BC_OPEN) THEN
-        vx(:, ny+1) = vx(:, ny)
-        vy(:, ny+1) = vy(:, ny)
-        vz(:, ny+1) = vz(:, ny)
       END IF
     END IF
     IF (down == MPI_PROC_NULL) THEN
@@ -304,10 +248,6 @@ CONTAINS
         vy(:, -2) = vy(:, 2)
         vz(:, -1) = vz(:, 1)
         vz(:, -2) = vz(:, 2)
-      ELSE IF (ybc_down == BC_OPEN) THEN
-        vx(:, -1) = vx(:, 0)
-        vy(:, -1) = vy(:, 0)
-        vz(:, -1) = vz(:, 0)
       END IF
     END IF
   
@@ -327,13 +267,6 @@ CONTAINS
         vy1(nx+2, :) = vy1(nx-2, :)
         vz1(nx+1, :) = vz1(nx-1, :)
         vz1(nx+2, :) = vz1(nx-2, :)
-      ELSE IF (xbc_right == BC_OPEN) THEN
-        vx1(nx+1, :) = vx1(nx, :)
-        vx1(nx+2, :) = vx1(nx, :)
-        vy1(nx+1, :) = vy1(nx, :)
-        vy1(nx+2, :) = vy1(nx, :)
-        vz1(nx+1, :) = vz1(nx, :)
-        vz1(nx+2, :) = vz1(nx, :)
       END IF
     END IF
     IF (left == MPI_PROC_NULL) THEN
@@ -344,13 +277,6 @@ CONTAINS
         vy1(-2, :) = vy1(2, :)
         vz1(-1, :) = vz1(1, :)
         vz1(-2, :) = vz1(2, :)
-      ELSE IF (xbc_left == BC_OPEN) THEN
-        vx1(-2, :) = vx1(0, :)
-        vy1(-2, :) = vy1(0, :)
-        vz1(-2, :) = vz1(0, :)
-        vx1(-1, :) = vx1(0, :)
-        vy1(-1, :) = vy1(0, :)
-        vz1(-1, :) = vz1(0, :)
       END IF
     END IF
 
@@ -362,13 +288,6 @@ CONTAINS
         vy1(:, ny+2) = vy1(:, ny-2)
         vz1(:, ny+1) = vz1(:, ny-1)
         vz1(:, ny+2) = vz1(:, ny-2)
-      ELSE IF (ybc_up == BC_OPEN) THEN
-        vx1(:, ny+1) = vx1(:, ny)
-        vx1(:, ny+2) = vx1(:, ny)
-        vy1(:, ny+1) = vy1(:, ny)
-        vy1(:, ny+2) = vy1(:, ny)
-        vz1(:, ny+1) = vz1(:, ny)
-        vz1(:, ny+2) = vz1(:, ny)
       END IF
     END IF
     IF (down == MPI_PROC_NULL) THEN
@@ -379,13 +298,6 @@ CONTAINS
         vy1(:, -2) = vy1(:, 2)
         vz1(:, -1) = vz1(:, 1)
         vz1(:, -2) = vz1(:, 2)
-      ELSE IF (ybc_down == BC_OPEN) THEN
-        vx1(:, -2) = vx1(:, 0)
-        vy1(:, -2) = vy1(:, 0)
-        vz1(:, -2) = vz1(:, 0)
-        vx1(:, -1) = vx1(:, 0)
-        vy1(:, -1) = vy1(:, 0)
-        vz1(:, -1) = vz1(:, 0)
       END IF
     END IF
 
@@ -407,12 +319,6 @@ CONTAINS
       rho( 0, :) = rho(1, :)
       rho(-1, :) = rho(2, :)
     END IF
-    IF (right == MPI_PROC_NULL .AND. xbc_right == BC_OPEN) THEN
-      rho(nx+1, :) = rho(nx  , :)
-    END IF
-    IF (left == MPI_PROC_NULL .AND. xbc_left == BC_OPEN) THEN
-      rho( 0, :) = rho(1, :)
-    END IF
     
     IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OTHER) THEN
       rho(:, ny+1) = rho(:, ny  )
@@ -422,12 +328,7 @@ CONTAINS
       rho(:, 0) = rho(:, 1) 
       rho(:, -1) = rho(:, 2)
     END IF
-    IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OPEN) THEN
-      rho(:, ny+1) = rho(:, ny  )
-    END IF
-    IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OPEN) THEN
-      rho(:, 0) = rho(:, 1) 
-    END IF
+
 
   END SUBROUTINE density_bcs
 
