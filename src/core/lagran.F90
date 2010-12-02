@@ -77,9 +77,9 @@ CONTAINS
      DEALLOCATE (bx1, by1, bz1, qxy, qxz, qyz, qxx, qyy, visc_heat, pressure, &
          flux_x, flux_y, flux_z, curlb)
  
-     CALL energy_bcs
-     CALL density_bcs
-     CALL velocity_bcs       
+      CALL energy_bcs
+      CALL density_bcs
+      CALL velocity_bcs  
 
   END SUBROUTINE lagrangian_step
 
@@ -356,15 +356,15 @@ CONTAINS
         qyy(ix, iy) = 0.0_num
 #ifndef Q_MONO
         qxy(ix, iy) = sxy * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(s)))
-        qxz(ix, iy) = sxz * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(s)))
+            * (visc1 * cf + L2 * visc2 * ABS(sxy))) 
+        qxz(ix, iy) = sxz * (L2 * rho(ix, iy) &   
+            * (visc1 * cf + L2 * visc2 * ABS(sxz))) 
         qyz(ix, iy) = syz * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(s)))
+            * (visc1 * cf + L2 * visc2 * ABS(syz))) 
         qxx(ix, iy) = sxx * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(s)))
+            * (visc1 * cf + L2 * visc2 * ABS(sxx))) 
         qyy(ix, iy) = syy * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(s)))
+            * (visc1 * cf + L2 * visc2 * ABS(syy))) 
 #endif
         qxy(ix, iy) = qxy(ix, iy) + 2.0_num * sxy * rho(ix, iy) * visc3 
         qxz(ix, iy) = qxz(ix, iy) + 2.0_num * sxz * rho(ix, iy) * visc3 
