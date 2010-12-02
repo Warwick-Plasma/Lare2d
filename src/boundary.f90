@@ -185,7 +185,6 @@ CONTAINS
       bz( 0, :) = bz(1, :)
       bz(-1, :) = bz(2, :)
     END IF
-
     IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OTHER) THEN
       bz(:, ny+1) = bz(:, ny  )
       bz(:, ny+2) = bz(:, ny-1)
@@ -193,6 +192,19 @@ CONTAINS
     IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OTHER) THEN
       bz(:,  0) = bz(:, 1)
       bz(:, -1) = bz(:, 2)
+    END IF
+
+    IF (right == MPI_PROC_NULL .AND. xbc_right == BC_OPEN) THEN
+      bz(nx+1, :) = bz(nx  , :)
+    END IF
+    IF (left == MPI_PROC_NULL .AND. xbc_left == BC_OPEN) THEN
+      bz( 0, :) = bz(1, :)
+    END IF
+    IF (up == MPI_PROC_NULL .AND. ybc_up == BC_OPEN) THEN
+      bz(:, ny+1) = bz(:, ny  )
+    END IF
+    IF (down == MPI_PROC_NULL .AND. ybc_down == BC_OPEN) THEN
+      bz(:,  0) = bz(:, 1)
     END IF
 
   END SUBROUTINE bz_bcs
