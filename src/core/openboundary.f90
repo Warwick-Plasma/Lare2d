@@ -331,7 +331,7 @@ CONTAINS
     bzbc(0) = -lambdag  / bxbc(0)                  
     
  
-    IF (beta > 0.01_num .AND. beta < 10.0_num) THEN
+    IF (beta > 0.1_num .AND. beta < 10.0_num) THEN
        pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
        pg = 0.5_num * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
   
