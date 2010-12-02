@@ -42,11 +42,12 @@ CONTAINS
 
 
   SUBROUTINE damp_boundaries
-  
+    ! note the damping in this routines may need to be customised for each problem
     REAL(num) :: a, d
   
     IF (damping) THEN
       ! right boundary
+    IF (right == MPI_PROC_NULL) THEN   
       d = 3.0_num * x_end / 4.0_num
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
@@ -57,9 +58,11 @@ CONTAINS
             vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
           END IF
         END DO
-      END DO
+      END DO 
+    END IF
 
       ! left boundary
+    IF (left == MPI_PROC_NULL) THEN   
       d = 3.0_num * x_start / 4.0_num
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
@@ -70,9 +73,11 @@ CONTAINS
             vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
           END IF
         END DO
-      END DO
+      END DO  
+    END IF
       
-      ! top boundary
+    ! top boundary
+    IF (up == MPI_PROC_NULL) THEN   
       d = 3.0_num * y_end / 4.0_num
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
@@ -84,8 +89,10 @@ CONTAINS
           END IF
         END DO
       END DO
+    END IF     
 
-      ! bottom boundary
+      ! bottom boundary    
+      IF(down == MPI_PROC_NULL) THEN
       d = 3.0_num * y_start / 4.0_num
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
@@ -97,6 +104,7 @@ CONTAINS
           END IF
         END DO
       END DO
+    END IF
         
     END IF
   
