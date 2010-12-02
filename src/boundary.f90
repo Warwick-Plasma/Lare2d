@@ -16,14 +16,40 @@ CONTAINS
   SUBROUTINE set_boundary_conditions
 
     LOGICAL :: first_call = .TRUE.
+    LOGICAL :: second_call = .FALSE.
+    
+    IF (second_call) THEN
+      IF (xbc_right == BC_OPEN) THEN
+        bx(nx+2,:) = bx(nx+1,:)
+        by(nx+2,:) = by(nx+1,:)
+        bz(nx+2,:) = bz(nx+1,:)
+      END IF        
+      IF (xbc_left == BC_OPEN) THEN
+        bx(-2,:) = bx(-1,:)
+        by(-1,:) = by(0,:)
+        bz(-1,:) = bz(0,:)
+      END IF        
+      IF (ybc_up == BC_OPEN) THEN
+        bx(:,ny+2) = bx(:,ny+1)
+        by(:,ny+2) = by(:,ny+1)
+        bz(:,ny+2) = bz(:,ny+1)
+      END IF        
+      IF (ybc_down == BC_OPEN) THEN
+        bx(:,-1) = bx(:,0)
+        by(:,-2) = by(:,-1)
+        bz(:,-1) = bz(:,0)
+      END IF        
+      second_call = .FALSE.
+    END IF
 
     IF (first_call) THEN
       any_open = .FALSE.
       IF ((xbc_right == BC_OPEN) .OR. (xbc_left == BC_OPEN) &
-          .OR. (ybc_up == BC_OPEN) .OR. (ybc_down == BC_OPEN)) any_open = .TRUE.
-      first_call = .FALSE.
+          .OR. (ybc_up == BC_OPEN) .OR. (ybc_down == BC_OPEN)) any_open = .TRUE.     
+      first_call = .FALSE.  
+      second_call = .TRUE.  
     END IF
-
+    
   END SUBROUTINE set_boundary_conditions
 
 
