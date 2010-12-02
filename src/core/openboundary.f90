@@ -11,9 +11,6 @@ MODULE openboundary
   REAL(num), DIMENSION(0:1) :: bxbc, bybc, bzbc
   REAL(num), DIMENSION(0:1) :: rbc, ebc
 
-  REAL(num) :: v0, v1
-  INTEGER :: ndx, ndy
-
 CONTAINS
 
 
@@ -38,7 +35,6 @@ CONTAINS
         bybc(1) = by(nx, iy)
         bzbc(1) = bz(nx, iy)
         rbc(1) = rho(nx, iy)
-        rbc(0) = rho(nx+1, iy)
         ebc(1) = energy(nx, iy)
 
         pbc = (gamma - 1.0_num) * energy(nx, iy) * rho(nx, iy)
@@ -69,9 +65,6 @@ CONTAINS
           CALL open_bcs_3
         END IF
 
-        v0 = SQRT(vx(nx+1, iy)**2 + vy(nx+1, iy)**2 + vz(nx+1, iy)**2)
-        v1 = SQRT(vxbc(0)**2 + vybc(0)**2 + vzbc(0)**2)
-
         rho(nx+1, iy) = rbc(0)
         energy(nx+1, iy) = ebc(0)
         bz(nx+1, iy) = bzbc(0)
@@ -85,15 +78,16 @@ CONTAINS
 
     ! left bounday
     IF (xbc_left == BC_OPEN .AND. left == MPI_PROC_NULL) THEN
+      direction = -1.0_num
+
       DO iy = -1, ny + 1
-        vxbc(1) = vx(0, iy)
+        vxbc(1) = direction * vx(0, iy)
         vybc(1) = vy(0, iy)
         vzbc(1) = vz(0, iy)
-        bxbc(1) = bx(0, iy)
+        bxbc(1) = direction * bx(0, iy)
         bybc(1) = by(1, iy)
         bzbc(1) = bz(1, iy)
         rbc(1) = rho(1, iy)
-        rbc(0) = rho(0, iy)
         ebc(1) = energy(1, iy)
 
         pbc = (gamma - 1.0_num) * energy(1, iy) * rho(1, iy)
@@ -101,14 +95,13 @@ CONTAINS
         pfar = (gamma - 1.0_num) * energy(-1, iy) * rho(-1, iy)
 
         rhofar = rho(-1, iy)
-        uxfar = vx(-2, iy)
+        uxfar = direction * vx(-2, iy)
         uyfar = vy(-2, iy)
         uzfar = vz(-2, iy)
-        bxfar = bx(-2, iy)
+        bxfar = direction * bx(-2, iy)
         byfar = by(-1, iy)
         bzfar = bz(-1, iy)
 
-        direction = -1.0_num
         vnorm = vx(0, iy)
         bperp = SQRT(byfar**2 + bzfar**2)
 
@@ -118,16 +111,13 @@ CONTAINS
           CALL open_bcs_2
         ELSE
           CALL open_bcs_3
-        END IF
-
-        v0 = SQRT(vx(-1, iy)**2 + vy(-1, iy)**2 + vz(-1, iy)**2)
-        v1 = SQRT(vxbc(0)**2 + vybc(0)**2 + vzbc(0)**2)
+        END IF            
 
         rho(0, iy) = rbc(0)
         energy(0, iy) = ebc(0)
         bz(0, iy) = bzbc(0)
-        bx(-1, iy) = bxbc(0)
-        vx(-1, iy) = vxbc(0)
+        bx(-1, iy) = direction * bxbc(0)
+        vx(-1, iy) = direction * vxbc(0)
         vy(-1, iy) = vybc(0)
         vz(-1, iy) = vzbc(0)
         by(0, iy) = bybc(0)
@@ -144,7 +134,6 @@ CONTAINS
         bybc(1) = bx(ix, ny)
         bzbc(1) = bz(ix, ny)
         rbc(1) = rho(ix, ny)
-        rbc(0) = rho(ix, ny+1)
         ebc(1) = energy(ix, ny)
 
         pbc = (gamma - 1.0_num) * energy(ix, ny) * rho(ix, ny)
@@ -169,11 +158,8 @@ CONTAINS
           CALL open_bcs_2
         ELSE
           CALL open_bcs_3
-        END IF
-
-        v0 = SQRT(vx(ix, ny+1)**2 + vy(ix, ny+1)**2 + vz(ix, ny+1)**2)
-        v1 = SQRT(vxbc(0)**2 + vybc(0)**2 + vzbc(0)**2)
-
+        END IF  
+        
         rho(ix, ny+1) = rbc(0)
         energy(ix, ny+1) = ebc(0)
         bz(ix, ny+1) = bzbc(0)
@@ -187,15 +173,16 @@ CONTAINS
 
     ! bottom boundary
     IF (ybc_down == BC_OPEN .AND. down == MPI_PROC_NULL) THEN
+      direction = -1.0_num
+
       DO ix = -1, nx + 1
-        vxbc(1) = vy(ix, 0)
+        vxbc(1) = direction * vy(ix, 0)
         vybc(1) = vx(ix, 0)
         vzbc(1) = vz(ix, 0)
-        bxbc(1) = by(ix, 0)
+        bxbc(1) = direction * by(ix, 0)
         bybc(1) = bx(ix, 1)
         bzbc(1) = bz(ix, 1)
         rbc(1) = rho(ix, 1)
-        rbc(0) = rho(ix, 0)
         ebc(1) = energy(ix, 1)
 
         pbc = (gamma - 1.0_num) * energy(ix, 1) * rho(ix, 1)
@@ -203,14 +190,13 @@ CONTAINS
         pfar = (gamma - 1.0_num) * energy(ix, -1) * rho(ix, -1)
 
         rhofar = rho(ix, -1)
-        uxfar = vy(ix, -2)
+        uxfar = direction * vy(ix, -2)
         uyfar = vx(ix, -2)
         uzfar = vz(ix, -2)
-        bxfar = by(ix, -2)
+        bxfar = direction * by(ix, -2)
         byfar = bx(ix, -1)
         bzfar = bz(ix, -1)
 
-        direction = -1.0_num
         vnorm = vy(ix, 0)
         bperp = SQRT(byfar**2 + bzfar**2)
 
@@ -222,15 +208,12 @@ CONTAINS
           CALL open_bcs_3
         END IF
 
-        v0 = SQRT(vx(ix, -1)**2 + vy(ix, -1)**2 + vz(ix, -1)**2)
-        v1 = SQRT(vxbc(0)**2 + vybc(0)**2 + vzbc(0)**2)
-
         rho(ix, 0) = rbc(0)
         energy(ix, 0) = ebc(0)
         bz(ix, 0) = bzbc(0)
-        by(ix, -1) = bxbc(0)
+        by(ix, -1) = direction * bxbc(0)
         vx(ix, -1) = vybc(0)
-        vy(ix, -1) = vxbc(0)
+        vy(ix, -1) = direction * vxbc(0)
         vz(ix, -1) = vzbc(0)
         bx(ix, 0) = bybc(0)
       END DO
@@ -246,7 +229,7 @@ CONTAINS
     REAL(num) :: c0, ct, cf
     REAL(num) :: pg, rhog, cffar, c0far, ctfar
     REAL(num) :: pmagg, uxg
-    REAL(num), DIMENSION(3) :: vtest, pstar, vstar, rhostar, pmagstar
+    REAL(num), DIMENSION(3) :: vtest, pstar, vstar, rhostar, pmagstar, bystar, bzstar
     INTEGER :: i
 
     c0far = SQRT(gamma * pfar / rhofar)
@@ -263,28 +246,37 @@ CONTAINS
     vtest(3) = vnorm
 
     DO i = 1, 3
-      IF (direction * vtest(i) >= 0.0_num) THEN
-        pstar(i) =  pbc + 0.5_num * (bybc(1)**2 + bzbc(1)**2 - bxbc(1)**2)
-        pmagstar(i) =  0.5_num * (bybc(1)**2 + bzbc(1)**2 - bxbc(1)**2)
+      IF (vtest(i) >= 0.0_num) THEN
+        pstar(i) =  pbc + 0.5_num * (bybc(1)**2 + bzbc(1)**2)
+        pmagstar(i) =  0.5_num * (bybc(1)**2 + bzbc(1)**2)
         vstar(i) = vxbc(1)
-        rhostar(i) = rbc(1)
+        rhostar(i) = rbc(1) 
+        bystar(i) = bybc(1)
+        bzstar(i) = bzbc(1)
       ELSE
-        pstar(i) = pfar + 0.5_num * (byfar**2 + bzfar**2 - bxfar**2)
-        pmagstar(i) = 0.5_num * (byfar**2 + bzfar**2 - bxfar**2)
+        pstar(i) = pfar + 0.5_num * (byfar**2 + bzfar**2)
+        pmagstar(i) = 0.5_num * (byfar**2 + bzfar**2)
         vstar(i) = uxfar
         rhostar(i) = rhofar
+        bystar(i) = byfar
+        bzstar(i) = bzfar
       END IF
     END DO
 
-    bxbc(0) = bxbc(1)
-    bybc(0) = bybc(1)
-    bzbc(0) = bzbc(1)
-    pmagg = 0.5_num * (bybc(0)**2 + bzbc(0)**2 - bxbc(0)**2)
+    bxbc(0) = 0.0_num
+    bybc(0) = 0.5_num * (bystar(1) + bystar(2))    
+    bzbc(0) = 0.5_num * (bzstar(1) + bzstar(2)) 
+
     pg = 0.5_num &
         * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
-    rhog = ((pg - pmagg) - (pstar(3) - pmagstar(3))) / c0far**2 + rhostar(3)
-    rbc(0) = MAX(rhog, none_zero)
-    ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+    pmagg = 0.5_num * (bybc(0)**2 + bzbc(0)**2)  
+    pmagg = MIN(pg, pmagg)
+    
+    rhog = (MAX((pg - pmagg),none_zero) - MAX((pstar(3) - pmagstar(3)),none_zero)) / cffar**2 + rhostar(3)
+    rbc(0) = MAX(rhog, none_zero)    
+    
+    ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)  
+    
     uxg = 0.5_num &
         * (vstar(1) + vstar(2) + (pstar(1) - pstar(2)) / (rhofar * cffar))
     vxbc(0) = uxg
@@ -322,7 +314,7 @@ CONTAINS
     vtest(5) = vnorm
 
     DO i = 1, 5
-      IF (direction * vtest(i) >= 0.0_num) THEN
+      IF (vtest(i) >= 0.0_num) THEN
         pstar(i) = pbc + 0.5_num * (bybc(1)**2 + bzbc(1)**2 - bxbc(1)**2)
         pmagstar(i) = 0.5_num * (bybc(1)**2 + bzbc(1)**2 - bxbc(1)**2)
         lambdaystar(i) = -bybc(1) * bxbc(1)
@@ -362,10 +354,11 @@ CONTAINS
     vzbc(0) = uzg
     pmagg = 0.5_num * (bybc(0)**2 + bzbc(0)**2 - bxbc(0)**2)
 
-    pg = 0.5_num &
-        * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
+    pg = 0.5_num * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
+    pmagg = MIN(pg, pmagg)
+     
+    rhog = (MAX((pg - pmagg),none_zero) - MAX((pstar(5) - pmagstar(5)),none_zero)) / c0far**2 + rhostar(5) 
 
-    rhog = ((pg - pmagg) - (pstar(5) - pmagstar(5))) / c0far**2 + rhostar(5)
     rbc(0) = MAX(rhog, none_zero)
     ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
 
@@ -427,7 +420,7 @@ CONTAINS
 
     ! Now check which characteristics are inflowing, outflowing, non-moving
     DO i = 1, 7
-      IF (direction * vtest(i)  >= 0.0_num) THEN
+      IF (vtest(i)  >= 0.0_num) THEN
         pstar(i) = pbc + 0.5_num * (bybc(1)**2 + bzbc(1)**2 - bxbc(1)**2)
         pmagstar(i) = 0.5_num * (bybc(1)**2 + bzbc(1)**2 - bxbc(1)**2)
         rhostar(i) = rbc(1)
@@ -479,7 +472,8 @@ CONTAINS
     byg = -lambdag / bxg
 
     pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
-    rhog = ((pg - pmagg) - (pstar(5) - pmagstar(5))) / c0**2 + rhostar(5)
+    pmagg = MIN(pg, pmagg)
+    rhog = (MAX((pg - pmagg),none_zero) - MAX((pstar(5) - pmagstar(5)),none_zero)) / c0**2 + rhostar(5)
     rhog = MAX(rhog, none_zero)
     rbc(0) = rhog
     ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
