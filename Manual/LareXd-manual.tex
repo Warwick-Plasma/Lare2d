@@ -25,7 +25,7 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{Version 2.3}
+\date{Version 2.4}
 \maketitle
 
 \thispagestyle{empty}
@@ -254,6 +254,20 @@ where $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recov
 Depending on your problem you may need to change $b_{min}$ which is set as a constant (parameter) in {\tt src/core/conduct.f90}. It is also possible to control the fractional accuracy of the SOR Gauss-Seidel scheme that is used to update the temperature, this is also in {\tt src/core/conduct.f90} and a value of $10^{-5}$ is known to reproduce analytic results well. If runtime becomes an issue this can be reduced but then you will need to test more carefully.
 
 % section thermal_conduction (end)
+            
+\section{Open  Boundaries} % (fold)
+\label{sec:open_bcs}
+Open boundaries are now implemented via far-field Riemann characteristics. This calculates the slow, fast, Alfven etc.speeds and then projects 1D Riemann invariants into ghost cells. If the wave is outgoing values are propagated from the inside the domain into the ghost cells. If the waves are inward propagating then values are carried in from the far-field. This requires a fixed far-field, i.e. specified values of $\rho, \epsilon, v_x, v_y, B_x, B_y, B_z$. So that the open boundary conditions doesn't affect the initial equilibrium these are set to the ghost cell values as defined in the initial conditions. As a result this open boundaries are only accurate if the magnetic field does not change a lot from the initial field. More accurately the far-field specified at $t=0$ must be a valid far-field later in the simulation. Otherwise the far-field problem for MHD is not well posed.
+
+{\it Notes:} In this version these routines have been tested with simple straight fields and x-point fields and they seem robust. Reflection is typically a few percent but can be as large as 10\% in extreme cases. It is best to just try for your problem and see if they work. If not let me know so I can either look to fix the problem or list the initial conditions here as one's which are known not to work. If the open boundaries do fail then the best option is to use a stretched grid with a damping layer. Sometimes simply commenting out the line {\tt CALL open\_bcs} can help! Most of these problems are to do with the open boundary problem for MHD not being well posed so in all these cases you will be conditioning the solution so caution is needed. 
+
+The open boundaries have not been tested with resistivity or thermal conductivity. If this causes problems be sure that resistivity is zero at the boundary. Also the open boundaries do not work with gravity. Open boundaries with gravity should be OK on surfaces of constant potential, i.e. not in the direction of gravity, but gravity must be turned off at the top of the domain. At the lower boundary care must be taken to not let the solution fall through the bottom. Experiment to find the best approach. If all fails use damping regions.
+
+% section open_bcs (end)
+            
+
+
+
 
 \section{The Grid}
 In order to define the initial conditions and understand the location of output arrays in physical space it is vital that all users know the underlying structure of the grid. This is best explained by stepping up through 1D then 2D and finally 3D computational cells. In 1D there are $nx$ computational cells. These are labelled from $ix=1$ up to $ix=nx$. The variables used in the code are not defined at the same point in a cell. We therefore need to be able to access the location of different parts of the grid to set up the initial conditions. For this $xb_i$ is the position of the right hand boundary of a cell and $xc_i$ the position of the cell centre. This means that the left hand boundary of the computational domain is at $xb_0$. The width of each cell is $dxb_i$ and the distance between cell centres is $dxc_i$. In this coordinate system the velocities are all defined at the cell boundaries and all scalars (density, pressure, specific internal energy density) are defined at cell centres. This is shown in figure \ref{1d-staggered}. The magnetic field components are defined at different locations for each component. $B_x$ is defined at the cell boundary ($xb_i$) while the $B_y$ and $B_z$ components are cell centred. Note that this staggering is essential for the accuracy, and conservation properties, of {\it LareXd}. 
@@ -883,9 +897,9 @@ From now on the easiest way to learn how to use VisIt is to experiment.
 
 Thermal conduction in Lare is based on the Braginskii thermal conduction in the presence of a magnetic field and is of the form\\
 \[
-\rho \frac{\partial \epsilon}{\partial t} = \nabla . \left(\vec{k} . \nabla T \vec{n} \right) +  \nabla . \left(  \frac{B_{min}^2}{B^2+B_{min}^2} \kappa \nabla T \right)
+\rho \frac{\partial \epsilon}{\partial t} = \nabla . \left(\vec{k} . \nabla T \vec{n} \right) +  \nabla . \left(  \frac{b_{min}^2}{B^2+b_{min}^2} \kappa \nabla T \right)
 \]
-where $\vec{k} = \kappa \vec{n}$, $\vec{n} = \vec{B}/B$ and $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. The notes below cover the most obscure elements of the notation used in the code but should make sense when read in conjunction with the source code in {\tt src/core/conduct.f90}. It is presented here as these routines are not documented in any of the references. 
+where $\vec{k} = \kappa \vec{n}$, $\vec{n} = \vec{B}/(B^2+b_{min}^2)^{1/2}$ and $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. The notes below cover the most obscure elements of the notation used in the code but should make sense when read in conjunction with the source code in {\tt src/core/conduct.f90}. It is presented here as these routines are not documented in any of the references. 
 
 Firstly the conduction is written in terms of the heat flux vector $\vec{q}$ so that
 \[
@@ -897,7 +911,7 @@ Using centre differencing, and assuming the grid stretching is modest,  then giv
 \rho_{i,j,k}^n \frac{\epsilon_{i,j,k}^{n+1}- \epsilon_{i,j,k}^{n}}{\Delta t}  =  
 \frac{qx_{i,j,k}- qx_{i-1,j,k}}{\Delta x} + ...
 \]      
-here terms in y and z derivatives have been dropped for simplicity. To avoid using nx as the x component of $\vec{n}$ (not allowed as nx is the number of grid points) the code defines $\vec{u}=\vec{B}/B$ so that $\vec{k} = \kappa \vec{u}$. The vector $\vec{u}$ is face centred the same as the magnetic field. The x component of the heat flux is therefore
+here terms in y and z derivatives have been dropped for simplicity. To avoid using nx as the x component of $\vec{n}$ (not allowed as nx is the number of grid points) the code defines $\vec{u}=\vec{B}/(B^2+b_{min}^2)^{1/2}$ so that $\vec{k} = \kappa \vec{u}$. The vector $\vec{u}$ is face centred the same as the magnetic field. The x component of the heat flux is therefore
 \begin{eqnarray*}
 qx_{i,j,k}&=&\left(uxkx_{i,j,k} + \frac{B_{min}^2}{B^2+B_{min}^2}\kappa \right)\left(\frac{T_{i+1,j,k}-T_{i,j,k}}{dxc_i} 
     \right) \\
@@ -915,7 +929,7 @@ The variable $e2T$ is used in the code to convert $\epsilon$ into $T$ so that $T
 \epsilon_{i,j,k}^{n+1}=\frac{\epsilon_{i,j,k}^{n} + a_2 \Delta t /\rho_{i,j,k}^n}{1+e2t\ a_1 \Delta t /\rho_{i,j,k}^n}
 \]
 
-This is iterated to convergence using SOR. The solution is deemed to have converged when the maximum residual error is less than \texttt{abs\_error} where \texttt{abs\_error=fractional\_error * MAXVAL(energy)} and \texttt{fractional\_error} is a specified constant. 
+This is iterated to convergence using SOR. The solution is deemed to have converged when the maximum residual error is less than \texttt{abs\_error} where \texttt{abs\_error=fractional\_error * MAXVAL(energy)} and \texttt{fractional\_error} is a constant specified at the top of {\tt SUBROUTINE conduct\_heat}. The parameter $b_{min}$ is also specified at the top of this routine. You may need to experiment with these values for different classes of problem.
 
 Note that the normalising constants \texttt{B0, L0, RHO0} must be set in \texttt{control.f90} for the conduction to work as it uses the real Braginskii thermal conductivity. Thus if \texttt{B0 = 0.005}, \texttt{L0 = 1.e6} and \texttt{RHO0 = 1.67e-13}, i.e. typical coronal values, then the normalising unit temperature is \texttt{T0 = 6.92e10} and as a result the normalised temperatures will all be much less than one for coronal temperatures.  
 
