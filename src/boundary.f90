@@ -22,7 +22,7 @@ CONTAINS
       IF (xbc_right == BC_OPEN) THEN
         bx(nx+2,:) = bx(nx+1,:)
         by(nx+2,:) = by(nx+1,:)
-        bz(nx+2,:) = bz(nx+1,:)
+        bz(nx+2,:) = bz(nx+1,:) 
       END IF        
       IF (xbc_left == BC_OPEN) THEN
         bx(-2,:) = bx(-1,:)
@@ -38,7 +38,8 @@ CONTAINS
         bx(:,-1) = bx(:,0)
         by(:,-2) = by(:,-1)
         bz(:,-1) = bz(:,0)
-      END IF        
+      END IF                
+      
       second_call = .FALSE.
     END IF
 
@@ -237,43 +238,31 @@ CONTAINS
   
     IF (right == MPI_PROC_NULL) THEN
       IF (xbc_right == BC_OTHER) THEN
-        vx(nx+1, :) = vx(nx-1, :)
-        vx(nx+2, :) = vx(nx-2, :)
-        vy(nx+1, :) = vy(nx-1, :)
-        vy(nx+2, :) = vy(nx-2, :)
-        vz(nx+1, :) = vz(nx-1, :)
-        vz(nx+2, :) = vz(nx-2, :)
+        vx(nx:nx+2, :) = 0.0_num
+        vy(nx:nx+2, :) = 0.0_num
+        vz(nx:nx+2, :) = 0.0_num
       END IF
     END IF
     IF (left == MPI_PROC_NULL) THEN
       IF (xbc_left == BC_OTHER) THEN
-        vx(-2, :) = vx(2, :)
-        vx(-1, :) = vx(1, :)
-        vy(-1, :) = vy(1, :)
-        vy(-2, :) = vy(2, :)
-        vz(-1, :) = vz(1, :)
-        vz(-2, :) = vz(2, :)
+        vx(0:-2, :) = 0.0_num
+        vy(0:-2, :) = 0.0_num
+        vz(0:-2, :) = 0.0_num
       END IF
     END IF
   
     IF (up == MPI_PROC_NULL) THEN
       IF (ybc_up == BC_OTHER) THEN
-        vx(:, ny+1) = vx(:, ny-1)
-        vx(:, ny+2) = vx(:, ny-2)
-        vy(:, ny+1) = vy(:, ny-1)
-        vy(:, ny+2) = vy(:, ny-2)
-        vz(:, ny+1) = vz(:, ny-1)
-        vz(:, ny+2) = vz(:, ny-2)
+        vx(:, ny:ny+2) = 0.0_num
+        vy(:, ny:ny+2) = 0.0_num
+        vz(:, ny:ny+2) = 0.0_num
       END IF
     END IF
     IF (down == MPI_PROC_NULL) THEN
       IF (ybc_down == BC_OTHER) THEN
-        vx(:, -1) = vx(:, 1)
-        vx(:, -2) = vx(:, 2)
-        vy(:, -1) = vy(:, 1)
-        vy(:, -2) = vy(:, 2)
-        vz(:, -1) = vz(:, 1)
-        vz(:, -2) = vz(:, 2)
+        vx(:, 0:-2) = 0.0_num
+        vy(:, 0:-2) = 0.0_num
+        vz(:, 0:-2) = 0.0_num
       END IF
     END IF
   
@@ -284,49 +273,37 @@ CONTAINS
   SUBROUTINE remap_v_bcs
 
     CALL remap_v_MPI
-
+    
     IF (right == MPI_PROC_NULL) THEN
       IF (xbc_right == BC_OTHER) THEN
-        vx1(nx+1, :) = vx1(nx-1, :)
-        vx1(nx+2, :) = vx1(nx-2, :)
-        vy1(nx+1, :) = vy1(nx-1, :)
-        vy1(nx+2, :) = vy1(nx-2, :)
-        vz1(nx+1, :) = vz1(nx-1, :)
-        vz1(nx+2, :) = vz1(nx-2, :)
+        vx1(nx:nx+2, :) = 0.0_num
+        vy1(nx:nx+2, :) = 0.0_num
+        vz1(nx:nx+2, :) = 0.0_num
       END IF
     END IF
     IF (left == MPI_PROC_NULL) THEN
       IF (xbc_left == BC_OTHER) THEN
-        vx1(-2, :) = vx1(2, :)
-        vx1(-1, :) = vx1(1, :)
-        vy1(-1, :) = vy1(1, :)
-        vy1(-2, :) = vy1(2, :)
-        vz1(-1, :) = vz1(1, :)
-        vz1(-2, :) = vz1(2, :)
+        vx1(0:-2, :) = 0.0_num
+        vy1(0:-2, :) = 0.0_num
+        vz1(0:-2, :) = 0.0_num
       END IF
     END IF
-
+    
     IF (up == MPI_PROC_NULL) THEN
       IF (ybc_up == BC_OTHER) THEN
-        vx1(:, ny+1) = vx1(:, ny-1)
-        vx1(:, ny+2) = vx1(:, ny-2)
-        vy1(:, ny+1) = vy1(:, ny-1)
-        vy1(:, ny+2) = vy1(:, ny-2)
-        vz1(:, ny+1) = vz1(:, ny-1)
-        vz1(:, ny+2) = vz1(:, ny-2)
+        vx1(:, ny:ny+2) = 0.0_num
+        vy1(:, ny:ny+2) = 0.0_num
+        vz1(:, ny:ny+2) = 0.0_num
       END IF
     END IF
     IF (down == MPI_PROC_NULL) THEN
       IF (ybc_down == BC_OTHER) THEN
-        vx1(:, -1) = vx1(:, 1)
-        vx1(:, -2) = vx1(:, 2)
-        vy1(:, -1) = vy1(:, 1)
-        vy1(:, -2) = vy1(:, 2)
-        vz1(:, -1) = vz1(:, 1)
-        vz1(:, -2) = vz1(:, 2)
+        vx1(:, 0:-2) = 0.0_num
+        vy1(:, 0:-2) = 0.0_num
+        vz1(:, 0:-2) = 0.0_num
       END IF
     END IF
-
+    
   END SUBROUTINE remap_v_bcs
 
 
