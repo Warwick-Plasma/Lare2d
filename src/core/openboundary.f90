@@ -58,9 +58,7 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
-        ELSE IF (bperp <= fraction * ABS(bxfar)) THEN
-          CALL open_bcs_2
-        ELSE
+        ELSE 
           CALL open_bcs_2
         END IF
 
@@ -104,9 +102,7 @@ CONTAINS
 
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
-        ELSE IF (bperp <= fraction * ABS(bxfar)) THEN
-          CALL open_bcs_2
-        ELSE
+        ELSE 
           CALL open_bcs_2
         END IF            
 
@@ -150,9 +146,7 @@ CONTAINS
 
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
-        ELSE IF (bperp <= fraction * ABS(bxfar)) THEN
-          CALL open_bcs_2
-        ELSE
+        ELSE 
           CALL open_bcs_2
         END IF  
         
@@ -196,9 +190,7 @@ CONTAINS
 
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
-        ELSE IF (bperp <= fraction * ABS(bxfar)) THEN
-          CALL open_bcs_2
-        ELSE
+        ELSE 
           CALL open_bcs_2
         END IF
 
@@ -339,7 +331,7 @@ CONTAINS
     bzbc(0) = -lambdag  / bxbc(0)                  
     
  
-    IF (beta > 0.01_num) THEN
+    IF (beta > 0.01_num .AND. beta < 10.0_num) THEN
        pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
        pg = 0.5_num * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
   
@@ -353,7 +345,25 @@ CONTAINS
        vybc(0) = 0.5_num * (uystar(3) + uystar(4) &
               + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
        vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
-              + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
+              + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))  
+    ELSE IF (beta > 10.0_num) THEN
+       lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4))
+       bybc(0) = -lambdag / bxbc(0)                   
+    
+       lambdag = 0.5_num * (lambdazstar(3) + lambdazstar(4))
+       bzbc(0) = -lambdag  / bxbc(0)
+       pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
+       pg = 0.5_num * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
+  
+       rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0far**2 + rhostar(5) 
+  
+       rbc(0) = MAX(rhog, none_zero)
+       ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+  
+       vxbc(0) = 0.5_num &
+              * (uxstar(1) + uxstar(2) + (pstar(1) - pstar(2)) / (rhofar * c0far))
+       vybc(0) = 0.5_num * (uystar(3) + uystar(4)) 
+       vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4)) 
     ELSE 
        pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
        pg = 0.5_num * (pstar(1) + pstar(2)) 
@@ -375,11 +385,11 @@ CONTAINS
 
 
 
+! This routine is currently not used and is here for later extensions and
+! improvements to the open boundary conditions if they are needed.
   SUBROUTINE open_bcs_3
     ! Solve for when bx and bperp are non zero. Solves in the coordinate system
     ! such that y-axis points along by_farfield  
-    ! This routine is currently not used and is here for later extensions and
-    ! improvements to the open boundary conditions if they are needed.
     REAL(num), DIMENSION(7) :: vtest
     INTEGER :: i
     REAL(num) :: a, b, c, d, e, f, g
