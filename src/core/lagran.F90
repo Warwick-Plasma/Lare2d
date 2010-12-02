@@ -439,8 +439,6 @@ CONTAINS
   ! Calculate the spatial profile of the resistivity at the current timestep
   ! Note that this is a core routine so it works in normalised units
   ! This includes lengths etc.
-  ! This routine also sets the Lambda_i, normalised ion - inertial depth, array
-  ! used in the Hall term
   SUBROUTINE eta_calc
 
     REAL(num) :: jx, jy, jz, jx1, jx2, jy1, jy2
@@ -471,12 +469,6 @@ CONTAINS
       END DO
     ELSE
         eta = 0.0_num        
-    END IF
-
-    IF (hall_mhd) THEN
-      lambda_i = lambda0 
-    ELSE
-      lambda_i = 0.0_num  
     END IF
 
   END SUBROUTINE eta_calc

@@ -94,7 +94,7 @@ CONTAINS
     ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
     ALLOCATE(p_visc(-1:nx+2, -1:ny+2))
     ALLOCATE(eta(-1:nx+2, -1:ny+2))
-    ALLOCATE(lambda_i(-1:nx+2, -1:ny+2))
+    ALLOCATE(lambda_i(0:nx, 0:ny))
     ! shocked and resistive need to be larger to allow offset = 4 in shock_test
     ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1(-1:nx+2, -1:ny+2))
     ALLOCATE(xc(-1:nx+2), xb(-2:nx+2), dxb(-1:nx+2), dxc(-1:nx+2))

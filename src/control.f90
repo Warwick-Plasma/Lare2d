@@ -54,7 +54,7 @@ CONTAINS
 
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
-    t_end = 30.0_num
+    t_end = 7.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
@@ -102,15 +102,8 @@ CONTAINS
     eta0 = 1.e-3_num
 
     ! Turn on or off the hall_mhd term in the MHD equations
+    ! If true than lambda_i must be set in the initial conditions
     hall_mhd = .FALSE.
-
-    ! Set the ion skin depth. If SI_Input is true then
-    ! This is in metres. Note that this should be fixed to
-    ! (the speed of light) / (ion plasma frequency) with the
-    ! plasma frequncy fixed by the chosen normalisation of
-    ! density (through the normalising mass density). Here
-    ! it is treated as a free pararmeter so be careful!
-    lambda0 = 0.0_num
 
     ! Turn on or off the Braginskii thermal conduction term in
     ! the MHD equations
