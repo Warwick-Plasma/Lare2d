@@ -271,7 +271,7 @@ CONTAINS
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = flux(ix, iy) &
-            + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
+            + v_advect * dt * w6 * (1.0_num - w5)
       END DO
     END DO
 
@@ -325,7 +325,7 @@ CONTAINS
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = flux(ix, iy) &
-            + bzone(ix, iy) * v_advect * dt * w6 * (1.0_num - w5)
+            +  v_advect * dt * w6 * (1.0_num - w5)
       END DO
     END DO
 
@@ -377,7 +377,7 @@ CONTAINS
 
         flux_rho = v_advect * dt * w6 * (1.0_num - w5)
 
-        dm(ix, iy) = (bzone(ix, iy) * flux_rho + dm(ix, iy)) * dyb(iy)
+        dm(ix, iy) = (flux_rho + dm(ix, iy)) * dyb(iy)
       END DO
     END DO
 
@@ -429,7 +429,7 @@ CONTAINS
             * MIN(ABS(w4) * (dxb(ix) * vad_p + dxb(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = dm(ix, iy) * (w7 + bzone(ix, iy) * w5 * (1.0_num - w6))
+        flux(ix, iy) = dm(ix, iy) * (w7 + w5 * (1.0_num - w6))
       END DO
     END DO
 
@@ -480,7 +480,7 @@ CONTAINS
             * MIN(ABS(w4) * (dxc(ix) * vad_p + dxc(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = w7 + bzone(ix, iy) * w5 * (1.0_num - w6)
+        flux(ix, iy) = w7 + w5 * (1.0_num - w6)
       END DO
     END DO
 
@@ -561,7 +561,7 @@ CONTAINS
             * MIN(ABS(w4) * (dxc(ix) * vad_p + dxc(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = w7 + bzone(ix, iy) * w5 * (1.0_num - w6)
+        flux(ix, iy) = w7 + w5 * (1.0_num - w6)
       END DO
     END DO
 
@@ -641,7 +641,7 @@ CONTAINS
             * MIN(ABS(w4) * (dxc(ix) * vad_p + dxc(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = w7 + bzone(ix, iy) * w5 * (1.0_num - w6)
+        flux(ix, iy) = w7 + w5 * (1.0_num - w6)
       END DO
     END DO
 
