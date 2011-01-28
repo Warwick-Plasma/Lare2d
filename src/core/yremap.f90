@@ -34,10 +34,10 @@ CONTAINS
       DO ix = -1, nx+2
         ixm = ix - 1
 
-        vxb = (vx1(ix, iy) + vx1(ix, iym)) / 2.0_num     ! vx at Ex(i, j)
-        vxbm = (vx1(ixm, iy) + vx1(ixm, iym)) / 2.0_num  ! vx at Ex(i-1, j)
-        vyb = (vy1(ix, iy) + vy1(ixm, iy)) / 2.0_num     ! vy at Ey(i, j)
-        vybm = (vy1(ix, iym) + vy1(ixm, iym)) / 2.0_num  ! vy at Ey(i, j-1)
+        vxb = (vx1(ix, iy) + vx1(ix, iym)) * 0.5_num     ! vx at Ex(i, j)
+        vxbm = (vx1(ixm, iy) + vx1(ixm, iym)) * 0.5_num  ! vx at Ex(i-1, j)
+        vyb = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num     ! vy at Ey(i, j)
+        vybm = (vy1(ix, iym) + vy1(ixm, iym)) * 0.5_num  ! vy at Ey(i, j-1)
 
         dv = (REAL(xpass, num) * (vxb - vxbm) / dxb(ix) &
             + (vyb - vybm) / dyb(iy)) * dt
@@ -134,7 +134,7 @@ CONTAINS
       END DO
     END DO
     ! cv1 = vertex CV before remap
-    cv1(0:nx, 0:ny) = flux(0:nx, 0:ny) / 4.0_num
+    cv1(0:nx, 0:ny) = flux(0:nx, 0:ny) * 0.25_num
 
     DO iy = 0, ny
       iyp = iy + 1
@@ -144,12 +144,12 @@ CONTAINS
       END DO
     END DO
     ! cv2 = vertex CV after remap
-    cv2(0:nx, 0:ny) = flux(0:nx, 0:ny) / 4.0_num
+    cv2(0:nx, 0:ny) = flux(0:nx, 0:ny) * 0.25_num
 
     DO iy = -2, ny+1
       iyp = iy + 1
       DO ix = 0, nx
-        flux(ix, iy) = (vy1(ix, iy) + vy1(ix, iyp)) / 2.0_num
+        flux(ix, iy) = (vy1(ix, iy) + vy1(ix, iyp)) * 0.5_num
       END DO
     END DO
     ! vertex velocity used in remap
@@ -170,7 +170,7 @@ CONTAINS
       END DO
     END DO
     ! mass flux out of vertex CV
-    dm(0:nx, -1:ny) = flux(0:nx, -1:ny) / 4.0_num
+    dm(0:nx, -1:ny) = flux(0:nx, -1:ny) * 0.25_num
 
     DO iy = 0, ny
       iym = iy - 1
@@ -232,10 +232,10 @@ CONTAINS
 
         v_advect = vy1(ix, iy)
 
-        db    = (dyb1(ix, iy  ) + dyb1(ixp, iy  )) / 2.0_num
-        dbyp  = (dyb1(ix, iyp ) + dyb1(ixp, iyp )) / 2.0_num
-        dbyp2 = (dyb1(ix, iyp2) + dyb1(ixp, iyp2)) / 2.0_num
-        dbym  = (dyb1(ix, iym ) + dyb1(ixp, iym )) / 2.0_num
+        db    = (dyb1(ix, iy  ) + dyb1(ixp, iy  )) * 0.5_num
+        dbyp  = (dyb1(ix, iyp ) + dyb1(ixp, iyp )) * 0.5_num
+        dbyp2 = (dyb1(ix, iyp2) + dyb1(ixp, iyp2)) * 0.5_num
+        dbym  = (dyb1(ix, iym ) + dyb1(ixp, iym )) * 0.5_num
 
         w4 = bx(ix, iy ) / db
         w5 = bx(ix, iyp) / dbyp
@@ -260,7 +260,7 @@ CONTAINS
             + (1.0_num + w5) * (ABS(w2) / dyc1(ix, iym) * vad_p &
             + ABS(w3) / dyc1(ix, iyp) * vad_m)
 
-        w4 = w4 / 6.0_num
+        w4 = w4 * sixth
 
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
@@ -290,7 +290,7 @@ CONTAINS
       DO ix = 1, nx
         ixm = ix - 1
 
-        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) / 2.0_num
+        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num
 
         w4 = bz(ix, iy ) / dyb1(ix, iy )
         w5 = bz(ix, iyp) / dyb1(ix, iyp)
@@ -315,7 +315,7 @@ CONTAINS
             + (1.0_num + w5) * (ABS(w2) / dyc1(ix, iym) * vad_p &
             + ABS(w3) / dyc1(ix, iyp) * vad_m)
 
-        w4 = w4 / 6.0_num
+        w4 = w4 * sixth
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
@@ -344,7 +344,7 @@ CONTAINS
       DO ix = 0, nx+1
         ixm = ix - 1
 
-        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) / 2.0_num
+        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num
 
         dm(ix, iy) = (MAX(0.0_num, v_advect) * rho(ix, iy) &
             + MIN(0.0_num, v_advect) * rho(ix, iyp)) * dt
@@ -366,7 +366,7 @@ CONTAINS
             + (1.0_num + w5) * (ABS(w2) / dyc1(ix, iym) * vad_p &
             + ABS(w3) / dyc1(ix, iyp) * vad_m)
 
-        w4 = w4 / 6.0_num
+        w4 = w4 * sixth
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
@@ -396,7 +396,7 @@ CONTAINS
       DO ix = 0, nx
         ixm = ix - 1
 
-        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) / 2.0_num
+        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num
 
         w1 = energy(ix, iyp ) - energy(ix, iy )
         w2 = energy(ix, iy  ) - energy(ix, iym)
@@ -420,7 +420,7 @@ CONTAINS
             + (1.0_num + w5) * (ABS(w2) / dyc(iym) * vad_p &
             + ABS(w3) / dyc(iyp) * vad_m)
 
-        w4 = w4 / 6.0_num
+        w4 = w4 * sixth
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
@@ -471,7 +471,7 @@ CONTAINS
             + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
             + ABS(w3) / dyb(iyp2) * vad_m)
 
-        w4 = w4 / 6.0_num
+        w4 = w4 * sixth
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
@@ -504,7 +504,7 @@ CONTAINS
               + 0.5_num * ai * (flux(ix, iy) - vx(ix, iy)) &
               + 0.5_num * aip * (vx(ix, iyp) - flux(ix, iy))
 
-          dk = dk * dm(ix, iy) / 2.0_num
+          dk = dk * dm(ix, iy) * 0.5_num
           delta_ke(ix , iyp) = delta_ke(ix , iyp) + dk
           delta_ke(ixp, iyp) = delta_ke(ixp, iyp) + dk
         END DO
@@ -552,7 +552,7 @@ CONTAINS
             + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
             + ABS(w3) / dyb(iyp2) * vad_m)
 
-        w4 = w4 / 6.0_num
+        w4 = w4 * sixth
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
@@ -585,7 +585,7 @@ CONTAINS
               + 0.5_num * ai * (flux(ix, iy) - vz(ix, iy)) &
               + 0.5_num * aip * (vz(ix, iyp) - flux(ix, iy))
 
-          dk = dk * dm(ix, iy) / 2.0_num
+          dk = dk * dm(ix, iy) * 0.5_num
           delta_ke(ix , iyp) = delta_ke(ix , iyp) + dk
           delta_ke(ixp, iyp) = delta_ke(ixp, iyp) + dk
         END DO
@@ -633,7 +633,7 @@ CONTAINS
             + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
             + ABS(w3) / dyb(iyp2) * vad_m)
 
-        w4 = w4 / 6.0_num
+        w4 = w4 * sixth
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
@@ -666,7 +666,7 @@ CONTAINS
               + 0.5_num * ai * (flux(ix, iy) - vy(ix, iy)) &
               + 0.5_num * aip * (vy(ix, iyp) - flux(ix, iy))
 
-          dk = dk * dm(ix, iy) / 2.0_num
+          dk = dk * dm(ix, iy) * 0.5_num
           delta_ke(ix , iyp) = delta_ke(ix , iyp) + dk
           delta_ke(ixp, iyp) = delta_ke(ixp, iyp) + dk
         END DO

@@ -45,8 +45,8 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 64
-    ny_global = 64
+    nx_global = 256
+    ny_global = 256
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
@@ -178,7 +178,7 @@ CONTAINS
 
     ! The interval between output snapshots. If SI_Input is true
     ! Then this is in seconds
-    dt_snapshots = 1.0_num
+    dt_snapshots = 10.0_num
 
     ! dump_mask is an array which specifies which quantities the
     ! code should output to disk in a data dump.
