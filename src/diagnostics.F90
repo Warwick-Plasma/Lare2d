@@ -270,8 +270,9 @@ CONTAINS
     ! with setting 'dt_multiplier' if you expect massive changes across
     ! cells.
 
-    REAL(num) :: cons, dt1, dt2, dt3, dt4, dt5, dt_local, dxlocal
-    REAL(num) :: dtr_local, dth_local, cs
+    REAL(num) :: cons, dt1, dt2, dt3, dt4, dt5, dt6, dt_local, dxlocal  
+    REAL(num) :: vxbp, vxbm, vybp, vybm, dvx, dvy, avxp, avxm, avyp, avym
+    REAL(num) :: dtr_local, dth_local, cs, area
 
     dt_local = largest_number
     dtr_local = largest_number
@@ -286,13 +287,27 @@ CONTAINS
         w1 = bx(ix, iy)**2 + by(ix, iy)**2 + bz(ix, iy)**2
         cs = cons * energy(ix,iy)    ! sound speed squared
         
-        w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero)) &
-            + 2.0_num * SQRT(p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))
+        w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero) &
+            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))
 
-        w2 = w2 * (1.0_num + visc1)
-
-        dt1 = dxb(ix) / (w2 + ABS(vx(ix, iy)))
-        dt2 = dyb(iy) / (w2 + ABS(vy(ix, iy)))
+        dt1 = dxb(ix) / w2 
+        dt2 = dyb(iy) / w2   
+        
+        vxbp = 0.5_num * (vx(ix,iy) + vx(ix,iy-1)) * dyb(iy)
+        vxbm = 0.5_num * (vx(ix-1,iy) + vx(ix-1,iy-1)) * dyb(iy)
+        vybp = 0.5_num * (vy(ix,iy) + vy(ix-1,iy)) * dxb(ix)
+        vybm = 0.5_num * (vy(ix,iy-1) + vy(ix-1,iy-1)) * dxb(ix)
+        
+        dvx = ABS(vxbp - vxbm)
+        dvy = ABS(vybp - vybm) 
+        avxp = ABS(vxbp)
+        avxm = ABS(vxbm)
+        avyp = ABS(vybp)
+        avym = ABS(vybm)
+                                  
+        area = dxb(ix) * dyb(iy)               
+        dt5 = area / MAX(avxp, avxp, dvx, none_zero * area)
+        dt6 = area / MAX(avyp, avyp, dvy, none_zero * area)
 
         ! find ideal MHD CFL limit
         dt_local = MIN(dt_local, dt1, dt2)
@@ -316,12 +331,6 @@ CONTAINS
         dtr_local = MIN(dtr_local, dt3)
         dth_local = MIN(dth_local, dt4)
 
-        ! correct to stop overlapping of Lagrangian cells
-        w1 = ABS(vx(ix, iy) - vx(ixm, iy)) / dxb(ix) &
-            + ABS(vy(ix, iy) - vy(ix, iym)) / dyb(iy)
-
-        dt5 = 1.0_num / MAX(w1, none_zero)
-        dt_local = MIN(dt_local, dt5)
       END DO
     END DO
 
