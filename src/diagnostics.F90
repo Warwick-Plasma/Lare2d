@@ -293,6 +293,9 @@ CONTAINS
         dt1 = dxb(ix) / w2 
         dt2 = dyb(iy) / w2   
         
+        ! find ideal MHD CFL limit
+        dt_local = MIN(dt_local, dt1, dt2)
+
         vxbp = 0.5_num * (vx(ix,iy) + vx(ix,iy-1)) * dyb(iy)
         vxbm = 0.5_num * (vx(ix-1,iy) + vx(ix-1,iy-1)) * dyb(iy)
         vybp = 0.5_num * (vy(ix,iy) + vy(ix-1,iy)) * dxb(ix)
@@ -309,8 +312,7 @@ CONTAINS
         dt5 = area / MAX(avxp, avxp, dvx, none_zero * area)
         dt6 = area / MAX(avyp, avyp, dvy, none_zero * area)
 
-        ! find ideal MHD CFL limit
-        dt_local = MIN(dt_local, dt1, dt2)
+        dt_local = MIN(dt_local, dt5, dt6)
 
         ! note resistive limits assumes uniform resistivity hence cautious
         ! factor 0.2
