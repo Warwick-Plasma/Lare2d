@@ -284,6 +284,7 @@ CONTAINS
         ixm = ix - 1
         iym = iy - 1
 
+        ! fix dt for Lagrangian step
         w1 = bx(ix, iy)**2 + by(ix, iy)**2 + bz(ix, iy)**2
         cs = cons * energy(ix,iy)    ! sound speed squared
         
@@ -295,11 +296,12 @@ CONTAINS
         
         ! find ideal MHD CFL limit
         dt_local = MIN(dt_local, dt1, dt2)
-
+                                            
+        ! now find dt for remap step                                    
         vxbp = 0.5_num * (vx(ix,iy) + vx(ix,iy-1)) * dyb(iy)
-        vxbm = 0.5_num * (vx(ix-1,iy) + vx(ix-1,iy-1)) * dyb(iy)
-        vybp = 0.5_num * (vy(ix,iy) + vy(ix-1,iy)) * dxb(ix)
-        vybm = 0.5_num * (vy(ix,iy-1) + vy(ix-1,iy-1)) * dxb(ix)
+        vxbm = 0.5_num * (vx(ixm,iy) + vx(ixm,iym)) * dyb(iy)
+        vybp = 0.5_num * (vy(ix,iy) + vy(ixm,iy)) * dxb(ix)
+        vybm = 0.5_num * (vy(ix,iym) + vy(ixm,iym)) * dxb(ix)
         
         dvx = ABS(vxbp - vxbm)
         dvy = ABS(vybp - vybm) 
