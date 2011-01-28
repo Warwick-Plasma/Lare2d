@@ -252,26 +252,26 @@ CONTAINS
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
-        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
+        vad_m = -MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
 
-        w5 = ABS(v_advect) * dt / (db * vad_p + dbxp * vad_m)
+        w7 = ABS(v_advect) * dt / (db * vad_p + dbxp * vad_m)
 
-        w4 = (2.0_num - w5) * ABS(w1) / dxc1(ix, iy) &
-            + (1.0_num + w5) * (ABS(w2) / dxc1(ixm, iy) * vad_p &
+        w9 = (2.0_num - w7) * ABS(w1) / dxc1(ix, iy) &
+            + (1.0_num + w7) * (ABS(w2) / dxc1(ixm, iy) * vad_p &
             + ABS(w3) / dxc1(ixp, iy) * vad_m)
 
-        w4 = w4 * sixth
+        w9 = w9 * sixth
 
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
         w6 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w4) * (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m), &
+            * MIN(ABS(w9) * (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = flux(ix, iy) &
-            + v_advect * dt * w6 * (1.0_num - w5)
+            + v_advect * dt * w6 * (1.0_num - w7)
       END DO
     END DO
 
@@ -307,25 +307,25 @@ CONTAINS
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
-        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
+        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
 
-        w5 = ABS(v_advect) * dt / (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m)
+        w7 = ABS(v_advect) * dt / (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m)
 
-        w4 = (2.0_num - w5) * ABS(w1) / dxc1(ix, iy) &
-            + (1.0_num + w5) * (ABS(w2) / dxc1(ixm, iy) * vad_p &
+        w9 = (2.0_num - w7) * ABS(w1) / dxc1(ix, iy) &
+            + (1.0_num + w7) * (ABS(w2) / dxc1(ixm, iy) * vad_p &
             + ABS(w3) / dxc1(ixp, iy) * vad_m)
 
-        w4 = w4 * sixth
+        w9 = w9 * sixth
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
         w6 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w4) * (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m), &
+            * MIN(ABS(w9) * (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
         flux(ix, iy) = flux(ix, iy) &
-            +  v_advect * dt * w6 * (1.0_num - w5)
+            +  v_advect * dt * w6 * (1.0_num - w7)
       END DO
     END DO
 
@@ -358,8 +358,8 @@ CONTAINS
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
-        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
+        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
 
         w5 = ABS(v_advect) * dt / (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m)
 
@@ -407,8 +407,8 @@ CONTAINS
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
-        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
+        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
 
         w5 = ABS(v_advect) * dt / (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m)
 
@@ -425,11 +425,11 @@ CONTAINS
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
-        w5 = SIGN(1.0_num, v_advect) * w8 &
+        w9 = SIGN(1.0_num, v_advect) * w8 &
             * MIN(ABS(w4) * (dxb(ix) * vad_p + dxb(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = dm(ix, iy) * (w7 + w5 * (1.0_num - w6))
+        flux(ix, iy) = dm(ix, iy) * (w7 + w9 * (1.0_num - w6))
       END DO
     END DO
 
@@ -458,8 +458,8 @@ CONTAINS
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
-        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
+        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
 
         w5 = ABS(v_advect) * dt / (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m)
 
@@ -476,11 +476,11 @@ CONTAINS
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
-        w5 = SIGN(1.0_num, v_advect) * w8 &
+        w9 = SIGN(1.0_num, v_advect) * w8 &
             * MIN(ABS(w4) * (dxc(ix) * vad_p + dxc(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = w7 + w5 * (1.0_num - w6)
+        flux(ix, iy) = w7 + w9 * (1.0_num - w6)
       END DO
     END DO
 
@@ -539,8 +539,8 @@ CONTAINS
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
-        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
+        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
 
         w5 = ABS(v_advect) * dt / (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m)
 
@@ -557,11 +557,11 @@ CONTAINS
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
-        w5 = SIGN(1.0_num, v_advect) * w8 &
+        w9 = SIGN(1.0_num, v_advect) * w8 &
             * MIN(ABS(w4) * (dxc(ix) * vad_p + dxc(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = w7 + w5 * (1.0_num - w6)
+        flux(ix, iy) = w7 + w9 * (1.0_num - w6)
       END DO
     END DO
 
@@ -619,8 +619,8 @@ CONTAINS
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = -MIN(SIGN(1.0_num, -v_advect), 0.0_num)
-        vad_m =  MAX(SIGN(1.0_num, -v_advect), 0.0_num)
+        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
+        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
 
         w5 = ABS(v_advect) * dt / (dxb1(ix, iy) * vad_p + dxb1(ixp, iy) * vad_m)
 
@@ -637,11 +637,11 @@ CONTAINS
         w8 = 0.5_num * (SIGN(1.0_num, w1) &
             + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
 
-        w5 = SIGN(1.0_num, v_advect) * w8 &
+        w9 = SIGN(1.0_num, v_advect) * w8 &
             * MIN(ABS(w4) * (dxc(ix) * vad_p + dxc(ixp) * vad_m), &
             ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
 
-        flux(ix, iy) = w7 + w5 * (1.0_num - w6)
+        flux(ix, iy) = w7 + w9 * (1.0_num - w6)
       END DO
     END DO
 

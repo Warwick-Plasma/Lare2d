@@ -68,7 +68,7 @@ MODULE shared_data
   INTEGER, PARAMETER :: data_dir_max_length = 64
   CHARACTER(LEN = data_dir_max_length) :: data_dir
 
-  REAL(num) :: w1, w2, w3, w4, w5, w6, w7, w8
+  REAL(num) :: w1, w2, w3, w4, w5, w6, w7, w8, w9
   REAL(num) :: dt, dt2, dtr, dth, t_end, time
   REAL(num) :: dt_multiplier = 0.8_num
   REAL(num) :: length_x, length_y, visc1, visc2, visc3
