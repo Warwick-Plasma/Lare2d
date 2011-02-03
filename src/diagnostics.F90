@@ -311,8 +311,8 @@ CONTAINS
         avym = ABS(vybm)
                                   
         area = dxb(ix) * dyb(iy)               
-        dt5 = area / MAX(avxp, avxp, dvx, none_zero * area)
-        dt6 = area / MAX(avyp, avyp, dvy, none_zero * area)
+        dt5 = area / MAX(avxp, avxp, dvx, 1.e-10_num * area)
+        dt6 = area / MAX(avyp, avyp, dvy, 1.e-10_num * area)
 
         dt_local = MIN(dt_local, dt5, dt6)
 
