@@ -18,7 +18,6 @@ CONTAINS
   SUBROUTINE setup_neutral
     ! Ion neutral collision cross section(m^2)
     REAL(num) :: sigma_in = 5.0e-19_num
-    REAL(num) :: tr
 
     IF (include_neutrals) THEN
       ALLOCATE(xi_n(-1:nx+2, -1:ny+2))
