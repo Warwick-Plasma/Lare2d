@@ -245,9 +245,9 @@ CONTAINS
     END IF
     IF (left == MPI_PROC_NULL) THEN
       IF (xbc_left == BC_OTHER) THEN
-        vx(0:-2, :) = 0.0_num
-        vy(0:-2, :) = 0.0_num
-        vz(0:-2, :) = 0.0_num
+        vx(-2:0, :) = 0.0_num
+        vy(-2:0, :) = 0.0_num
+        vz(-2:0, :) = 0.0_num
       END IF
     END IF
   
@@ -260,9 +260,9 @@ CONTAINS
     END IF
     IF (down == MPI_PROC_NULL) THEN
       IF (ybc_down == BC_OTHER) THEN
-        vx(:, 0:-2) = 0.0_num
-        vy(:, 0:-2) = 0.0_num
-        vz(:, 0:-2) = 0.0_num
+        vx(:, -2:0) = 0.0_num
+        vy(:, -2:0) = 0.0_num
+        vz(:, -2:0) = 0.0_num
       END IF
     END IF
   
@@ -283,9 +283,9 @@ CONTAINS
     END IF
     IF (left == MPI_PROC_NULL) THEN
       IF (xbc_left == BC_OTHER) THEN
-        vx1(0:-2, :) = 0.0_num
-        vy1(0:-2, :) = 0.0_num
-        vz1(0:-2, :) = 0.0_num
+        vx1(-2:0, :) = 0.0_num
+        vy1(-2:0, :) = 0.0_num
+        vz1(-2:0, :) = 0.0_num
       END IF
     END IF
     
@@ -298,9 +298,9 @@ CONTAINS
     END IF
     IF (down == MPI_PROC_NULL) THEN
       IF (ybc_down == BC_OTHER) THEN
-        vx1(:, 0:-2) = 0.0_num
-        vy1(:, 0:-2) = 0.0_num
-        vz1(:, 0:-2) = 0.0_num
+        vx1(:, -2:0) = 0.0_num
+        vy1(:, -2:0) = 0.0_num
+        vz1(:, -2:0) = 0.0_num
       END IF
     END IF
     
