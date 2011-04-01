@@ -67,10 +67,6 @@ CONTAINS
     grav_ref(-1) = grav_ref(0)
     grav_ref(ny_global+1:ny_global+2) = grav_ref(ny_global)
 
-
-    !Temp profile from 2D Nozawa 1991
-
-
 betafs = 0.0_num
     !beta profile from Archontis 2009 but in 2D
     !similar to that of Nozawa 1991
@@ -126,7 +122,7 @@ betafs = 0.0_num
        END DO
        IF (include_neutrals) THEN
           DO iy=0,ny_global,1
-             xi_v = get_neutral(temp_ref(iy),rho_ref(iy))
+             xi_v = get_neutral(temp_ref(iy),rho_ref(iy),yb(iy))
              r1 = mu_m(iy)
              mu_m(iy) = 1.0_num / (2.0_num-xi_v)
              maxerr = MAX(maxerr, ABS(mu_m(iy) - r1))
@@ -152,7 +148,7 @@ betafs = 0.0_num
     DO ix = -1,nx+2,1
        DO iy = -1,ny+2,1
           blah = energy(ix,iy)
-          CALL get_energy(rho(ix,iy),blah,eos_number,energy(ix,iy))
+          CALL get_energy(rho(ix,iy),blah,eos_number,yb(iy),energy(ix,iy))
        END DO
     END DO
     DO ix=-1,nx+2,1
