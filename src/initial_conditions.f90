@@ -69,17 +69,7 @@ CONTAINS
 
 
     !Temp profile from 2D Nozawa 1991
-    DO iy = -1,ny_global+1
-       IF (yc_global(iy) < 0.0_num) THEN
-          temp_ref(iy) = Tph - a * Tph * (gamma - 1.0_num) &
-               * yc_global(iy) / gamma 
-       END IF
-       IF (yc_global(iy) >= 0.0_num) THEN
-          temp_ref(iy) = Tph + (Tcor - Tph) * 0.5_num &
-               * (TANH((yc_global(iy) - ycor) / wtr) + 1.0_num)
-       END IF
-    END DO
-    temp_ref(ny_global+1:ny_global+2) = temp_ref(ny_global)
+
 
 betafs = 0.0_num
     !beta profile from Archontis 2009 but in 2D
@@ -103,6 +93,18 @@ betafs = 0.0_num
     DO loop = 1,100
        maxerr = 0.0_num
        !Go from photosphere down
+       DO iy = -1,ny_global+1
+          IF (yc_global(iy) < 0.0_num) THEN
+             temp_ref(iy) = Tph - a * (gamma - 1.0_num) &
+                  * yc_global(iy) * grav_ref(iy) * mu_m(iy) / gamma 
+          END IF
+          IF (yc_global(iy) >= 0.0_num) THEN
+             temp_ref(iy) = Tph + (Tcor - Tph) * 0.5_num &
+                  * (TANH((yc_global(iy) - ycor) / wtr) + 1.0_num)
+          END IF
+       END DO
+       temp_ref(ny_global+1:ny_global+2) = temp_ref(ny_global)
+       
        DO iy = ny_global,0,-1
           IF (yc_global(iy) < 0.0_num) THEN  
              dg = 1.0_num / (dyb_global(iy) + dyb_global(iy-1))
