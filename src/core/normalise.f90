@@ -24,7 +24,7 @@ CONTAINS
     ! Normalise tbar, r_bar and eta_bar for including Cowling resistivity and neutrals
     t_bar = t_bar / temp0
     r_bar = r_bar * rho0 / temp0**(3.0_num / 2.0_num) 
-    eta_bar_0 = rho0**2 * SQRT(temp0) / B0**2
+    eta_bar_0 = (mu0_si * L0 * v0) * rho0**2 * SQRT(temp0) / B0**2 
     eta_bar = eta_bar / eta_bar_0
   
     ! Normalise ionise_pot 
