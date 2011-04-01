@@ -84,7 +84,7 @@ betafs = 0.0_num
     rho_ref = 1.0_num
     mu_m = 1.0_num
     IF (eos_number == EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
-    DO loop = 1,100
+    DO loop = 1,1000
        maxerr = 0.0_num
        !Go from photosphere down
        DO iy = -1,ny_global+1
@@ -126,8 +126,9 @@ betafs = 0.0_num
              maxerr = MAX(maxerr, ABS(mu_m(iy) - r1))
           END DO
        END IF
-       IF (maxerr < 1.e-10_num) EXIT
-    END DO
+       IF (maxerr < 1.e-16_num) EXIT
+    END DO 
+
     rho_ref(ny_global+1:ny_global+2) = rho_ref(ny_global)
                                   
     !magnetic flux sheet profile from Archontis2009
