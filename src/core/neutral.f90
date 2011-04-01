@@ -5,24 +5,21 @@ MODULE neutral
 
   USE shared_data
   USE boundary
-  USE eos
 
   IMPLICIT NONE
 
   PRIVATE
-  PUBLIC :: perpendicular_resistivity, newton_relax, &
-      neutral_fraction, setup_neutral, get_neutral, get_energy
+  PUBLIC :: perpendicular_resistivity, neutral_fraction, setup_neutral, get_neutral
 
 CONTAINS
 
   SUBROUTINE setup_neutral
     ! Ion neutral collision cross section(m^2)
     REAL(num) :: sigma_in = 5.0e-19_num
+    REAL(num) :: mbar
 
-    IF (include_neutrals) THEN
-      ALLOCATE(xi_n(-1:nx+2, -1:ny+2))
-      xi_n = 0.0_num
-    END IF
+    ALLOCATE(xi_n(-1:nx+2, -1:ny+2))
+    xi_n = 0.0_num       
 
     IF (cowling_resistivity) THEN
       ALLOCATE(eta_perp(-1:nx+2, -1:ny+2))
@@ -30,26 +27,23 @@ CONTAINS
       ALLOCATE(perp_current(0:nx, 0:ny))
     END IF
     
-    ! Ionisation potential of hydrogen(J)
-    ionise_pot = ionise_pot_0
-    
     ! Temperature of the photospheric radiation field
     tr = 6420.0_num
     
     ! Calculate fbar^(2 / 3) in (k^-1 m^-2)
-    f_bar = pi * (me_0 / h_0) * (kb_0 / h_0)
-    f_bar = SQRT(2.0_num) * f_bar**(3.0_num / 2.0_num)
+    f_bar = 2.0_num * pi * (me_si / hp_si) * (kb_si / hp_si)
+    f_bar = f_bar**(3.0_num / 2.0_num)
     
     ! Calculate tbar in (K)
-    t_bar = ionise_pot / kb_0
+    t_bar = ionise_pot_si / kb_si
     
     ! Calculate rbar in (kg^-1)
-    mbar = mh * mf                     
+    mbar = mh_si * mf                     
     r_bar = 4.0_num / mbar
     
     ! Calculate eta_bar in (m^4 / (k s kg^2))
     eta_bar = 2.0_num * mbar &
-        / (SQRT(16.0_num * kb_0 / (pi * mbar)) * sigma_in)
+        / (SQRT(16.0_num * kb_si / (pi * mbar)) * sigma_in)
     
   END SUBROUTINE setup_neutral
 
@@ -81,19 +75,27 @@ CONTAINS
         bfieldsq = bxv**2 + byv**2 + bzv**2
 
         ! Get the vertex temperature
-        CALL get_temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, t_v)
-        CALL get_temp(rho(ixp, iy), energy(ixp, iy), eos_number, ix, iy, T)
-
+        t_v = (gamma - 1.0_num) &
+            * (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
+            / ((2.0_num - xi_n(ix, iy)))
+        T = (gamma - 1.0_num) &
+            * (energy(ixp,iy) - (1.0_num - xi_n(ixp, iy)) * ionise_pot) &
+            / ((2.0_num - xi_n(ixp, iy)))
         t_v = t_v + T
-        CALL get_temp(rho(ix, iyp), energy(ix, iyp), eos_number, ix, iy, T)
 
+        T = (gamma - 1.0_num) &
+            * (energy(ix,iyp) - (1.0_num - xi_n(ix, iyp)) * ionise_pot) &
+            / ((2.0_num - xi_n(ix, iyp)))
         t_v = t_v + T
-        CALL get_temp(rho(ixp, iyp), energy(ixp, iyp), eos_number, ix, iy, T)
 
+        T = (gamma - 1.0_num) &
+            * (energy(ixp,iyp) - (1.0_num - xi_n(ixp, iyp)) * ionise_pot) &
+            / ((2.0_num - xi_n(ixp, iyp)))
         t_v = t_v + T
+
         t_v = t_v / 4.0_num
 
-        xi_v = get_neutral(t_v, rho_v)
+        xi_v = get_neutral(t_v, rho_v, yb(iy))
 
         f = MAX(1.0_num - xi_v, none_zero)
         IF (f .GT. 0) THEN
@@ -111,14 +113,21 @@ CONTAINS
 
 
 
-  FUNCTION get_neutral(t_v, rho_v)
+  FUNCTION get_neutral(t_v, rho_v, height)
     
-    REAL(num), INTENT(IN) :: t_v, rho_v
+    REAL(num), INTENT(IN) :: t_v, rho_v, height
     REAL(num) :: get_neutral
-    REAL(num) :: bof, r
+    REAL(num) :: bof, r, t_rad, dilution
     
-    bof = 1.0_num / (f_bar * tr * SQRT(t_v)) &
-        * EXP((0.25_num * (t_v / tr - 1.0_num) + 1.0_num) &
+    t_rad = tr
+    dilution = 0.5_num
+    IF (height <= 0.0_num) THEN
+      t_rad = t_v
+      dilution = 1.0_num  
+    END IF
+      
+    bof = 1.0_num / (dilution * f_bar * t_rad * SQRT(t_v)) &
+        * EXP((0.25_num * (t_v / t_rad - 1.0_num) + 1.0_num) &
         * T_bar / t_v)
     r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho_v * bof))
     get_neutral = r / (1.0_num + r)
@@ -127,19 +136,12 @@ CONTAINS
 
 
 
-  SUBROUTINE neutral_fraction(material)
+  SUBROUTINE neutral_fraction
 
-    INTEGER, INTENT(IN) :: material
     REAL(num) :: bof, r, T, rho0, e0, dx, x
     REAL(num), DIMENSION(2) :: ta, fa, xi_a
     REAL(num) :: ionise_pot_local
     INTEGER :: loop
-
-    IF (material .EQ. EOS_ION) THEN
-      ionise_pot_local = ionise_pot
-    ELSE
-      ionise_pot_local = 0.0_num
-    END IF
 
     ! Variable bof is b / f in the original version
     DO iy = -1, ny + 2
@@ -160,14 +162,14 @@ CONTAINS
         DO loop = 1, 100
           dx = dx / 2.0_num
           x = t  + dx
-          xi_a(1) = get_neutral(x, rho0)   
+          xi_a(1) = get_neutral(x, rho0, yb(iy))   
           fa(1) = x - (gamma - 1.0_num) * (e0 &
               - (1.0_num - xi_a(1)) * ionise_pot_local) / (2.0_num - xi_a(1))
           IF (fa(1) <= 0.0_num) t = x
           IF (ABS(dx) < 1.e-8_num .OR. fa(1) == 0.0_num) EXIT
         END DO
 
-        xi_n(ix, iy) = get_neutral(x, rho0)   
+        xi_n(ix, iy) = get_neutral(x, rho0, yb(iy))   
       END DO
     END DO
 
@@ -175,46 +177,10 @@ CONTAINS
 
 
 
-  SUBROUTINE get_energy(rho_in, temp_in, m_in, en_out)
-    ! this routine is only used by initial conditions and must be in SI
-    ! with variables as defined with kb etc. The routine needs to be here to call 
-    ! get_neutral above
-    REAL(num), INTENT(IN) :: rho_in, temp_in
-    INTEGER, INTENT(IN) :: m_in
-    REAL(num), INTENT(OUT) :: en_out
-    REAL(num) :: xi_local
-  
-    IF (m_in .EQ. EOS_IDEAL) THEN
-      en_out = temp_in * kb / ((gamma - 1.0_num) * mbar * reduced_mass)
-      RETURN
-    END IF
-  
-    IF (m_in .EQ. EOS_PI) THEN
-      ! Since we can't guarantee that the ionisation fraction already
-      ! calculated is correct here, calculate it straight from the temperature
-      xi_local = get_neutral(temp_in, rho_in)  
-      en_out = (kb * temp_in * (2.0_num - xi_local)) &
-          / (mbar * (gamma - 1.0_num))
-      RETURN
-    END IF
-  
-    IF (m_in .EQ. EOS_ION) THEN
-      ! Since we can't guarantee that the ionisation fraction already
-      ! calculated is correct here, calculate it straight from the temperature
-      xi_local = get_neutral(temp_in, rho_in) 
-      en_out = (kb * temp_in * (2.0_num - xi_local) &
-          + (1.0_num - xi_local) * ionise_pot * (gamma - 1.0_num)) &
-          / (mbar * (gamma - 1.0_num))
-      RETURN
-    END IF
-  
-  END SUBROUTINE get_energy
-
-
-
-
-  SUBROUTINE newton_relax
-
+!   SUBROUTINE newton_relax
+! 
+! !this routine currently never used
+! 
 !     INTEGER, DIMENSION(1) :: ref_index, z0(1) = 1
 !     LOGICAL :: first_call = .TRUE., run_loop = .TRUE.
 ! 
@@ -246,7 +212,8 @@ CONTAINS
 !     END IF
 ! 
 !     CALL energy_bcs   
-
-  END SUBROUTINE newton_relax
+! 
+!   END SUBROUTINE newton_relax
+!                
 
 END MODULE neutral

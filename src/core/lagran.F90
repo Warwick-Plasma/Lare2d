@@ -3,7 +3,6 @@ MODULE lagran
   USE shared_data
   USE boundary
   USE neutral
-  USE normalise
   USE eos 
   USE conduct
 

@@ -13,9 +13,30 @@ MODULE constants
 #endif
   INTEGER, PARAMETER :: dbl = KIND(1.D0)
 
+  REAL(num), PARAMETER :: pi = 3.14159265358979323_num
+
+  ! These are the real SI physical constants
+  ! Permiability of free space
+  REAL(num), PARAMETER :: mu0_si =  4.0e-7_num * pi
+  
+  ! Boltzmann's Constant
+  REAL(num), PARAMETER :: kb_si = 1.3806504e-23_num
+  
+  ! Mass of hydrogen ion
+  REAL(num), PARAMETER :: mh_si = 1.67262158e-27_num
+  
+  ! Mass of electron
+  REAL(num), PARAMETER :: me_si = 9.10938188e-31_num
+  
+  ! Planck's constant
+  REAL(num), PARAMETER :: hp_si = 6.626068e-34_num
+  
+  ! Ionisation potential of hydrogen in J
+  REAL(num), PARAMETER :: ionise_pot_si = 2.17870364e-18_num
+  
+
   REAL(num), PARAMETER :: dt_multiplier = 0.9_num
 
-  REAL(num), PARAMETER :: pi = 3.14159265358979323_num
   REAL(num), PARAMETER :: none_zero = TINY(1.0_num) 
   REAL(num), PARAMETER :: largest_number = HUGE(1.0_num)  
   REAL(num), PARAMETER :: third = 1.0_num / 3.0_num, sixth = 1.0_num / 6.0_num
@@ -85,17 +106,17 @@ MODULE shared_data
   LOGICAL :: x_stretch, y_stretch, rke
   LOGICAL :: resistive_mhd, any_open, hall_mhd
   LOGICAL :: restart
+                           
+  ! normalising constants                 
+  REAL(num) :: B0, L0, rho0
+  ! mass fraction - mass of ions in units of proton mass
+  REAL(num) :: mf  
+  ! average particle mass in units of mf*mh, i.e. 0.5 is fully ionised
+  REAL(num) :: reduced_mass
 
   ! Heat conduction
-
   LOGICAL :: conduction, heat_flux_limiter
   REAL(num) :: kappa_0, flux_limiter, temperature_100mk
-
-  ! RTV radiation
-  LOGICAL :: radiation
-
-  ! Code normalisation
-  LOGICAL :: SI
 
   ! Equation of state
   INTEGER :: eos_number = EOS_IDEAL
