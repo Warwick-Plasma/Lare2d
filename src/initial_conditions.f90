@@ -17,7 +17,7 @@ CONTAINS
     INTEGER :: loop, i, j, k
     INTEGER :: ix, iy, iz
     REAL(num) :: a1, a2, blah, dg
-    REAL(num) :: a=2.0_num, Tph=9.8_num, Tcor=980.0_num, ycor=11.0_num, wtr=0.6_num
+    REAL(num) :: a=1.0_num, Tph=9.8_num, Tcor=980.0_num, ycor=11.0_num, wtr=0.6_num
     REAL(num) :: betafs=0.25_num, yfsl=-10.0_num, yfsu=-1.0_num, wfsl=0.5_num, wfsu=0.5_num
     REAL(num) :: r1, maxerr, xi_v, ran1
     REAL(num) :: amp, wptb, yptb1, yptb2, yptb, np
@@ -162,6 +162,18 @@ CONTAINS
     DO ix=-1,nx+2,1
         energy(ix,ny+2) = energy(ix,ny+1)
     END DO
+
+    amp = 0.01_num
+    wptb = 20.0_num
+
+    DO iy=1,ny,1
+      IF ((yc_global(iy) .GT. -10.0_num) .AND. (yc_global(iy) .LT. -1.0_num)) THEN
+        DO ix=1,nx,1
+          vy(ix,iy) = (amp / 4.0_num) * COS(2.0_num*pi*xb(ix)/wptb) &
+              * (TANH((yb(iy)-yfsl)/0.5_num)-TANH((yb(iy)-yfsu)/0.5_num))
+        END DO
+      END IF
+    END DO  
 
 
     DEALLOCATE(yc_global, dyb_global, dyc_global, mu_m)
