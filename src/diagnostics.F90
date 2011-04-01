@@ -289,8 +289,7 @@ CONTAINS
         cs = cons * energy(ix,iy)    ! sound speed squared
         
         w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero) &
-            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero)) &
-              * (1.0_num + visc1)
+            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero)) 
 
         dt1 = dxb(ix) / w2 
         dt2 = dyb(iy) / w2   
