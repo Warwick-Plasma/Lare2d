@@ -25,13 +25,14 @@ CONTAINS
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: energy0, limiter
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: radiation
     REAL(num), DIMENSION(:, :), ALLOCATABLE  :: heat_in 
+    REAL(num), DIMENSION(:, :), ALLOCATABLE  :: alpha
     REAL(num) :: e2t, exb, eyb 
     REAL(num) :: b, bxc, byc, bzc, bpx, bpy 
     REAL(num) :: ux, uy
     REAL(num) :: pow = 5.0_num / 2.0_num  
     REAL(num) :: a1, a2, a3, a4, a5, error, errmax, abs_error
     REAL(num) :: w, residual, q_shx, q_shy, q_sh, q_f, q_nl 
-    REAL(num) :: rad_max, rad_loss
+    REAL(num) :: rad_max, rad, alf
 
     INTEGER :: loop, redblack, x1, y1
 
@@ -45,19 +46,26 @@ CONTAINS
     ALLOCATE(limiter(-1:nx+2, -1:ny+2))
     ALLOCATE(radiation(1:nx, 1:ny))
     ALLOCATE(heat_in(1:nx, 1:ny))
+    ALLOCATE(alpha(1:nx, 1:ny))
             
     IF (first_call) THEN
-      heat0 = 0.0_num   
-      IF (up == MPI_PROC_NULL) THEN
-         a1 = rad_losses(rho(1,ny), energy(1,ny)) * energy(1,ny) !/ rho(1,ny)**2 
-      END IF   
+      heat0 = 0.0_num 
+      a1 = 0.0_num  
+      IF (up == MPI_PROC_NULL) THEN    
+         CALL rad_losses(rho(1,ny), energy(1,ny), rad, alf)
+         a1 = rad * energy(1,ny) / rho(1,ny)**2 
+      END IF               
       CALL MPI_ALLREDUCE(a1, heat0, 1, mpireal, MPI_MAX, comm, errcode)
-      first_call = .FALSE.
+      first_call = .FALSE.               
     END IF
 
-		! find factor required to convert between energy and temperature
-		! N.B. only works for simple Ideal EOS which is fully ionised
-    e2t = (gamma - 1.0_num) * 0.5_num 
+		! factor required to convert between normalised energy and normalised temperature
+		! N.B. only works for simple Ideal EOS which is fully ionised 
+		IF (include_neutrals) THEN
+      e2t = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) 
+    ELSE
+      e2t = (gamma - 1.0_num) * reduced_mass
+    END IF
     a1 = fractional_error * MAXVAL(energy)  
     CALL MPI_ALLREDUCE(a1, abs_error, 1, mpireal, MPI_MAX, comm, errcode)      
 
@@ -144,14 +152,17 @@ CONTAINS
 		energy0 = energy  
 
     radiation = 0.0_num
-    heat_in = 0.0_num
+    heat_in = 0.0_num 
+    alpha = 0.0_num
     DO iy = 1, ny
       DO ix = 1, nx  
-        IF (yc(iy) > 10.0_num .AND. energy0(ix,iy)*e2tmk > 0.02_num) THEN
-          heat_in(ix,iy) = heating(rho(ix,iy), energy0(ix,iy), yc(iy))  
-          a1 = rad_losses(rho(ix,iy), energy0(ix,iy)) * energy0(ix,iy)
+        heat_in(ix,iy) = heating(rho(ix,iy), energy0(ix,iy), yc(iy))  
+        CALL rad_losses(rho(ix,iy), energy0(ix,iy), rad, alf)
+        alpha(ix,iy) = alf  
+        IF (yc(iy) > 10.0_num) THEN  
+          a1 = rad * energy0(ix,iy)
           a2 = heat_in(ix,iy) + (energy0(ix,iy) - 0.02_num / e2tmk) * rho(ix,iy) / dt   
-          radiation(ix,iy) =  MIN(a1,a2) / energy0(ix,iy)    
+          radiation(ix,iy) =  MIN(a1,a2) / energy0(ix,iy) 
         END IF    
       END DO
     END DO      
@@ -196,9 +207,9 @@ CONTAINS
               * (energy(ix+1,iy) + energy(ix+1,iy-1) - energy(ix-1,iy) - energy(ix-1,iy-1)) &
               / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ix-1))) 
 
-            a3 = a1 * e2t + radiation(ix,iy)   
+            a3 = a1 * e2t + radiation(ix,iy) * alpha(ix,iy)  
 
-            a4 = a2 + heat_in(ix,iy)  
+            a4 = a2 + heat_in(ix,iy)  - (1.0_num - alpha(ix,iy)) * radiation(ix,iy) * energy0(ix,iy)
   
             a3 = a3 * dt / rho(ix, iy)     
             a4 = a4 * dt / rho(ix, iy)         
@@ -235,43 +246,52 @@ CONTAINS
     DEALLOCATE(limiter)
     DEALLOCATE(radiation)
     DEALLOCATE(heat_in)
+    DEALLOCATE(alpha)
 
   END SUBROUTINE conduct_heat
           
 
 
-  FUNCTION rad_losses(density, e0) 
-    REAL(num), INTENT(IN) :: density, e0
-    REAL(num) :: rad_losses 
+  SUBROUTINE rad_losses(density, e0, rad, alf)  
+    ! returns the normalised RTV losses divided by energy(ix,iy) and the power alpha
+    REAL(num), INTENT(IN) :: density, e0   
+    REAL(num), INTENT(OUT) :: rad, alf 
                            
-    REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.995_num,10.0_num /)
-    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
+!    REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.995_num,10.0_num /)
+!    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
+    REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.0_num,10.0_num /)
+    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 0.0_num, 0.0_num /)
     REAL(num), DIMENSION(6) :: alpha = (/0.0_num, 2.0_num, 0.0_num, -2.0_num, 0.0_num, -2.0_num/3.0_num /) 
     REAL(num) :: tmk
     INTEGER :: i
     
     tmk = e0 * e2tmk   
-    rad_losses = 0.0_num                                
+    rad = 0.0_num     
+    alf = 0.0_num                           
     IF (tmk < trange(1) .OR. tmk > trange(7)) RETURN
                                                       
     DO i = 1, 6
       IF (tmk >= trange(i) .AND. tmk <= trange(i+1)) EXIT
     END DO 
     
-    rad_losses = density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
-    rad_losses = rad_losses * h_star * lr_star * e2tmk  
+    rad = density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
+    rad = rad * h_star * lr_star * e2tmk   
+    alf = alpha(i)
   
-  END FUNCTION rad_losses  
+  END SUBROUTINE rad_losses  
        
   
   
   FUNCTION heating(density, e0, height) 
     REAL(num), INTENT(IN) :: density, e0, height
-    REAL(num) :: heating      
+    REAL(num) :: heating
+    REAL(num) :: tmk      
     ! input coronal heating function in W/M^3
-                           
+    
+    tmk = e0 * e2tmk                       
     heating = 0.0_num
-    heating = heat0 * 1.5_num
+!    IF(height > 20.0_num) heating = 1.5_num * heat0 * density**2
+    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 1.2_num * heat0 * density**2
   
   END FUNCTION heating
   
