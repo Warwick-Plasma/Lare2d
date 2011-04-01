@@ -29,7 +29,7 @@ CONTAINS
     REAL(num) :: b, bxc, byc, bzc, bpx, bpy 
     REAL(num) :: ux, uy
     REAL(num) :: pow = 5.0_num / 2.0_num  
-    REAL(num) :: a1, a2, a3, a4, a5, error, errmax, abs_error
+    REAL(num) :: a1, a2, a3, a4, a5, error, errmax
     REAL(num) :: w, residual, q_shx, q_shy, q_sh, q_f, q_nl 
     REAL(num) :: rad_max, rad, alf
 
@@ -57,9 +57,6 @@ CONTAINS
       CALL MPI_ALLREDUCE(a1, heat0, 1, mpireal, MPI_MAX, comm, errcode)
       first_call = .FALSE.               
     END IF
-
-    a1 = fractional_error * MAXVAL(energy)  
-    CALL MPI_ALLREDUCE(a1, abs_error, 1, mpireal, MPI_MAX, comm, errcode)      
 
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1 
@@ -281,7 +278,7 @@ CONTAINS
     tmk = e0 * e2tmk                       
     heating = 0.0_num
 
-    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = heat0 * density**2
+    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 1.2_num * heat0 * density**2
   
   END FUNCTION heating
   
