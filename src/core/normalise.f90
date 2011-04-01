@@ -13,10 +13,11 @@ CONTAINS
   
   SUBROUTINE normalise_transport
   
-    REAL(num) :: eta_bar_0, pressure0, energy0, temp0, mbar, kappa0
+    REAL(num) :: eta_bar_0, pressure0, v0, energy0, temp0, mbar, kappa0
   
     pressure0 = B0**2 / mu0_si ! Pressure 
-    energy0 = B0**2 / (mu0_si * rho0)   
+    energy0 = B0**2 / (mu0_si * rho0)  
+    v0 = SQRT(energy0) 
     mbar = mf * mh_si
     temp0 = mbar * pressure0 / (kb_si * rho0) ! Temperature in K
     
@@ -39,7 +40,14 @@ CONTAINS
   	
   	!find the normalised temperature corresponding to 100MK
     temp0 = (mbar / kb_si) * B0**2 / (mu0_si * rho0) ! Temperature in K
-  	temperature_100mk = 1.e8_num / temp0  
+  	temperature_100mk = 1.e8_num / temp0      
+  	
+  	!convertion factor to get temperature in MK from normalised energy
+     e2tmk = (mbar / kb_si) * energy0 * (gamma - 1.0_num) / 2.e6_num     
+     
+     h_star = L0 / (rho0 * v0**3)   
+     
+     lr_star = 2.87038e-6_num * (rho0 / (mbar * 5.e14))**2
   
   END SUBROUTINE normalise_transport
   
