@@ -6,8 +6,11 @@ MODULE conduct
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: conduct_heat
+  PUBLIC :: conduct_heat    
+  
+  REAL(num) :: heat0 = 0.0_num
 
+real(num) :: heat_norm = 1.0_num, lr_star = 1.0_num, e2tmk = 1.0_num                
 CONTAINS
 
   ! Subroutine implementing Braginskii parallel thermal conduction
@@ -21,16 +24,19 @@ CONTAINS
 
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: uxkx, uxky, uykx, uyky 
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: energy0, limiter
+    REAL(num), DIMENSION(:, :), ALLOCATABLE :: radiation
+    REAL(num), DIMENSION(:, :), ALLOCATABLE  :: heat_in 
     REAL(num) :: e2t, exb, eyb 
     REAL(num) :: b, bxc, byc, bzc, bpx, bpy 
     REAL(num) :: ux, uy
     REAL(num) :: pow = 5.0_num / 2.0_num  
-    REAL(num) :: a1, a2, a3, error, errmax, abs_error
-    REAL(num) :: w, residual, q_shx, q_shy, q_sh, q_f, q_nl
+    REAL(num) :: a1, a2, a3, a4, a5, error, errmax, abs_error
+    REAL(num) :: w, residual, q_shx, q_shy, q_sh, q_f, q_nl 
+    REAL(num) :: rad_max, rad_loss
 
     INTEGER :: loop, redblack, x1, y1
 
-    LOGICAL :: converged
+    LOGICAL :: converged, first_call = .TRUE.
     REAL(num), PARAMETER :: fractional_error = 1.0e-3_num
     REAL(num), PARAMETER :: b_min = 1.0e-3_num
 
@@ -38,12 +44,23 @@ CONTAINS
     ALLOCATE(uykx(-1:nx+1, -1:ny+1), uyky(-1:nx+1, -1:ny+1))
     ALLOCATE(energy0(-1:nx+2, -1:ny+2))
     ALLOCATE(limiter(-1:nx+2, -1:ny+2))
+    ALLOCATE(radiation(1:nx, 1:ny))
+    ALLOCATE(heat_in(1:nx, 1:ny))
             
+    IF (first_call) THEN
+      heat0 = 0.0_num   
+      IF (up == MPI_PROC_NULL) THEN
+         a1 = rad_losses(rho(1,ny), energy(1,ny)) * energy(1,ny) / rho(1,ny)**2 
+      END IF   
+      CALL MPI_ALLREDUCE(a1, heat0, 1, mpireal, MPI_MAX, comm, errcode)
+      first_call = .FALSE.
+    END IF
+
 		! find factor required to convert between energy and temperature
 		! N.B. only works for simple EOS
-    e2t = (gamma - 1.0_num) / 2.0_num  
+    e2t = (gamma - 1.0_num) * reduced_mass  
     a1 = fractional_error * MAXVAL(energy)  
-    CALL MPI_ALLREDUCE(a1, abs_error, 1, mpireal, MPI_MAX, comm, errcode)   
+    CALL MPI_ALLREDUCE(a1, abs_error, 1, mpireal, MPI_MAX, comm, errcode)      
 
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1 
@@ -126,6 +143,18 @@ CONTAINS
     w = 1.6_num       ! initial over-relaxation parameter  
 		! store energy^{n} 
 		energy0 = energy  
+
+    radiation = 0.0_num
+    heat_in = 0.0_num
+    DO iy = 1, ny
+      DO ix = 1, nx  
+        IF (rho(ix,iy) < 1.e-6_num .AND. energy(ix,iy)*e2tmk > 0.02_num) THEN
+          heat_in(ix,iy) = heating(rho(ix,iy), yc(iy))
+          radiation(ix,iy) = rad_losses(rho(ix,iy), energy0(ix,iy))  
+        END IF    
+      END DO
+    END DO      
+
 		! interate to get energy^{n+1} by SOR Guass-Seidel
     iterate: DO loop = 1, 100
       errmax = 0.0_num 
@@ -139,8 +168,8 @@ CONTAINS
             ! terms containing energy(ix,iy) resulting from 
             ! d^2/dx^2 and d^2/dy^2 derivatives
             a1 = uxkx(ix,iy)/(dxc(ix)*dxb(ix)) + uxkx(ix-1,iy)/(dxc(ix-1)*dxb(ix)) &
-               + uyky(ix,iy)/(dyc(iy)*dyb(iy)) + uyky(ix,iy-1)/(dyc(iy-1)*dyb(iy))  
-            
+               + uyky(ix,iy)/(dyc(iy)*dyb(iy)) + uyky(ix,iy-1)/(dyc(iy-1)*dyb(iy))   
+                           
             ! terms not containing energy(ix,iy) resulting from 
             ! d^2/dx^2 and d^2/dy^2 derivatives
             a2 = uxkx(ix,iy)*e2t*energy(ix+1,iy)/(dxc(ix)*dxb(ix)) &
@@ -164,13 +193,17 @@ CONTAINS
               / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ix-1)))  
             a2 = a2 - uykx(ix,iy-1) * e2t &
               * (energy(ix+1,iy) + energy(ix+1,iy-1) - energy(ix-1,iy) - energy(ix-1,iy-1)) &
-              / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ix-1)))  
+              / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ix-1))) 
+            
+            a4 = a2 + heat_in(ix,iy)  
+            
+            a3 = a1 * e2t + radiation(ix,iy)   
   
-            a1 = a1 * dt * e2t / rho(ix, iy)     
-            a2 = a2 * dt / rho(ix, iy)         
+            a3 = a3 * dt / rho(ix, iy)     
+            a4 = a4 * dt / rho(ix, iy)         
 
             residual = energy(ix, iy) &
-                  - (energy0(ix, iy)  + a2) / (1.0_num + a1) 
+                  - (energy0(ix, iy)  + a4) / (1.0_num + a3) 
             energy(ix, iy) = MAX(energy(ix, iy) - w * residual, 0.0_num)
             error = ABS(residual) 
             errmax = MAX(errmax, error)
@@ -199,9 +232,46 @@ CONTAINS
     DEALLOCATE(uykx, uyky)
     DEALLOCATE(energy0)
     DEALLOCATE(limiter)
+    DEALLOCATE(radiation)
+    DEALLOCATE(heat_in)
 
   END SUBROUTINE conduct_heat
           
 
+
+  FUNCTION rad_losses(density, e0) 
+    REAL(num), INTENT(IN) :: density, e0
+    REAL(num) :: rad_losses 
+                           
+    REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.995_num,10.0_num /)
+    REAL(num), DIMENSION(6) :: psi = (/1.2304_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
+    REAL(num), DIMENSION(6) :: alpha = (/0.0_num, 2.0_num, 0.0_num, -2.0_num, 0.0_num, -2.0_num/3.0_num /) 
+    REAL(num) :: tmk
+    INTEGER :: i
+    
+    tmk = e0 * e2tmk   
+    rad_losses = 0.0_num                                
+    IF (tmk <= trange(1) .OR. tmk >= trange(7)) RETURN
+                                                      
+    DO i = 1, 6
+      IF (tmk > trange(i) .AND. tmk < trange(i+1)) EXIT
+    END DO 
+    
+    rad_losses = density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
+    rad_losses = rad_losses * heat_norm * lr_star * e2tmk    
+  
+  END FUNCTION rad_losses  
+  
+  
+  FUNCTION heating(density, height) 
+    REAL(num), INTENT(IN) :: density, height
+    REAL(num) :: heating      
+    ! input coronal heating function in W/M^3
+    
+    heating = 0.0_num
+    IF(heating > 40.0_num) heating = heat0 * density**2 
+  
+  END FUNCTION heating
+  
 
 END MODULE conduct
