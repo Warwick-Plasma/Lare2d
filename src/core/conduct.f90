@@ -10,7 +10,6 @@ MODULE conduct
   
   REAL(num) :: heat0 = 0.0_num
 
-real(num) :: heat_norm = 1.0_num, lr_star = 1.0_num, e2tmk = 1.0_num                
 CONTAINS
 
   ! Subroutine implementing Braginskii parallel thermal conduction
@@ -37,7 +36,7 @@ CONTAINS
     INTEGER :: loop, redblack, x1, y1
 
     LOGICAL :: converged, first_call = .TRUE.
-    REAL(num), PARAMETER :: fractional_error = 1.0e-3_num
+    REAL(num), PARAMETER :: fractional_error = 1.0e-4_num
     REAL(num), PARAMETER :: b_min = 1.0e-3_num
 
     ALLOCATE(uxkx(-1:nx+1, -1:ny+1), uxky(-1:nx+1, -1:ny+1))
@@ -50,15 +49,15 @@ CONTAINS
     IF (first_call) THEN
       heat0 = 0.0_num   
       IF (up == MPI_PROC_NULL) THEN
-         a1 = rad_losses(rho(1,ny), energy(1,ny)) * energy(1,ny) / rho(1,ny)**2 
+         a1 = rad_losses(rho(1,ny), energy(1,ny)) * energy(1,ny) !/ rho(1,ny)**2 
       END IF   
       CALL MPI_ALLREDUCE(a1, heat0, 1, mpireal, MPI_MAX, comm, errcode)
       first_call = .FALSE.
     END IF
 
 		! find factor required to convert between energy and temperature
-		! N.B. only works for simple EOS
-    e2t = (gamma - 1.0_num) * reduced_mass  
+		! N.B. only works for simple Ideal EOS which is fully ionised
+    e2t = (gamma - 1.0_num) * 0.5_num 
     a1 = fractional_error * MAXVAL(energy)  
     CALL MPI_ALLREDUCE(a1, abs_error, 1, mpireal, MPI_MAX, comm, errcode)      
 
@@ -148,9 +147,11 @@ CONTAINS
     heat_in = 0.0_num
     DO iy = 1, ny
       DO ix = 1, nx  
-        IF (rho(ix,iy) < 1.e-6_num .AND. energy(ix,iy)*e2tmk > 0.02_num) THEN
-          heat_in(ix,iy) = heating(rho(ix,iy), yc(iy))
-          radiation(ix,iy) = rad_losses(rho(ix,iy), energy0(ix,iy))  
+        IF (yc(iy) > 10.0_num .AND. energy0(ix,iy)*e2tmk > 0.02_num) THEN
+          heat_in(ix,iy) = heating(rho(ix,iy), energy0(ix,iy), yc(iy))  
+          a1 = rad_losses(rho(ix,iy), energy0(ix,iy)) * energy0(ix,iy)
+          a2 = heat_in(ix,iy) + (energy0(ix,iy) - 0.02_num / e2tmk) * rho(ix,iy) / dt   
+          radiation(ix,iy) =  MIN(a1,a2) / energy0(ix,iy)    
         END IF    
       END DO
     END DO      
@@ -194,10 +195,10 @@ CONTAINS
             a2 = a2 - uykx(ix,iy-1) * e2t &
               * (energy(ix+1,iy) + energy(ix+1,iy-1) - energy(ix-1,iy) - energy(ix-1,iy-1)) &
               / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ix-1))) 
-            
-            a4 = a2 + heat_in(ix,iy)  
-            
+
             a3 = a1 * e2t + radiation(ix,iy)   
+
+            a4 = a2 + heat_in(ix,iy)  
   
             a3 = a3 * dt / rho(ix, iy)     
             a4 = a4 * dt / rho(ix, iy)         
@@ -205,7 +206,7 @@ CONTAINS
             residual = energy(ix, iy) &
                   - (energy0(ix, iy)  + a4) / (1.0_num + a3) 
             energy(ix, iy) = MAX(energy(ix, iy) - w * residual, 0.0_num)
-            error = ABS(residual) 
+            error = ABS(residual) / energy0(ix,iy)
             errmax = MAX(errmax, error)
             
           END DO 
@@ -219,7 +220,7 @@ CONTAINS
       CALL MPI_ALLREDUCE(errmax, error, 1, mpireal, MPI_MAX, comm, errcode)
       errmax = error      
 
-      IF (errmax .LT. abs_error) THEN
+      IF (errmax .LT. fractional_error) THEN
         converged = .TRUE.  
         EXIT iterate
       END IF
@@ -244,32 +245,33 @@ CONTAINS
     REAL(num) :: rad_losses 
                            
     REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.995_num,10.0_num /)
-    REAL(num), DIMENSION(6) :: psi = (/1.2304_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
+    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
     REAL(num), DIMENSION(6) :: alpha = (/0.0_num, 2.0_num, 0.0_num, -2.0_num, 0.0_num, -2.0_num/3.0_num /) 
     REAL(num) :: tmk
     INTEGER :: i
     
     tmk = e0 * e2tmk   
     rad_losses = 0.0_num                                
-    IF (tmk <= trange(1) .OR. tmk >= trange(7)) RETURN
+    IF (tmk < trange(1) .OR. tmk > trange(7)) RETURN
                                                       
     DO i = 1, 6
-      IF (tmk > trange(i) .AND. tmk < trange(i+1)) EXIT
+      IF (tmk >= trange(i) .AND. tmk <= trange(i+1)) EXIT
     END DO 
     
     rad_losses = density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
-    rad_losses = rad_losses * heat_norm * lr_star * e2tmk    
+    rad_losses = rad_losses * h_star * lr_star * e2tmk  
   
   END FUNCTION rad_losses  
+       
   
   
-  FUNCTION heating(density, height) 
-    REAL(num), INTENT(IN) :: density, height
+  FUNCTION heating(density, e0, height) 
+    REAL(num), INTENT(IN) :: density, e0, height
     REAL(num) :: heating      
     ! input coronal heating function in W/M^3
-    
+                           
     heating = 0.0_num
-    IF(heating > 40.0_num) heating = heat0 * density**2 
+    heating = heat0 * 1.5_num
   
   END FUNCTION heating
   
