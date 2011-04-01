@@ -13,6 +13,9 @@ CONTAINS
 
 
   SUBROUTINE set_initial_conditions
+    ! This is about the most complicated example for initial conditions
+    ! Used here as it covers including gravity and neutrals
+    ! The normalisation assumed is that from the defauls control.f90    
 
     INTEGER :: loop, i, j, k
     INTEGER :: ix, iy, iz
