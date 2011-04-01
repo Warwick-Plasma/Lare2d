@@ -88,7 +88,7 @@ CONTAINS
     ! The background resistivity expressed as the inverse Lundquist number,
     ! i.e. the
     ! same for normalised and SI input
-    eta_background = 0.0044_num
+    eta_background = 0.001_num
 
     ! The critical current for triggering anomalous resistivity
     ! and the resistivity when above the critical current
@@ -142,7 +142,7 @@ CONTAINS
     ! BC_OTHER - Other boundary conditions specified in "boundary.f90"
     xbc_left = BC_PERIODIC
     xbc_right = BC_PERIODIC
-    ybc_up = BC_OPEN
+    ybc_up = BC_OTHER
     ybc_down = BC_OTHER
 
     ! set to true to turn on routine for damped boundaries
