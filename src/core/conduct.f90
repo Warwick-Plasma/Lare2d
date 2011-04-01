@@ -249,10 +249,8 @@ CONTAINS
     REAL(num), INTENT(IN) :: density, e0   
     REAL(num), INTENT(OUT) :: rad, alf 
                            
-!    REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.995_num,10.0_num /)
-!    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
-    REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.0_num,10.0_num /)
-    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 0.0_num, 0.0_num /)
+    REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num,0.562_num,1.995_num,10.0_num /)
+    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
     REAL(num), DIMENSION(6) :: alpha = (/0.0_num, 2.0_num, 0.0_num, -2.0_num, 0.0_num, -2.0_num/3.0_num /) 
     REAL(num) :: tmk
     INTEGER :: i
@@ -269,7 +267,7 @@ CONTAINS
     rad = density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
     rad = rad * h_star * lr_star * e2tmk   
     alf = alpha(i)
-  
+
   END SUBROUTINE rad_losses  
        
   
@@ -282,8 +280,8 @@ CONTAINS
     
     tmk = e0 * e2tmk                       
     heating = 0.0_num
-!    IF(height > 20.0_num) heating = 1.5_num * heat0 * density**2
-    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 1.2_num * heat0 * density**2
+
+    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = heat0 * density**2
   
   END FUNCTION heating
   
