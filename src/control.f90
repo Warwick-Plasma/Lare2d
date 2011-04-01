@@ -51,7 +51,7 @@ CONTAINS
 
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
-    t_end = 50.0_num
+    t_end = 10.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
@@ -157,12 +157,13 @@ CONTAINS
     ! EOS_PI - Simple ideal gas for partially ionised plasma
     ! EOS_ION - EOS_PI plus the ionisation potential
     eos_number = EOS_PI
-    ! EOS_IDEAL also requires that you specific a reduced mass factor
-    ! This is the reduced mass in units of the average ion mass
-    ! This has no meaning for other EOS choices
-    ! For fully ionised simple cases set to 0.5
-    ! For neutral hydrogen set to 1.0
-    reduced_mass = 1.0_num
+    ! EOS_IDEAL also requires that you specific whether
+    ! the gas is ionised or not. Some startified atmospheres
+    ! only work for neutral hydrogen for example
+    ! For fully ionised gas set .FALSE.
+    ! For neutral hydrogen set .TRUE.
+    ! This flag is ignored for all other EOS choices.
+    neutral_gas = .TRUE.
     
   END SUBROUTINE control_variables
 
@@ -203,8 +204,9 @@ CONTAINS
     ! If the element is false then the field isn't dumped
     ! N.B. if dump_mask(1:8) not true then the restart will not work
     dump_mask = .FALSE.
-    dump_mask(1:10) = .TRUE.
-    dump_mask(17:19) = .TRUE.
+    dump_mask(1:10) = .TRUE.     
+    IF (include_neutrals) dump_mask(14) = .TRUE.
+    IF (cowling_resistivity) dump_mask(15:16) = .TRUE.
 
   END SUBROUTINE set_output_dumps
 

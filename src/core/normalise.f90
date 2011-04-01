@@ -28,8 +28,9 @@ CONTAINS
     eta_bar = eta_bar / eta_bar_0
   
     ! Normalise ionise_pot 
-    ionise_pot = ionise_pot_si / (energy0 * mbar)
-     
+    ionise_pot = ionise_pot_si / (energy0 * mbar)   
+    IF (eos_number /= EOS_ION) ionise_pot = 0.0_num
+         
     ! normalise tr required for get_neutral etc.
     tr = tr / temp0                             
     
@@ -41,8 +42,13 @@ CONTAINS
   	!find the normalised temperature corresponding to 100MK
   	temperature_100mk = 1.e8_num / temp0      
   	
-  	!convertion factor to get temperature in MK from normalised energy
-    e2tmk = temp0 * (gamma - 1.0_num) / 2.e6_num     
+		! factor required to convert between normalised energy and normalised temperature 
+		! only distinguishes between fully ioned and neutral. Ok as only needed in conduction. 
+		e2t = (gamma - 1.0_num) / 2.0_num
+		IF (eos_number == EOS_IDEAL .AND. neutral_gas) e2t = e2t * 2.0_num
+
+   	!convertion factor to get temperature in MK from normalised energy
+    e2tmk = temp0 * e2t / 1.e6_num     
      
     h_star = L0 / (rho0 * v0**3)   
      

@@ -6,8 +6,8 @@
 !*************************************************************************
 MODULE diagnostics
 
-  USE shared_data; USE boundary; USE normalise
-  USE eos
+  USE shared_data
+  USE boundary
   USE output_cartesian
   USE output
   USE iocontrol
@@ -145,8 +145,9 @@ CONTAINS
       IF (dump_mask(9)) THEN
         DO iy = 0, ny
           DO ix = 0, nx
-            CALL get_temp(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
-                data(ix, iy))
+            data(ix,iy) = (gamma - 1.0_num) &
+                * (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
+                / (2.0_num - xi_n(ix, iy))
           END DO
         END DO
         CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
@@ -155,9 +156,9 @@ CONTAINS
 
       IF (dump_mask(10)) THEN
         DO iy = 0, ny
-          DO ix = 0, nx
-            CALL get_pressure(rho(ix, iy), energy(ix, iy), eos_number, ix, iy, &
-                data(ix, iy))
+          DO ix = 0, nx   
+            data(ix,iy) = (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
+                * (gamma - 1.0_num) * rho(ix,iy)
           END DO
         END DO
         CALL cfd_write_2d_cartesian_variable_parallel("Pressure", "Fluid", &

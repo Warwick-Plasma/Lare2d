@@ -1,7 +1,6 @@
 MODULE initial_conditions
 
   USE shared_data
-  USE eos
   USE neutral
 
   IMPLICIT NONE
@@ -67,7 +66,6 @@ CONTAINS
     grav_ref(-1) = grav_ref(0)
     grav_ref(ny_global+1:ny_global+2) = grav_ref(ny_global)
 
-betafs = 0.0_num
     !beta profile from Archontis 2009 but in 2D
     !similar to that of Nozawa 1991
     !NB : The variable beta used here is actually 1/beta
@@ -84,7 +82,7 @@ betafs = 0.0_num
     !photosphere and calculating up and down from there including beta
     rho_ref = 1.0_num
     mu_m = 1.0_num
-    IF (eos_number==EOS_IDEAL) mu_m = reduced_mass
+    IF (eos_number==EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
     IF (include_neutrals) xi_n = 0.0_num
     DO loop = 1,100
        maxerr = 0.0_num
@@ -146,9 +144,19 @@ betafs = 0.0_num
        bx(ix,:) = mag_ref(coordinates(1)*ny-1:coordinates(1)*ny+ny+2)
     END DO
     DO ix = -1,nx+2,1
-       DO iy = -1,ny+2,1
-          blah = energy(ix,iy)
-          CALL get_energy(rho(ix,iy),blah,eos_number,yb(iy),energy(ix,iy))
+       DO iy = -1,ny+2,1 
+         IF (eos_number /= EOS_IDEAL) THEN         
+           xi_v = get_neutral(energy(ix,iy), rho(ix,iy), yb(iy))
+         ELSE  
+           IF (neutral_gas) THEN
+             xi_v = 1.0_num
+           ELSE
+             xi_v = 0.0_num
+           END IF
+         END IF   
+         energy(ix,iy) = (energy(ix,iy) * (2.0_num - xi_v) &
+            + (1.0_num - xi_v) * ionise_pot * (gamma - 1.0_num)) &
+            / ((gamma - 1.0_num))
        END DO
     END DO
     DO ix=-1,nx+2,1

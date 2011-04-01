@@ -2,7 +2,6 @@ MODULE conduct
 
   USE shared_data
   USE boundary
-  USE eos
 
   IMPLICIT NONE
   PRIVATE
@@ -26,7 +25,7 @@ CONTAINS
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: radiation
     REAL(num), DIMENSION(:, :), ALLOCATABLE  :: heat_in 
     REAL(num), DIMENSION(:, :), ALLOCATABLE  :: alpha
-    REAL(num) :: e2t, exb, eyb 
+    REAL(num) :: exb, eyb 
     REAL(num) :: b, bxc, byc, bzc, bpx, bpy 
     REAL(num) :: ux, uy
     REAL(num) :: pow = 5.0_num / 2.0_num  
@@ -59,13 +58,6 @@ CONTAINS
       first_call = .FALSE.               
     END IF
 
-		! factor required to convert between normalised energy and normalised temperature
-		! N.B. only works for simple Ideal EOS which is fully ionised 
-		IF (include_neutrals) THEN
-      e2t = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) 
-    ELSE
-      e2t = (gamma - 1.0_num) * reduced_mass
-    END IF
     a1 = fractional_error * MAXVAL(energy)  
     CALL MPI_ALLREDUCE(a1, abs_error, 1, mpireal, MPI_MAX, comm, errcode)      
 
