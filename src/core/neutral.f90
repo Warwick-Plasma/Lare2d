@@ -31,13 +31,8 @@ CONTAINS
     tr = 6420.0_num
     
     ! Calculate fbar^(2 / 3) in (k^-1 m^-2)
-<<<<<<< HEAD:src/core/neutral.f90
     f_bar = 2.0_num * pi * (me_si / hp_si) * (kb_si / hp_si)
     f_bar = f_bar**(3.0_num / 2.0_num)
-=======
-    f_bar = pi * (me_si / hp_si) * (kb_si / hp_si)
-    f_bar = SQRT(2.0_num) * f_bar**(3.0_num / 2.0_num)
->>>>>>> Updated to match local version:src/core/neutral.f90
     
     ! Calculate tbar in (K)
     t_bar = ionise_pot_si / kb_si
