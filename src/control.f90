@@ -71,7 +71,7 @@ CONTAINS
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
     x_start = 0.0_num
-    x_end = 100.0_num
+    x_end = 100.0_num 
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
@@ -108,7 +108,7 @@ CONTAINS
     ! with steep temperature gradients and very hot regions with
     ! large thermal conductivity. For many problems it is however
     ! fine. 
-    conduction = .FALSE.  
+    conduction = .TRUE.  
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit 
     ! This is an experimental feature
     heat_flux_limiter = .FALSE.
@@ -133,7 +133,7 @@ CONTAINS
     ! If cowling_resistivity is true then the code calculates and
     ! applies the Cowling Resistivity to the MHD equations   
     ! only possible if not EOS_IDEAL
-    cowling_resistivity = .FALSE.
+    cowling_resistivity = .TRUE.
 
     ! Set the boundary conditions on the four edges of the simulation domain
     ! Valid constants are
