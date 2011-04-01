@@ -149,7 +149,8 @@ CONTAINS
                 * (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
                 / (2.0_num - xi_n(ix, iy))
           END DO
-        END DO
+        END DO    
+        IF (eos_number == EOS_IDEAL .AND. neutral_gas) data = data * 2.0_num
         CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -288,7 +289,8 @@ CONTAINS
         cs = cons * energy(ix,iy)    ! sound speed squared
         
         w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero) &
-            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))
+            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero)) &
+              * (1.0_num + visc1)
 
         dt1 = dxb(ix) / w2 
         dt2 = dyb(iy) / w2   
