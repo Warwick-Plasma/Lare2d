@@ -66,6 +66,7 @@ CONTAINS
     grav_ref(-1) = grav_ref(0)
     grav_ref(ny_global+1:ny_global+2) = grav_ref(ny_global)
 
+betafs = 0.0_num
     !beta profile from Archontis 2009 but in 2D
     !similar to that of Nozawa 1991
     !NB : The variable beta used here is actually 1/beta
@@ -82,8 +83,7 @@ CONTAINS
     !photosphere and calculating up and down from there including beta
     rho_ref = 1.0_num
     mu_m = 1.0_num
-    IF (eos_number==EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
-    IF (include_neutrals) xi_n = 0.0_num
+    IF (eos_number == EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
     DO loop = 1,100
        maxerr = 0.0_num
        !Go from photosphere down
@@ -118,7 +118,7 @@ CONTAINS
                   /dyc_global(iy-1)/mu_m(iy)+grav_ref(iy-1)*dyb_global(iy)*dg)
           END IF
        END DO
-       IF (include_neutrals) THEN
+       IF (eos_number /= EOS_IDEAL) THEN
           DO iy=0,ny_global,1
              xi_v = get_neutral(temp_ref(iy),rho_ref(iy),yb(iy))
              r1 = mu_m(iy)
