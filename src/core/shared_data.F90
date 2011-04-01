@@ -112,7 +112,13 @@ MODULE shared_data
   ! mass fraction - mass of ions in units of proton mass
   REAL(num) :: mf  
   ! average particle mass in units of mf*mh, i.e. 0.5 is fully ionised
-  REAL(num) :: reduced_mass
+  REAL(num) :: reduced_mass   
+  !convertion factor to get temperature in MK from normalised energy  
+  REAL(num) :: e2tmk
+  ! normalisation used for radiative losses
+  REAL(num) :: lr_star
+  ! normalisation used for coronal heating
+  REAL(num) :: h_star
 
   ! Heat conduction
   LOGICAL :: conduction, heat_flux_limiter
