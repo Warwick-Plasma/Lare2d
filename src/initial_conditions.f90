@@ -66,7 +66,6 @@ CONTAINS
     grav_ref(-1) = grav_ref(0)
     grav_ref(ny_global+1:ny_global+2) = grav_ref(ny_global)
 
-betafs = 0.0_num
     !beta profile from Archontis 2009 but in 2D
     !similar to that of Nozawa 1991
     !NB : The variable beta used here is actually 1/beta

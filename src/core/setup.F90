@@ -62,10 +62,8 @@ CONTAINS
     REAL(num) :: dx, dy, xcstar, ycstar
     INTEGER :: ix, iy
 
-    ALLOCATE (xb_global(-2:nx_global+2))
-    ALLOCATE (yb_global(-2:ny_global+2))
-    ALLOCATE (dxnew(-2:nx_global+2))
-    ALLOCATE (dynew(-2:ny_global+2))
+    ALLOCATE(dxnew(-2:nx_global+2))
+    ALLOCATE(dynew(-2:ny_global+2))
 
     ! initially assume uniform grid
     dx = 1.0_num / REAL(nx_global, num)
