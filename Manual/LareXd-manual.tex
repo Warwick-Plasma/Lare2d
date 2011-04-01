@@ -25,7 +25,7 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{Version 2.4}
+\date{Version 2.6}
 \maketitle
 
 \thispagestyle{empty}
@@ -40,14 +40,14 @@ The Lagrangian remap code comes in 2D ({\it Lare2d}) and 3D ({\it Lare3d}). For 
 
 Without going into detail, see \cite{jcp} for complete algorithm, the main features of the code are:
 \begin{itemize}
- \item Solves the nonlinear MHD equations with user controlled viscosity and resistivity. Optional physics packages are: gravity, the Hall term (only in 2D), partially ionised hydrogen equation of state, Cowling resistivity and parallel thermal conductivity.
+ \item Solves the nonlinear MHD equations with user controlled viscosity and resistivity. Optional physics packages are: gravity, the Hall term (only in 2D), partially ionised hydrogen equation of state, Cowling resistivity, parallel thermal conductivity radiation and arbitrary heating.
  \item Splits each timestep into a Lagragrian step followed by a remap onto the original grid. This allows all of the physics to be included into a simple Lagrangian step making it easy to add additional physics. The remap step includes gradient limiters to ensure the correct shock solution.
  \item Uses a staggered grid to prevent the checkerboard instability and to build conservation laws into the finite difference scheme.
  \item Parallelised via MPI and known to scale linearly up to 1000 cores of a cluster.
  \item Comes with packages for visualisation by IDL and VisIt. \cite{visit}
 \end{itemize}
 
-This manual should be sufficient to set up {\it LareXd} for any initial conditions, run the code and begin analysing the results. In order to do this you must know the core equations that are solved. The initial conditions can either be specified in SI units or in normalised form. It is also essential that you know something about the code structure and once the code has run how to load the data into IDL or VisIt. For the more ambitious you will need a good understanding of the Lagrangian step as this is what you will need to change to include additional physics. It is unlikely you will ever need to know how to change the remap step. If editing the core code note that this is always in normalised form so you must understand how this is applied. For examples of the uses of the {\it LareXd} codes just check out papers that reference \cite{jcp}. In order that this manual does not get stuck in the fine details of shock theory etc. it has been written in an informal style which deliberately oversimplifies some theoretical points. It's a user manual, not a theoretical treatise. References to grown up theory are at the end. 
+This manual should be sufficient to set up {\it LareXd} for any initial conditions, run the code and begin analysing the results. In order to do this you must know the core equations that are solved. It is also essential that you know something about the code structure and once the code has run how to load the data into IDL or VisIt. For the more ambitious you will need a good understanding of the Lagrangian step as this is what you will need to change to include additional physics. It is unlikely you will ever need to know how to change the remap step. If editing the core code note that this is always in normalised form so you must understand how this is applied. For examples of the uses of the {\it LareXd} codes just check out papers that reference \cite{jcp}. In order that this manual does not get stuck in the fine details of shock theory etc. it has been written in an informal style which deliberately oversimplifies some theoretical points. It's a user manual, not a theoretical treatise. References to grown up theory are at the end. 
 
 
 
@@ -73,7 +73,7 @@ P&=&\frac{\rho k_{B}T}{\mu_m}\\
 \end{eqnarray*}
 where $\mu_m$ is the reduced mass, i.e. the average mass of all particles in the plasma. Hence $\mu_m=m_p$ for neutral hydrogen atoms ($m_p$ is the proton mass) and $\mu_m=0.5 m_p$ for fully ionised hydrogen. 
 
- {\it LareXd} can either be set to accept an initialisation with variables in S.I. units or using dimensionless variables. The output always matches the input type. If you plan to setup your initial conditions in S.I. units then you do not need to know about the code normalisation to run and use the code. There are two occasions when you will need to understand the normalisation. The first is if you input your variables in dimensionless form. To do this of course you must have chosen a normalisation. For some additional physics packages to work correctly you must tell {\it LareXd} the numerical values of your normalising length, magnetic field and mass density (more on this below). The additional physics packages that require this are thermal conduction and the inclusion of neutrals. If you are only running resistive MHD then these are not needed. The second reason you may need to understand the normalisation is that all of the core code works on the normalised equations so that should you want to edit the code, e.g. to change the resistivity, you must do this on normalised equations.  
+There are two occasions when you will need to understand the normalisation. The first is to input your variables in dimensionless form. To do this of course you must have chosen a normalisation. For some additional physics packages to work correctly you must tell {\it LareXd} the numerical values of your normalising length, magnetic field and mass density (more on this below). The additional physics packages that require this are thermal conduction and the inclusion of neutrals. If you are only running resistive MHD then these are not needed. The second reason you may need to understand the normalisation is that all of the core code works on the normalised equations so that should you want to edit the code, e.g. to change the resistivity, you must do this on normalised equations.  
  
 The normalisation is through the choice of normalising magnetic field $B_0$, density $\rho_0$ and length $L_0$. Thus we define dimensionless quantities as
 \begin{eqnarray*}
@@ -178,6 +178,10 @@ The above is fine for non-MHD problems. If the derivation of the shock jump cond
 \end{equation}
 This is applied to all cells, not just those which are compressed, as significant shear forces may exist across expanding cells. The heating term is however always positive.
 
+\subsection{Boundary Conditions}
+Boundary conditions can be set in {\tt control.f90}. The preset routines are periodic, open and other. If you specify {\tt other} then you must be sure that what is in {\tt boundary.f90} matches precisely you imposed conditions - take care in getting the grid staggering right. Open boundary works on a simplified far-field characteristic model. For this it is best to test on your problem, if fine then go ahead and use. However if these do not work for you problem, they are not guaranteed to work well for all conditions, then you may have to resort to coding up your own conditions in {\tt boundary.f90} and using {\tt other} as your choice for boundaries.
+
+All choices of boundary also allow damping to be applied near the boundary. This is entirely user configurable and requires that the appropriate boundaries are treated as you prefer in {\tt damp\_boundaries} inside {\tt boundary.f90}.   
 
 \section{Hall MHD}
 The 2D version {\it Lare2d} comes with an input deck option to run using Hall MHD. In Hall MHD the only difference in the basic equations is that Ohm's law changes from
@@ -216,8 +220,10 @@ If Hall MHD is turned on in \texttt{control.f90} then $\lambda_i$ must be specif
 P&=&\frac{\rho k_{B}T}{\mu_m}\\
 \epsilon&=&\frac{P}{\rho(\gamma-1)}\\
 \mu_m&=&\bar{m}\ m_{reduced}
-\end{eqnarray*} 
-The reduced mass as a function of the ion mass $\bar{m}$ is defined as $m_{reduced}$ and can be specified in \texttt{control.f90} through the parameter \texttt{reduced\_mass}. Thus setting $m_{reduced}=1$ gives unionised atomic hydrogen while $m_{reduced}=0.5$ will give fully ionised hydrogen. 
+\end{eqnarray*}       
+The reduced mass is controlled through the logical variable {\tt neutral\_gas} in  \texttt{control.f90}. If 
+{\tt neutral\_gas = .TRUE.} then $m_{reduced}=1$, if {\tt neutral\_gas = .FALSE.} then $m_{reduced}=0.5$.
+Thus setting $m_{reduced}=1$ gives unionised atomic hydrogen while $m_{reduced}=0.5$ will give fully ionised hydrogen. 
 
 \item \texttt{eos\_number=EOS\_PI}: Here the effect of neutrals on the partial pressures is included 
 \begin{eqnarray*}
@@ -238,11 +244,11 @@ where $X_i$ is the ionisation energy for hydrogen.
 
 Note that we always assume an ideal gas so the first equation is the same for all options. For an ideal plasma we assume a single ionisation state so that the reduced mass is half the ion mass. If including the effect of neutrals fully one should always use \texttt{eos\_number=EOS\_ION} as the ionisation energy of hydrogen must be taken into account. The second option is therefore never formally correct. It is however retained as the energy equation used in MHD is often missing important sources and sinks and therefore to include $X_i$ is actually a mistake in simple formulations of the energy equation. This is explained in \cite{flux-emergence}.
 
-All of the above assumes that $\xi_n$ is known. This is specified in \texttt{neutral.f90} and \texttt{eos.f90}. In this version of the code $\xi_n$ is determined from a modified Saha equation based on a three level hydrogen model \cite{brown}. This is therefore only valid for the solar chromosphere. To change this the routines that need to return, or calculate, a different $\xi_n$ are \texttt{Get\_Neutral} and \texttt{neutral\_fraction} and \texttt{Get\_Energy} in \texttt{neutral.f90}.
+All of the above assumes that $\xi_n$ is known. This is specified in \texttt{neutral.f90}. In this version of the code $\xi_n$ is determined from a modified Saha equation based on a three level hydrogen model \cite{brown}. This is therefore only valid for the solar chromosphere. To change this the routines that need to return, or calculate, a different $\xi_n$ are \texttt{Get\_Neutral} and \texttt{neutral\_fraction} in \texttt{neutral.f90}.
 
 As well as affecting the partial pressure the neutral fraction can alter the nature of resistive effects. The dominant term here is the introduction of an anisotropic resistivity so that the Ohm's law becomes 
 $\mathbf{E}+\mathbf{v}\times\mathbf{B}=\eta \mathbf{j_{\parallel}} + \eta_c \mathbf{j_{\perp}}$ 
-where $\eta_c$ is the Cowling resistivity which may be orders of magnitude larger than the Spitzer value. Once $\xi_n$ is known $\eta_c$ can be calculated from the standrad formula in \cite{flux-emergence}. This is done in subroutine \texttt{perpendicular\_resistivity} in \texttt{neutral.f90}. 
+where $\eta_c$ is the Cowling resistivity which may be orders of magnitude larger than the Spitzer value. Once $\xi_n$ is known $\eta_c$ can be calculated from the standard formula in \cite{flux-emergence}. This is done in subroutine \texttt{perpendicular\_resistivity} in \texttt{neutral.f90}. 
 
 \section{Thermal Conduction} % (fold)
 \label{sec:thermal_conduction}
@@ -698,7 +704,7 @@ where \texttt{\{Data\_Dir\}} should be replaced by the name of the directory
 holding the data that you no longer want. 
 \subsection*{How do I restart from an old snapshot?}
 You can specify to restart from any previous snapshot by setting \texttt{initial = IC\_RESTART} in
-\texttt{control.f90} and then specifying the restart file number with \texttt{restart\_snapshot}. Note this works fine except for en.dat, the energy diagnostics. You must keep the energy diagnostics from each run. For example if you run from $t=0$ to $t=100$ and want to restart from $t=100$ and run to $t=200$ then before the restart you must move en.dat which is stored in the Data directory, e.g. rename this en1.dat. After running from the restart you will then have an en1.dat and an en.dat file. Rename en.dat to en2.dat then to combine back into a single file first move en1.dat to en.dat then add en2.dat onto the end of this with '\texttt{cat en2.dat >> en.dat}'. Obviously this is messy and will be fixed in a later version when I get the time.            
+\texttt{control.f90} and then specifying the restart file number with \texttt{restart\_snapshot}. Note this works fine except for en.dat, the energy diagnostics. You must keep the energy diagnostics from each run. For example if you run from $t=0$ to $t=100$ and want to restart from $t=100$ and run to $t=200$ then before the restart you must move en.dat which is stored in the Data directory, e.g. rename this en1.dat. After running from the restart you will then have an en1.dat and an en.dat file. Rename en.dat to en2.dat then to combine back into a single file first move en1.dat to en.dat then add en2.dat onto the end of this with '\texttt{cat en2.dat >> en.dat}'. Obviously this is messy and will be fixed in a later version when I get the time. Also note that gravity needs to be re-initialised and this is done by calling {\tt initial\_conditions} so this routine must rest gravity consistent with the snapshot. This will be fixed to automatic later.           
 
 
 \section{Output}
@@ -921,7 +927,7 @@ qx_{i,j,k}&=&\left(uxkx_{i,j,k} + \frac{B_{min}^2}{B^2+B_{min}^2}\kappa \right)\
 \end{eqnarray*}
 In this equation $uxkx_{i,j,k}=ux_{i,j,k}kx_{i,j,k}$ and all quantities are defined at the x surface. The temperature used to determine $\kappa$ is fixed as $T^n$, i.e. the currently known value of temperature. All appearances of $T$ in the equations above are treated as either $T^n$ or $T^{n+1}$ as required for Gauss-Seidel iteration. In this way the update of specific internal energy density is through
 \[
-\rho_{i,j,k}^n \frac{\epsilon_{i,j,k}^{n+1}- \epsilon_{i,j,k}^{n}}{\Delta t}  =  a_1\ T_{i,j,k} + a_2
+\rho_{i,j,k}^n \frac{\epsilon_{i,j,k}^{n+1}- \epsilon_{i,j,k}^{n}}{\Delta t}  =  - a_1\ T_{i,j,k}^{n+1} + a_2
 \]
 Here $a_2$ is all the terms not containing $T_{i,j,k}$ and $a_1$ is the sum of coefficients in front of all terms containing 
 $T_{i,j,k}$.
@@ -943,6 +949,10 @@ The vectors components $uxkx$ etc. are then replaced with limited values defined
 uxkx=uxkx\frac{q_{nl}}{qsh_x}
 \]
 Experience from measured heat fluxes in laser plasma experiments suggest that actually the heat flux must be limited not to $q_f=v_{the} k_B T$ but to $q_f=F_L v_{the} k_B T$  where $F_L$ is a flux limiter which is usually set to 0.05. The parameter $F_L$ is set in the input \texttt{control.f90} file as \texttt{flux\_limiter}. If flux limiters are unfamiliar you should read papers from the laser plasma community where these are measured and used in codes.
+                                                 
+\subsection*{Radiative Losses and Heating}
+
+Yet to complete% TODO {Document RTV losses appendix}
 
 \newpage
 \begin{thebibliography}{}
