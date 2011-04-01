@@ -94,7 +94,7 @@ CONTAINS
     ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
     ALLOCATE(p_visc(-1:nx+2, -1:ny+2))
     ALLOCATE(eta(-1:nx+2, -1:ny+2))
-    ALLOCATE(lambda_i(0:nx, 0:ny))
+    IF (hall_mhd) ALLOCATE(lambda_i(0:nx, 0:ny))
     ! shocked and resistive need to be larger to allow offset = 4 in shock_test
     ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1(-1:nx+2, -1:ny+2))
     ALLOCATE(xc(-1:nx+2), xb(-2:nx+2), dxb(-1:nx+2), dxc(-1:nx+2))
@@ -136,7 +136,7 @@ CONTAINS
     DEALLOCATE(vx1, vy1, vz1)
     DEALLOCATE(bx, by, bz)
     DEALLOCATE(delta_ke, p_visc)
-    DEALLOCATE(eta, lambda_i)
+    DEALLOCATE(eta)
     DEALLOCATE(cv, cv1)
     DEALLOCATE(xc, xb, dxb, dxc)
     DEALLOCATE(yc, yb, dyb, dyc)
@@ -144,6 +144,7 @@ CONTAINS
     DEALLOCATE(jx_r, jy_r, jz_r)  
     DEALLOCATE(xb_global, yb_global)
     
+    IF (ALLOCATED(lambda_i)) DEALLOCATE(lambda_i)
     IF (ALLOCATED(xi_n)) DEALLOCATE(xi_n)
     IF (ALLOCATED(eta_perp)) DEALLOCATE(eta_perp)
     IF (ALLOCATED(parallel_current)) DEALLOCATE(parallel_current)

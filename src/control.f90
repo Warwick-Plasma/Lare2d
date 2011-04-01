@@ -71,7 +71,7 @@ CONTAINS
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
     x_start = 0.0_num
-    x_end = 100.0_num 
+    x_end = 100.0_num  / 64.0_num
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
