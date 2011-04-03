@@ -42,12 +42,12 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 4
+    nx_global = 256
     ny_global = 256
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
-    nsteps = 1
+    nsteps = -1
 
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
@@ -71,7 +71,7 @@ CONTAINS
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
     x_start = 0.0_num
-    x_end = 100.0_num  / 64.0_num
+    x_end = 100.0_num 
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
