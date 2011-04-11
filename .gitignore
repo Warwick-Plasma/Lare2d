@@ -8,3 +8,5 @@ Data/*
 *.gz
 Manual/LareXd-manual.pdf
 *.dvi
+*.tmproj
+
