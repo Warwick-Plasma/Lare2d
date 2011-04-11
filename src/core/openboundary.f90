@@ -19,15 +19,14 @@ CONTAINS
 
     REAL(num) :: bperp
 
-    ! update ghost cells based on Riemann problem with farfield
     ! only expected to work perfectly for prblems with straight B field
     ! through boundaries which do not drastically change shape during the
     ! simulation.    
     
     fraction = 0.9_num
 
-    ! right boundary
-    IF (xbc_max == BC_OPEN .AND. right == MPI_PROC_NULL) THEN
+    ! proc_x_max boundary
+    IF (xbc_max == BC_OPEN .AND. proc_x_max == MPI_PROC_NULL) THEN
       DO iy = -1, ny + 1
         ! variables carried out of domain by Riemann invariants
         vxbc(1) = vx(nx, iy)
@@ -73,8 +72,8 @@ CONTAINS
       END DO
     END IF
 
-    ! left bounday
-    IF (xbc_min == BC_OPEN .AND. left == MPI_PROC_NULL) THEN
+    ! proc_x_min bounday
+    IF (xbc_min == BC_OPEN .AND. proc_x_min == MPI_PROC_NULL) THEN
       DO iy = -1, ny + 1
         vxbc(1) = - vx(0, iy)
         vybc(1) = vy(0, iy)
@@ -118,7 +117,7 @@ CONTAINS
     END IF
 
     ! top boundary
-    IF (ybc_max == BC_OPEN .AND. up == MPI_PROC_NULL) THEN
+    IF (ybc_max == BC_OPEN .AND. proc_y_max == MPI_PROC_NULL) THEN
       DO ix = -1, nx + 1
         vxbc(1) = vy(ix, ny)
         vybc(1) = vx(ix, ny)
@@ -162,7 +161,7 @@ CONTAINS
     END IF
 
     ! bottom boundary
-    IF (ybc_min == BC_OPEN .AND. down == MPI_PROC_NULL) THEN
+    IF (ybc_min == BC_OPEN .AND. proc_y_min == MPI_PROC_NULL) THEN
       DO ix = -1, nx + 1
         vxbc(1) = - vy(ix, 0)
         vybc(1) = vx(ix, 0)
@@ -401,7 +400,6 @@ CONTAINS
     REAL(num), DIMENSION(7) :: pstar, uxstar, uystar, uzstar, rhostar
     REAL(num), DIMENSION(7) :: lambdastar, pmagstar, bzstar
 
-    ! Setup the far field variables
     c0far = SQRT(gamma * pfar / rhofar)
     pmagfar = 0.5_num * (byfar**2 + bzfar**2 - bxfar**2)
     pfar = pfar + pmagfar
@@ -414,7 +412,6 @@ CONTAINS
     csfar = SQRT(0.5_num * (a - SQRT(a**2 - b))) 
     beta = c0far**2 / (cxfar**2 + ctfar**2)
 
-    ! Setup the speeds
     c0 = SQRT(gamma * (gamma - 1.0_num) * ebc(1))
     cx = ABS(bxbc(1)) / SQRT(rbc(1))
     ct = SQRT((bybc(1)**2 + bzbc(1)**2) / rbc(1))

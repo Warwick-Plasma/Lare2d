@@ -56,13 +56,12 @@ CONTAINS
 
     CALL MPI_COMM_RANK(comm, rank, errcode)
     CALL MPI_CART_COORDS(comm, rank, 2, coordinates, errcode)
-    CALL MPI_CART_SHIFT(comm, 1, 1, left, right, errcode)
-    CALL MPI_CART_SHIFT(comm, 0, 1, down, up, errcode)
+    CALL MPI_CART_SHIFT(comm, 1, 1, proc_x_min, proc_x_max, errcode)
+    CALL MPI_CART_SHIFT(comm, 0, 1, proc_y_min, proc_y_max, errcode)
 
     ! Create the subarray for this problem: subtype decribes where this
     ! process's data fits into the global picture.
 
-    ! set up the starting point for my subgrid (assumes arrays start at 0)
     starts(1) = coordinates(2) * nx
     starts(2) = coordinates(1) * ny
 
@@ -70,7 +69,6 @@ CONTAINS
     subsizes = (/ nx+1, ny+1 /)
     sizes = (/ nx_global+1, ny_global+1 /)
 
-    ! set up and commit the subarray type
     CALL MPI_TYPE_CREATE_SUBARRAY(ndims, sizes, subsizes, starts, &
         MPI_ORDER_FORTRAN, mpireal, subtype, errcode)
 

@@ -141,7 +141,7 @@ MODULE shared_data
 
   ! MPI data
 
-  INTEGER :: rank, left, right, up, down, coordinates(2)
+  INTEGER :: rank, proc_x_min, proc_x_max, proc_y_max, proc_y_min, coordinates(2)
   INTEGER :: errcode, comm, tag, nproc, nprocx, nprocy
   INTEGER :: status(MPI_STATUS_SIZE)
 
