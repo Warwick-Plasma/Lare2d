@@ -47,7 +47,7 @@ CONTAINS
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
-    nsteps = -1
+    nsteps = 1
 
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
@@ -83,7 +83,7 @@ CONTAINS
     y_stretch = .FALSE.
 
     ! Turn on or off the resistive parts of the MHD equations
-    resistive_mhd = .TRUE.
+    resistive_mhd = .FALSE.
 
     ! The background resistivity expressed as the inverse Lundquist number,
     ! i.e. the
@@ -108,7 +108,7 @@ CONTAINS
     ! with steep temperature gradients and very hot regions with
     ! large thermal conductivity. For many problems it is however
     ! fine. 
-    conduction = .TRUE.  
+    conduction = .FALSE.  
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit 
     ! This is an experimental feature
     heat_flux_limiter = .FALSE.
@@ -132,8 +132,9 @@ CONTAINS
 
     ! If cowling_resistivity is true then the code calculates and
     ! applies the Cowling Resistivity to the MHD equations   
-    ! only possible if not EOS_IDEAL
-    cowling_resistivity = .TRUE.
+    ! only possible if not EOS_IDEAL    
+    ! resistive_mhd must be TRUE for this to actaully be applied
+    cowling_resistivity = .FALSE.
 
     ! Set the boundary conditions on the four edges of the simulation domain
     ! Valid constants are
@@ -152,7 +153,7 @@ CONTAINS
     ! EOS_IDEAL - Simple ideal gas for perfectly ionised plasma
     ! EOS_PI - Simple ideal gas for partially ionised plasma
     ! EOS_ION - EOS_PI plus the ionisation potential
-    eos_number = EOS_PI
+    eos_number = EOS_IDEAL
     ! EOS_IDEAL also requires that you specific whether
     ! the gas is ionised or not. Some startified atmospheres
     ! only work for neutral hydrogen for example
