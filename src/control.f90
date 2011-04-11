@@ -141,10 +141,10 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN - Reimann characteristic boundary conditions
     ! BC_OTHER - Other boundary conditions specified in "boundary.f90"
-    xbc_left = BC_PERIODIC
-    xbc_right = BC_PERIODIC
-    ybc_up = BC_OTHER
-    ybc_down = BC_OTHER
+    xbc_min = BC_PERIODIC
+    xbc_max = BC_PERIODIC
+    ybc_max = BC_OTHER
+    ybc_min = BC_OTHER
 
     ! set to true to turn on routine for damped boundaries
     damping = .FALSE.
