@@ -83,7 +83,7 @@ CONTAINS
     IF (x_stretch) CALL stretch_x ! stretch grid ?
 
     ! define position of ghost cells using sizes of adjacent cells
-    IF (xbc_right == BC_PERIODIC) THEN
+    IF (xbc_max == BC_PERIODIC) THEN
       xb_global(nx_global+1) = xb_global(nx_global) &
           + (xb_global(1) - xb_global(0))
       xb_global(nx_global+2) = xb_global(nx_global) &
@@ -133,7 +133,7 @@ CONTAINS
 
     IF (y_stretch) CALL stretch_y
 
-    IF (ybc_up == BC_PERIODIC) THEN
+    IF (ybc_max == BC_PERIODIC) THEN
       yb_global(ny_global+1) = yb_global(ny_global) &
           + (yb_global(1) - yb_global(0))
       yb_global(ny_global+2) = yb_global(ny_global) &

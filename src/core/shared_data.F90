@@ -43,7 +43,7 @@ MODULE constants
   INTEGER, PARAMETER :: BC_PERIODIC = 1, BC_OTHER = 2
   INTEGER, PARAMETER :: BC_OPEN = 3
 
-  INTEGER, PARAMETER :: version = 2, revision = 7
+  INTEGER, PARAMETER :: version = 2, revision = 8
 
   ! IC codes
   ! This is a bitmask, remember that
@@ -99,7 +99,7 @@ MODULE shared_data
   REAL(num) :: gamma, eta0, j_max, dt_snapshots, lambda0, eta_background
   REAL(num) :: total_visc_heating = 0.0_num, total_ohmic_heating = 0.0_num
 
-  INTEGER :: xbc_right, ybc_up, xbc_left, ybc_down
+  INTEGER :: xbc_max, ybc_max, xbc_min, ybc_min
   INTEGER :: ix, iy, ixp, iyp, ixm, iym, xpass, ypass
   INTEGER :: restart_snapshot
   INTEGER :: peak_substeps = 0
@@ -141,7 +141,7 @@ MODULE shared_data
 
   ! MPI data
 
-  INTEGER :: rank, left, right, up, down, coordinates(2)
+  INTEGER :: rank, proc_x_min, proc_x_max, proc_y_max, proc_y_min, coordinates(2)
   INTEGER :: errcode, comm, tag, nproc, nprocx, nprocy
   INTEGER :: status(MPI_STATUS_SIZE)
 
