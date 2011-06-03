@@ -682,17 +682,17 @@ CONTAINS
   SUBROUTINE dm_y_bcs
 
     CALL MPI_SENDRECV(dm(0:nx+1, 1), nx+2, mpireal, &
-        down, tag, dm(0:nx+1, ny+1), nx+2, mpireal, &
-        up, tag, comm, status, errcode)
+        proc_y_min, tag, dm(0:nx+1, ny+1), nx+2, mpireal, &
+        proc_y_max, tag, comm, status, errcode)
 
-    IF (up == MPI_PROC_NULL) &
+    IF (proc_y_max == MPI_PROC_NULL) &
         dm(0:nx+1, ny+1) = dm(0:nx+1, ny)
 
     CALL MPI_SENDRECV(dm(0:nx+1, ny-1), nx+2, mpireal, &
-        up, tag, dm(0:nx+1, -1), nx+2, mpireal, &
-        down, tag, comm, status, errcode)
+        proc_y_max, tag, dm(0:nx+1, -1), nx+2, mpireal, &
+        proc_y_min, tag, comm, status, errcode)
 
-    IF (down == MPI_PROC_NULL) &
+    IF (proc_y_min == MPI_PROC_NULL) &
         dm(0:nx+1, -1) = dm(0:nx+1, 0)
 
   END SUBROUTINE dm_y_bcs

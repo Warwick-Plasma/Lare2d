@@ -454,7 +454,7 @@ SUBROUTINE set_initial_conditions
 
      !wait for lower process
      IF (coordinates(1)/=0) THEN
-        CALL MPI_RECV(rho(:,-1),nx+4,mpireal,down,tag,comm,status,errcode)
+        CALL MPI_RECV(rho(:,-1),nx+4,mpireal,proc_y_min,tag,comm,status,errcode)
      END IF
      !calculate the density profile in y for the specified energy profile
      DO ix = -1,nx+2
@@ -468,7 +468,7 @@ SUBROUTINE set_initial_conditions
      END DO
      !now send to higher process
      IF (coordinates(1)/=nprocy-1) THEN
-        CALL MPI_SEND(rho(:,ny-1),nx+4,mpireal,up,tag,comm,errcode)
+        CALL MPI_SEND(rho(:,ny-1),nx+4,mpireal,proc_y_max,tag,comm,errcode)
      END IF
      !If there are any other cycles the use the real equation of state
      eos_this_cycle=eos_number
@@ -522,7 +522,7 @@ END SUBROUTINE set_initial_conditions
 
     !wait for lower process
     IF (coordinates(1)/=0) THEN
-       CALL MPI_RECV(rho(:,-1),nx+4,mpireal,down,tag,comm,status,errcode)
+       CALL MPI_RECV(rho(:,-1),nx+4,mpireal,proc_y_min,tag,comm,status,errcode)
     END IF
     !calculate the density profile in y for the specified energy profile
     DO ix = -1,nx+2
@@ -536,7 +536,7 @@ END SUBROUTINE set_initial_conditions
     END DO
     !now send to higher process
     IF (coordinates(1)/=nprocy-1) THEN
-       CALL MPI_SEND(rho(:,ny-1),nx+4,mpireal,up,tag,comm,errcode)
+       CALL MPI_SEND(rho(:,ny-1),nx+4,mpireal,proc_y_max,tag,comm,errcode)
     END IF
 
     yt = -12.0_num * 150.0e3_num
@@ -616,7 +616,7 @@ END SUBROUTINE set_initial_conditions
 
        !wait for lower process
        IF (coordinates(1)/=0) THEN
-          CALL MPI_RECV(rho(:,-1),nx+4,mpireal,down,tag,comm,status,errcode)
+          CALL MPI_RECV(rho(:,-1),nx+4,mpireal,proc_y_min,tag,comm,status,errcode)
        END IF
        !calculate the density profile in y for the specified energy profile
        DO ix = -1,nx+2
@@ -630,7 +630,7 @@ END SUBROUTINE set_initial_conditions
        END DO
        !now send to higher process
        IF (coordinates(1)/=nprocy-1) THEN
-          CALL MPI_SEND(rho(:,ny-1),nx+4,mpireal,up,tag,comm,errcode)
+          CALL MPI_SEND(rho(:,ny-1),nx+4,mpireal,proc_y_max,tag,comm,errcode)
        END IF
        !If there are any other cycles the use the real equation of state
        eos_this_cycle=eos_number
