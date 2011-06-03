@@ -27,7 +27,7 @@ CONTAINS
     fraction = 0.9_num
 
     ! right boundary
-    IF (xbc_right == BC_OPEN .AND. right == MPI_PROC_NULL) THEN
+    IF (xbc_max == BC_OPEN .AND. right == MPI_PROC_NULL) THEN
       DO iy = -1, ny + 1
         ! variables carried out of domain by Riemann invariants
         vxbc(1) = vx(nx, iy)
@@ -74,7 +74,7 @@ CONTAINS
     END IF
 
     ! left bounday
-    IF (xbc_left == BC_OPEN .AND. left == MPI_PROC_NULL) THEN
+    IF (xbc_min == BC_OPEN .AND. left == MPI_PROC_NULL) THEN
       DO iy = -1, ny + 1
         vxbc(1) = - vx(0, iy)
         vybc(1) = vy(0, iy)
@@ -118,7 +118,7 @@ CONTAINS
     END IF
 
     ! top boundary
-    IF (ybc_up == BC_OPEN .AND. up == MPI_PROC_NULL) THEN
+    IF (ybc_max == BC_OPEN .AND. up == MPI_PROC_NULL) THEN
       DO ix = -1, nx + 1
         vxbc(1) = vy(ix, ny)
         vybc(1) = vx(ix, ny)
@@ -162,7 +162,7 @@ CONTAINS
     END IF
 
     ! bottom boundary
-    IF (ybc_down == BC_OPEN .AND. down == MPI_PROC_NULL) THEN
+    IF (ybc_min == BC_OPEN .AND. down == MPI_PROC_NULL) THEN
       DO ix = -1, nx + 1
         vxbc(1) = - vy(ix, 0)
         vybc(1) = vx(ix, 0)

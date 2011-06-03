@@ -99,7 +99,7 @@ MODULE shared_data
   REAL(num) :: gamma, eta0, j_max, dt_snapshots, lambda0, eta_background
   REAL(num) :: total_visc_heating = 0.0_num, total_ohmic_heating = 0.0_num
 
-  INTEGER :: xbc_right, ybc_up, xbc_left, ybc_down
+  INTEGER :: xbc_max, ybc_max, xbc_min, ybc_min
   INTEGER :: ix, iy, ixp, iyp, ixm, iym, xpass, ypass
   INTEGER :: restart_snapshot
   INTEGER :: peak_substeps = 0
