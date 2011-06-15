@@ -15,15 +15,15 @@ CONTAINS
   SUBROUTINE set_initial_conditions
     ! This is about the most complicated example for initial conditions
     ! Used here as it covers including gravity and neutrals
-    ! The normalisation assumed is that from the defauls control.f90    
+    ! The normalisation assumed is that from the default control.f90    
 
-    INTEGER :: loop, i, j, k
-    INTEGER :: ix, iy, iz
-    REAL(num) :: a1, a2, blah, dg
+    INTEGER :: loop
+    INTEGER :: ix, iy
+    REAL(num) :: a1, a2, dg
     REAL(num) :: a=1.0_num, Tph=9.8_num, Tcor=980.0_num, ycor=11.0_num, wtr=0.6_num
     REAL(num) :: betafs=0.25_num, yfsl=-10.0_num, yfsu=-1.0_num, wfsl=0.5_num, wfsu=0.5_num
-    REAL(num) :: r1, maxerr, xi_v, ran1
-    REAL(num) :: amp, wptb, yptb1, yptb2, yptb, np
+    REAL(num) :: r1, maxerr, xi_v
+    REAL(num) :: amp, wptb, yptb1, yptb2, yptb
     REAL(num), DIMENSION(:), ALLOCATABLE :: yc_global, dyb_global, dyc_global
     REAL(num), DIMENSION(:), ALLOCATABLE :: grav_ref, temp_ref, rho_ref
     REAL(num), DIMENSION(:), ALLOCATABLE :: beta_ref, mag_ref, mu_m
@@ -86,7 +86,7 @@ CONTAINS
     rho_ref = 1.0_num
     mu_m = 1.0_num
     IF (eos_number == EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
-    DO loop = 1,1000
+    DO loop = 1,1
        maxerr = 0.0_num
        !Go from photosphere down
        DO iy = -1,ny_global+1
@@ -161,9 +161,6 @@ CONTAINS
             + (1.0_num - xi_v) * ionise_pot * (gamma - 1.0_num)) &
             / (gamma - 1.0_num)
        END DO
-    END DO
-    DO ix=-1,nx+2,1
-        energy(ix,ny+2) = energy(ix,ny+1)
     END DO
 
     amp = 0.01_num
