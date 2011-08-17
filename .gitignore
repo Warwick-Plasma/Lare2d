@@ -8,10 +8,7 @@ Data/*
 *.gz
 Manual/LareXd-manual.pdf
 *.dvi
-<<<<<<< HEAD
 *.tmproj
 
-=======
 
-*.tmproj
->>>>>>> Added *.tmproj to .gitignore
+/Manual/LareXd-manual.fdb_latexmk

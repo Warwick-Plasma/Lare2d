@@ -15,6 +15,9 @@ CONTAINS
     INTEGER :: ndims, dims(2)
     LOGICAL :: periods(2), reorder
     INTEGER :: starts(2), sizes(2), subsizes(2)
+    INTEGER :: nx0, ny0
+    INTEGER :: nxp, nyp
+    INTEGER :: cx, cy
 
     CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc, errcode)
 
@@ -35,8 +38,6 @@ CONTAINS
 
     nprocx = dims(2)
     nprocy = dims(1)
-    nx = nx_global / nprocx
-    ny = ny_global / nprocy
 
     periods = .TRUE.
     reorder = .TRUE.
@@ -59,11 +60,45 @@ CONTAINS
     CALL MPI_CART_SHIFT(comm, 1, 1, proc_x_min, proc_x_max, errcode)
     CALL MPI_CART_SHIFT(comm, 0, 1, proc_y_min, proc_y_max, errcode)
 
+    cx = coordinates(2)
+    cy = coordinates(1)
+
     ! Create the subarray for this problem: subtype decribes where this
     ! process's data fits into the global picture.
 
-    starts(1) = coordinates(2) * nx
-    starts(2) = coordinates(1) * ny
+    nx0 = nx_global / nprocx
+    ny0 = ny_global / nprocy
+    nx = nx0
+    ny = ny0
+
+    ! If the number of gridpoints cannot be exactly subdivided then fix
+    ! The first nxp processors have nx0 grid points
+    ! The remaining processors have nx0+1 grid points
+    IF (nx0 * nprocx .NE. nx_global) THEN
+      nxp = (nx0 + 1) * nprocx - nx_global
+      IF (cx .GE. nxp) nx = nx0 + 1
+    ELSE
+      nxp = nprocx
+    ENDIF
+    IF (ny0 * nprocy .NE. ny_global) THEN
+      nyp = (ny0 + 1) * nprocy - ny_global
+      IF (cy .GE. nyp) ny = ny0 + 1
+    ELSE
+      nyp = nprocy
+    ENDIF
+
+    ! set up the starting point for my subgrid (assumes arrays start at 0)
+
+    IF (cx .LT. nxp) THEN
+      starts(1) = cx * nx0
+    ELSE
+      starts(1) = nxp * nx0 + (cx - nxp) * (nx0 + 1)
+    ENDIF
+    IF (cy .LT. nyp) THEN
+      starts(2) = cy * ny0
+    ELSE
+      starts(2) = nyp * ny0 + (cy - nyp) * (ny0 + 1)
+    ENDIF
 
     ! the grid sizes
     subsizes = (/ nx+1, ny+1 /)
