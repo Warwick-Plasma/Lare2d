@@ -105,7 +105,6 @@ CONTAINS
           eta_perp(ix, iy) = 0.0_num
         END IF
 
-!        eta_perp(ix, iy) = MIN(eta_perp(ix, iy), 4.0_num)
       END DO
     END DO
 
@@ -131,7 +130,7 @@ CONTAINS
         * T_bar / t_v)
     r = 0.5_num * (-1.0_num + SQRT(1.0_num + r_bar * rho_v * bof))
     get_neutral = r / (1.0_num + r)
-    
+
   END FUNCTION  get_neutral
 
 
@@ -175,44 +174,5 @@ CONTAINS
   END SUBROUTINE neutral_fraction
 
 
-
-!   SUBROUTINE newton_relax
-! 
-! !this routine currently never used
-! 
-!     INTEGER, DIMENSION(1) :: ref_index, z0(1) = 1
-!     LOGICAL :: first_call = .TRUE., run_loop = .TRUE.
-! 
-!     ! This should only be run above the photosphere so first call sets up
-!     ! the lowest value of iz to use if at all, the -2 is due to zc starting
-!     ! at -1
-!     IF (first_call) THEN
-!       z0 = MINLOC(ABS(zc - 0.0_num)) - 2
-!       ! This process doesn't have any cells in the corona
-!       IF (z0(1) > nz) run_loop = .FALSE.
-!       IF (z0(1) < 1) z0(1) = 1 ! only need to run over the internal domain
-!       first_call = .FALSE.
-!     END IF
-! 
-!     ! For every point need to find the reference density value and hence
-!     ! the tau and temperature
-!     IF (run_loop) THEN
-!       DO iz = z0(1), nz
-!         DO iy = 1, ny
-!           DO ix = 1, nx
-!             ! the 2 is subtracted due to rho_ref starting at -1
-!             ref_index = MINLOC(ABS(rho(ix, iy) - rho_ref)) - 2
-!             energy(ix, iy) = (energy(ix, iy) + dt / tau_ref(ref_index(1)) * &
-!                 T_ref(ref_index(1)) / (gamma - 1.0_num)) &
-!                 / (1.0_num + dt / tau_ref(ref_index(1)))
-!           END DO
-!         END DO
-!       END DO
-!     END IF
-! 
-!     CALL energy_bcs   
-! 
-!   END SUBROUTINE newton_relax
-!                
 
 END MODULE neutral
