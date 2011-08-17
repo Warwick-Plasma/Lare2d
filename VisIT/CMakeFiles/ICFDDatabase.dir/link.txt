@@ -1,0 +1,1 @@
+/usr/bin/c++   -dynamiclib -Wl,-headerpad_max_install_names  -o /Users/Tony/.visit/2.3.0/darwin-x86_64/plugins/databases/libICFDDatabase.dylib -install_name /Users/Tony/.visit/2.3.0/darwin-x86_64/plugins/databases/libICFDDatabase.dylib CMakeFiles/ICFDDatabase.dir/CFDPluginInfo.C.o -L/usr/local/visit/2.3.0/darwin-x86_64/lib -lvisitcommon 
