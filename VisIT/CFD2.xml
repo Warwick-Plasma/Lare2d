@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
   <Plugin name="CFD" type="database" label="Compact Fluid Datatype" version="1.0ALPHA" enabled="true" mdspecificcode="false" engspecificcode="false" onlyengine="false" noengine="false" dbtype="STMD" haswriter="false" hasoptions="false">
     <FilePatterns>
-      cfd
+      *.cfd
     </FilePatterns>
     <Files components="M">
       avtCFDFileFormat.C
