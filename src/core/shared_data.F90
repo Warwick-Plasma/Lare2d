@@ -35,7 +35,7 @@ MODULE constants
   REAL(num), PARAMETER :: ionise_pot_si = 2.17870364e-18_num
   
 
-  REAL(num), PARAMETER :: dt_multiplier = 0.9_num
+  REAL(num), PARAMETER :: dt_multiplier = 0.8_num
 
   REAL(num), PARAMETER :: none_zero = TINY(1.0_num) 
   REAL(num), PARAMETER :: largest_number = HUGE(1.0_num)  
