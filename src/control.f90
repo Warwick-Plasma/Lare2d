@@ -16,7 +16,7 @@ CONTAINS
     ! Modules which are coded in SI units
 
     ! Gamma is the ratio of specific heat capacities
-    gamma = 1.4_num 
+    gamma = 1.1_num 
 
     ! Average mass of an ion in proton masses
     ! The code assumes a single ion species with this mass
@@ -33,7 +33,7 @@ CONTAINS
     ! Length normalisation in m
     L0 = 180.e3_num
     ! Density normalisation in kg / m^3
-    RHO0 = 1.67e-4_num
+    RHO0 = 1.7e-4_num
     
   END SUBROUTINE user_normalisation
 
@@ -47,11 +47,11 @@ CONTAINS
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
-    nsteps = 1
+    nsteps = -1
 
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
-    t_end = 10.0_num
+    t_end = 50.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
@@ -71,14 +71,14 @@ CONTAINS
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
     x_start = 0.0_num
-    x_end = 100.0_num 
+    x_end = 180.0_num 
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
     ! The length of the domain in the y direction
     ! If SI_Input is true then this is in metres
     y_start = -20.0_num
-    y_end = 80.0_num
+    y_end = 160.0_num
     ! Should the y grid be stretched of uniform
     y_stretch = .FALSE.
 
@@ -88,7 +88,7 @@ CONTAINS
     ! The background resistivity expressed as the inverse Lundquist number,
     ! i.e. the
     ! same for normalised and SI input
-    eta_background = 0.001_num
+    eta_background = 0.0_num
 
     ! The critical current for triggering anomalous resistivity
     ! and the resistivity when above the critical current
@@ -128,7 +128,7 @@ CONTAINS
     ! IC_RESTART - Load the output file with index restart_snapshot and
     ! use it as the initial conditions
     initial = IC_NEW
-    restart_snapshot = 1
+    restart_snapshot = 250
 
     ! If cowling_resistivity is true then the code calculates and
     ! applies the Cowling Resistivity to the MHD equations   
@@ -143,7 +143,7 @@ CONTAINS
     ! BC_OTHER - Other boundary conditions specified in "boundary.f90"
     xbc_min = BC_PERIODIC
     xbc_max = BC_PERIODIC
-    ybc_max = BC_OTHER
+    ybc_max = BC_OPEN
     ybc_min = BC_OTHER
 
     ! set to true to turn on routine for damped boundaries
@@ -173,7 +173,7 @@ CONTAINS
 
     ! The interval between output snapshots. If SI_Input is true
     ! Then this is in seconds
-    dt_snapshots = 10.0_num
+    dt_snapshots = 0.5_num
 
     ! dump_mask is an array which specifies which quantities the
     ! code should output to disk in a data dump.
