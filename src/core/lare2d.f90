@@ -62,7 +62,8 @@ PROGRAM lare2d
     IF ((i >= nsteps .AND. nsteps >= 0) .OR. (time >= t_end)) EXIT
     i = i + 1                                           
     CALL eta_calc                    ! lagran.f90
-    CALL set_dt                      ! diagnostics.f90  
+    CALL set_dt                      ! diagnostics.f90    
+if (rank == 0 .AND. mod(i,10)==0) print*, dt, time     
     CALL lagrangian_step             ! lagran.f90
     CALL eulerian_remap(i)           ! remap.f90
     IF (rke) CALL energy_correction  ! diagnostics.f90

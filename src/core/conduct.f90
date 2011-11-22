@@ -50,7 +50,7 @@ CONTAINS
     IF (first_call) THEN
       heat0 = 0.0_num 
       a1 = 0.0_num  
-      IF (up == MPI_PROC_NULL) THEN    
+      IF (proc_y_max == MPI_PROC_NULL) THEN    
          CALL rad_losses(rho(1,ny), energy(1,ny), rad, alf)
          a1 = rad * energy(1,ny) / rho(1,ny)**2 
       END IF               
@@ -277,7 +277,7 @@ CONTAINS
     tmk = e0 * e2tmk                       
     heating = 0.0_num
 
-    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 1.2_num * heat0 * density**2
+    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 0.5_num * heat0 * density**2
   
   END FUNCTION heating
   
