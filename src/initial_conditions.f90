@@ -85,7 +85,7 @@ CONTAINS
               (0.5_num * (1.0_num - TANH((yc_global(iy) - yfsu) / wfsu)))
       END IF
     END DO
-!beta_ref = 0.0_num
+beta_ref = 0.0_num
   
     !calculate the density profile, starting from the refence density at the
     !photosphere and calculating up and down from there including beta
@@ -101,10 +101,6 @@ CONTAINS
                   * yc_global(iy) * grav_ref(iy) * mu_m(iy) / gamma 
           END IF
           IF (yc_global(iy) >= 0.0_num) THEN
-  ! Uncomment for tanh profile
-!             temp_ref(iy) = Tph + ((Tcor - Tph) * 0.5_num &
-!                  * (TANH((yc_global(iy) - ycor) / wtr) + 1.0_num))
-  ! Uncomment for logT profile
              temp_ref(iy) = Tph - 1.0 + ((Tcor - Tph)**(0.5_num &
                   * (TANH((yc_global(iy) - ycor) / wtr) + 1.0_num)))
           END IF
@@ -185,16 +181,16 @@ CONTAINS
       randamp = rand(0)
         DO iy=1,ny
         IF ((yc(iy) .GT. yfsl) .AND. (yc(iy) .LT. yfsu)) THEN
-          vy(ix,iy) = 0.44_num * (randamp - 0.5_num)
-          IF ((xc(ix) .GT. 40.0) .AND. (xc(ix) .LT. 42.0)) THEN
-            vy(ix,iy) = 0.22
-          END IF
-          IF ((xc(ix) .GT. 65.0) .AND. (xc(ix) .LT. 67.0)) THEN
-            vy(ix,iy) = 0.22
-          END IF
-          IF ((xc(ix) .GT. 138.0) .AND. (xc(ix) .LT. 140.0)) THEN
-            vy(ix,iy) = 0.22
-          END IF
+!           vy(ix,iy) = 0.44_num * (randamp - 0.5_num)
+!           IF ((xc(ix) .GT. 40.0) .AND. (xc(ix) .LT. 42.0)) THEN
+             vy(ix,iy) = 0.22
+!           END IF
+!           IF ((xc(ix) .GT. 65.0) .AND. (xc(ix) .LT. 67.0)) THEN
+!             vy(ix,iy) = 0.22
+!           END IF
+!           IF ((xc(ix) .GT. 138.0) .AND. (xc(ix) .LT. 140.0)) THEN
+!             vy(ix,iy) = 0.22
+!           END IF
         END IF
       END DO
     END DO         

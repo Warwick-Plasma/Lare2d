@@ -277,7 +277,7 @@ CONTAINS
     tmk = e0 * e2tmk                       
     heating = 0.0_num
 
-    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 0.5_num * heat0 * density**2
+    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 1.0_num * heat0 * density**2
   
   END FUNCTION heating
   
