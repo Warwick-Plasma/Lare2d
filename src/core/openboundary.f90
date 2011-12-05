@@ -17,7 +17,7 @@ CONTAINS
 
   SUBROUTINE open_bcs
 
-    REAL(num) :: bperp
+    REAL(num) :: bperp 
 
     ! only expected to work perfectly for prblems with straight B field
     ! through boundaries which do not drastically change shape during the
@@ -152,11 +152,12 @@ CONTAINS
         rho(ix, ny+1) = rbc(0)
         energy(ix, ny+1) = ebc(0)
         bz(ix, ny+1) = bzbc(0)
-        by(ix, ny+1) = bxbc(0)
+        by(ix, ny+1) = bxbc(0)   
         vx(ix, ny+1) = vybc(0)
         vy(ix, ny+1) = vxbc(0)
         vz(ix, ny+1) = vzbc(0)
-        bx(ix, ny+1) = bybc(0)
+        bx(ix, ny+1) = bybc(0)    
+            
       END DO
     END IF
 
@@ -214,6 +215,7 @@ CONTAINS
     REAL(num) :: c0, ct, cf
     REAL(num) :: pg, rhog, cffar, c0far, ctfar
     REAL(num) :: pmagg
+    REAL(num) :: var_min, var_max
     REAL(num), DIMENSION(3) :: vtest, pstar, vstar, rhostar, pmagstar, bystar, bzstar
     INTEGER :: i
 
@@ -266,6 +268,21 @@ CONTAINS
     vybc(0) = vybc(1)
     vzbc(0) = vzbc(1)  
 
+    var_min = min(uxfar, vxbc(1))
+    var_max = max(uxfar, vxbc(1)) 
+    vxbc(0) = min(vxbc(0), var_max)
+    vxbc(0) = max(vxbc(0), var_min)
+    
+    var_min = min(uyfar, vybc(1))
+    var_max = max(uyfar, vybc(1)) 
+    vybc(0) = min(vybc(0), var_max)
+    vybc(0) = max(vybc(0), var_min)
+    
+    var_min = min(uzfar, vzbc(1))
+    var_max = max(uzfar, vzbc(1)) 
+    vzbc(0) = min(vzbc(0), var_max)
+    vzbc(0) = max(vzbc(0), var_min)
+
   END SUBROUTINE open_bcs_1
 
 
@@ -277,6 +294,7 @@ CONTAINS
     REAL(num) :: c0, cx
     REAL(num) :: pg, rhog, c0far, cxfar
     REAL(num) :: pmagg, lambdag, beta
+    REAL(num) :: var_min, var_max
     REAL(num), DIMENSION(5) :: vtest, pstar, uxstar, rhostar, pmagstar
     REAL(num), DIMENSION(5) :: uystar, lambdaystar, lambdazstar, uzstar
     INTEGER :: i
@@ -379,6 +397,20 @@ CONTAINS
               + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))   
     ENDIF   
 
+    var_min = min(uxfar, vxbc(1))
+    var_max = max(uxfar, vxbc(1)) 
+    vxbc(0) = min(vxbc(0), var_max)
+    vxbc(0) = max(vxbc(0), var_min)
+    
+    var_min = min(uyfar, vybc(1))
+    var_max = max(uyfar, vybc(1)) 
+    vybc(0) = min(vybc(0), var_max)
+    vybc(0) = max(vybc(0), var_min)
+    
+    var_min = min(uzfar, vzbc(1))
+    var_max = max(uzfar, vzbc(1)) 
+    vzbc(0) = min(vzbc(0), var_max)
+    vzbc(0) = max(vzbc(0), var_min)
 
   END SUBROUTINE open_bcs_2
 
