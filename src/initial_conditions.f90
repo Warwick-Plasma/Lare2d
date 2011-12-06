@@ -20,9 +20,7 @@ CONTAINS
     INTEGER :: loop, i, j, k
     INTEGER :: ix, iy, iz
     REAL(num) :: a1, a2, blah, dg
-    ! Uncomment for tanh profile
-!    REAL(num) :: a=2.0_num, Tph=9.8_num, Tcor=980.0_num, ycor=8.0_num, wtr=0.6_num
-    ! Uncomment for logT profile
+
     REAL(num) :: a=2.0_num, Tph=9.8_num, Tcor=980.0_num, ycor=11.78_num, wtr=0.4_num
     REAL(num) :: betafs=0.25_num, yfsl=-5.0_num, yfsu=0.0_num, wfsl=0.5_num, wfsu=0.5_num
     REAL(num) :: r1, maxerr, xi_v, ran1
@@ -85,7 +83,6 @@ CONTAINS
               (0.5_num * (1.0_num - TANH((yc_global(iy) - yfsu) / wfsu)))
       END IF
     END DO
-!beta_ref = 0.0_num
  
     !calculate the density profile, starting from the refence density at the
     !photosphere and calculating up and down from there including beta
@@ -101,10 +98,6 @@ CONTAINS
                   * yc_global(iy) * grav_ref(iy) * mu_m(iy) / gamma 
           END IF
           IF (yc_global(iy) >= 0.0_num) THEN
-  ! Uncomment for tanh profile
-!             temp_ref(iy) = Tph + ((Tcor - Tph) * 0.5_num &
-!                  * (TANH((yc_global(iy) - ycor) / wtr) + 1.0_num))
-  ! Uncomment for logT profile
              temp_ref(iy) = Tph - 1.0 + ((Tcor - Tph)**(0.5_num &
                   * (TANH((yc_global(iy) - ycor) / wtr) + 1.0_num)))
           END IF
@@ -185,8 +178,6 @@ CONTAINS
       randamp = rand(0)
         DO iy=1,ny
         IF ((yc(iy) .GT. yfsl) .AND. (yc(iy) .LT. yfsu)) THEN
-!          vy(ix,iy) = (amp / 4.0_num) * COS(2.0_num*pi*xb(ix)/wptb) &
-!              * (TANH((yb(iy)-yfsl)/0.5_num)-TANH((yb(iy)-yfsu)/0.5_num))
           vy(ix,iy) = 0.044_num * (randamp - 0.5_num)
           IF ((xc(ix) .GT. 40.0) .AND. (xc(ix) .LT. 42.0)) THEN
             vy(ix,iy) = 0.022
