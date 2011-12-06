@@ -4,7 +4,7 @@ MODULE openboundary
 
   IMPLICIT NONE
 
-  REAL(num) :: pfar, rhofar, uxfar, uyfar, uzfar
+  REAL(num) :: pfar, rhofar, efar, uxfar, uyfar, uzfar
   REAL(num) :: bxfar, byfar, bzfar, pbc, vnorm, fraction
 
   REAL(num), DIMENSION(0:1) :: vxbc, vybc, vzbc
@@ -44,6 +44,7 @@ CONTAINS
         pfar = (gamma - 1.0_num) * energy(nx+2, iy) * rho(nx+2, iy)
 
         rhofar = rho(nx+2, iy)
+        efar = energy(nx+2, iy)
         uxfar = vx(nx+2, iy)
         uyfar = vy(nx+2, iy)
         uzfar = vz(nx+2, iy)
@@ -89,6 +90,7 @@ CONTAINS
         pfar = (gamma - 1.0_num) * energy(-1, iy) * rho(-1, iy)
 
         rhofar = rho(-1, iy)
+        efar = energy(-1, iy)
         uxfar = - vx(-2, iy)
         uyfar = vy(-2, iy)
         uzfar = vz(-2, iy)
@@ -133,6 +135,7 @@ CONTAINS
         pfar = (gamma - 1.0_num) * energy(ix, ny+2) * rho(ix, ny+2)
 
         rhofar = rho(ix, ny+2)
+        efar = energy(ix, ny+2)
         uxfar = vy(ix, ny+2)
         uyfar = vx(ix, ny+2)
         uzfar = vz(ix, ny+2)
@@ -178,6 +181,7 @@ CONTAINS
         pfar = (gamma - 1.0_num) * energy(ix, -1) * rho(ix, -1)
 
         rhofar = rho(ix, -1)
+        efar = energy(ix, -1)
         uxfar = - vy(ix, -2)
         uyfar = vx(ix, -2)
         uzfar = vz(ix, -2)
@@ -267,6 +271,36 @@ CONTAINS
         * (vstar(1) + vstar(2) + (pstar(1) - pstar(2)) / (rhofar * cffar))
     vybc(0) = vybc(1)
     vzbc(0) = vzbc(1)  
+
+    var_min = min(efar, ebc(1))
+    var_max = max(efar, ebc(1)) 
+    ebc(0) = min(ebc(0), var_max)
+    ebc(0) = max(ebc(0), var_min)       
+    
+    var_min = min(rhofar, rbc(1))
+    var_max = max(rhofar, rbc(1)) 
+    rbc(0) = min(rbc(0), var_max)
+    rbc(0) = max(rbc(0), var_min)       
+
+    var_min = min(rhofar, rbc(1))
+    var_max = max(rhofar, rbc(1)) 
+    rbc(0) = min(rbc(0), var_max)
+    rbc(0) = max(rbc(0), var_min)       
+
+    var_min = min(bxfar, bxbc(1))
+    var_max = max(bxfar, bxbc(1)) 
+    bxbc(0) = min(bxbc(0), var_max)
+    bxbc(0) = max(bxbc(0), var_min)       
+
+    var_min = min(byfar, bybc(1))
+    var_max = max(byfar, bybc(1)) 
+    bybc(0) = min(bybc(0), var_max)
+    bybc(0) = max(bybc(0), var_min)       
+
+    var_min = min(bzfar, bzbc(1))
+    var_max = max(bzfar, bzbc(1)) 
+    bzbc(0) = min(bzbc(0), var_max)
+    bzbc(0) = max(bzbc(0), var_min)       
 
     var_min = min(uxfar, vxbc(1))
     var_max = max(uxfar, vxbc(1)) 
@@ -397,6 +431,36 @@ CONTAINS
               + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))   
     ENDIF   
 
+    var_min = min(efar, ebc(1))
+    var_max = max(efar, ebc(1)) 
+    ebc(0) = min(ebc(0), var_max)
+    ebc(0) = max(ebc(0), var_min)       
+    
+    var_min = min(rhofar, rbc(1))
+    var_max = max(rhofar, rbc(1)) 
+    rbc(0) = min(rbc(0), var_max)
+    rbc(0) = max(rbc(0), var_min)       
+
+    var_min = min(rhofar, rbc(1))
+    var_max = max(rhofar, rbc(1)) 
+    rbc(0) = min(rbc(0), var_max)
+    rbc(0) = max(rbc(0), var_min)       
+
+    var_min = min(bxfar, bxbc(1))
+    var_max = max(bxfar, bxbc(1)) 
+    bxbc(0) = min(bxbc(0), var_max)
+    bxbc(0) = max(bxbc(0), var_min)       
+
+    var_min = min(byfar, bybc(1))
+    var_max = max(byfar, bybc(1)) 
+    bybc(0) = min(bybc(0), var_max)
+    bybc(0) = max(bybc(0), var_min)       
+
+    var_min = min(bzfar, bzbc(1))
+    var_max = max(bzfar, bzbc(1)) 
+    bzbc(0) = min(bzbc(0), var_max)
+    bzbc(0) = max(bzbc(0), var_min)   
+    
     var_min = min(uxfar, vxbc(1))
     var_max = max(uxfar, vxbc(1)) 
     vxbc(0) = min(vxbc(0), var_max)

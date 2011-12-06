@@ -42,8 +42,8 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 256
-    ny_global = 256
+    nx_global = 128
+    ny_global = 128
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end

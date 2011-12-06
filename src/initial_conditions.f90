@@ -85,7 +85,7 @@ CONTAINS
               (0.5_num * (1.0_num - TANH((yc_global(iy) - yfsu) / wfsu)))
       END IF
     END DO
-beta_ref = 0.0_num
+!beta_ref = 0.0_num
  
     !calculate the density profile, starting from the refence density at the
     !photosphere and calculating up and down from there including beta
