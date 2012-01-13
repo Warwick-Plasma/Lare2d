@@ -16,7 +16,7 @@ CONTAINS
     ! Modules which are coded in SI units
  
     ! Gamma is the ratio of specific heat capacities
-    gamma = 1.1_num 
+    gamma = 5.0_num / 3.0_num 
  
     ! Average mass of an ion in proton masses
     ! The code assumes a single ion species with this mass
@@ -51,7 +51,7 @@ CONTAINS
  
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
-    t_end = 50.0_num
+    t_end = 200.0_num
  
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
@@ -71,7 +71,7 @@ CONTAINS
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
     x_start = 0.0_num
-    x_end = 180.0_num 
+    x_end = 2.8_num   !180.0_num 
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
  
@@ -153,7 +153,7 @@ CONTAINS
     ! EOS_IDEAL - Simple ideal gas for perfectly ionised plasma
     ! EOS_PI - Simple ideal gas for partially ionised plasma
     ! EOS_ION - EOS_PI plus the ionisation potential
-    eos_number = EOS_IDEAL
+    eos_number = EOS_ION
     ! EOS_IDEAL also requires that you specific whether
     ! the gas is ionised or not. Some startified atmospheres
     ! only work for neutral hydrogen for example
@@ -173,7 +173,7 @@ CONTAINS
  
     ! The interval between output snapshots. If SI_Input is true
     ! Then this is in seconds
-    dt_snapshots = 0.5_num
+    dt_snapshots = 2.0_num
  
     ! dump_mask is an array which specifies which quantities the
     ! code should output to disk in a data dump.
