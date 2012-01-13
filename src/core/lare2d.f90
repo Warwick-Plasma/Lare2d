@@ -63,7 +63,7 @@ PROGRAM lare2d
     i = i + 1                                           
     CALL eta_calc                    ! lagran.f90
     CALL set_dt                      ! diagnostics.f90    
-if (rank == 0 .AND. mod(i,50)==0) print*, dt, time     
+    IF (eos_number /= EOS_IDEAL) CALL neutral_fraction ! neutral.f90   
     CALL lagrangian_step             ! lagran.f90
     CALL eulerian_remap(i)           ! remap.f90
     IF (rke) CALL energy_correction  ! diagnostics.f90
