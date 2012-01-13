@@ -8,6 +8,7 @@ MODULE conduct
   PUBLIC :: conduct_heat    
   
   REAL(num) :: heat0 = 0.0_num
+  REAL(num) :: rho_cor = 0.0_num
 
 CONTAINS
 
@@ -49,7 +50,8 @@ CONTAINS
             
     IF (first_call) THEN
       heat0 = 0.0_num 
-      a1 = 0.0_num  
+      a1 = 0.0_num 
+      rho_cor = rho(1,50)
       IF (proc_y_max == MPI_PROC_NULL) THEN    
          CALL rad_losses(rho(1,ny), energy(1,ny), rad, alf)
          a1 = rad * energy(1,ny) / rho(1,ny)**2 
@@ -151,7 +153,7 @@ CONTAINS
         IF (yc(iy) > 10.0_num) THEN  
           a1 = rad * energy0(ix,iy)
           a2 = heat_in(ix,iy) + (energy0(ix,iy) - 0.02_num / e2tmk) * rho(ix,iy) / dt   
-          radiation(ix,iy) =  MIN(a1,a2) / energy0(ix,iy) 
+          radiation(ix,iy) =  a1 / energy0(ix,iy) !MIN(a1,a2) / energy0(ix,iy) 
         END IF    
       END DO
     END DO      
@@ -205,7 +207,7 @@ CONTAINS
 
             residual = energy(ix, iy) &
                   - (energy0(ix, iy)  + a4) / (1.0_num + a3) 
-            energy(ix, iy) = MAX(energy(ix, iy) - w * residual, 0.0_num)
+            energy(ix, iy) = MAX(energy(ix, iy) - w * residual, (1.0_num - xi_n(ix,iy))*ionise_pot)
             error = ABS(residual) / energy0(ix,iy)
             errmax = MAX(errmax, error)
             
@@ -238,7 +240,8 @@ CONTAINS
     DEALLOCATE(alpha)
 
   END SUBROUTINE conduct_heat
-          
+               
+               
 
   SUBROUTINE rad_losses(density, e0, rad, alf)  
     ! returns the normalised RTV losses divided by energy(ix,iy) and the power alpha
@@ -277,7 +280,7 @@ CONTAINS
     tmk = e0 * e2tmk                       
     heating = 0.0_num
 
-    IF(height > 10.0_num .AND. tmk > 0.02_num) heating = 1.0_num * heat0 * density**2
+    IF(density < rho_cor .AND. tmk > 0.02_num) heating = 10.0_num * heat0 * density**2
   
   END FUNCTION heating
   
