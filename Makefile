@@ -84,7 +84,7 @@ boundary.o:boundary.f90 shared_data.o mpiboundary.o
 xremap.o:xremap.f90 shared_data.o boundary.o
 yremap.o:yremap.f90 shared_data.o boundary.o
 zremap.o:zremap.f90 shared_data.o boundary.o
-diagnostics.o:diagnostics.F90 shared_data.o boundary.o output_cartesian.o output.o iocontrol.o 
+diagnostics.o:diagnostics.F90 shared_data.o boundary.o conduct.o output_cartesian.o output.o iocontrol.o 
 iocommon.o:iocommon.f90 shared_data.o
 output.o:output.f90 shared_data.o iocommon.o
 output_cartesian.o: output_cartesian.f90 shared_data.o iocommon.o output.o
