@@ -151,7 +151,6 @@ CONTAINS
                 / (2.0_num - xi_n(ix, iy))
           END DO
         END DO    
-        IF (eos_number == EOS_IDEAL .AND. neutral_gas) data = data * 2.0_num
         CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
