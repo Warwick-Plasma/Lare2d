@@ -37,7 +37,7 @@ CONTAINS
 
     INTEGER :: loop, redblack, x1, y1
 
-    LOGICAL :: converged, first_call = .TRUE.
+    LOGICAL :: converged
     REAL(num), PARAMETER :: fractional_error = 1.0e-4_num
     REAL(num), PARAMETER :: b_min = 1.0e-3_num
 
@@ -53,18 +53,6 @@ CONTAINS
             
     temperature = (gamma - 1.0_num) * (energy - (1.0_num - xi_n) * ionise_pot) &
                  / (2.0_num - xi_n)            
-
-    IF (first_call) THEN
-      heat0 = 0.0_num 
-      a1 = 0.0_num 
-      rho_cor = rho(1,50)
-      IF (proc_y_max == MPI_PROC_NULL) THEN    
-         CALL rad_losses(rho(1,ny), temperature(1,ny), rad, alf)
-         a1 = rad * temperature(1,ny) / rho(1,ny)**2 
-      END IF               
-      CALL MPI_ALLREDUCE(a1, heat0, 1, mpireal, MPI_MAX, comm, errcode)
-      first_call = .FALSE.               
-    END IF
 
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1 
@@ -155,9 +143,9 @@ CONTAINS
     DO iy = 1, ny
       DO ix = 1, nx  
         heat_in(ix,iy) = heating(rho(ix,iy), temperature0(ix,iy))  
-        CALL rad_losses(rho(ix,iy), temperature0(ix,iy), rad, alf)
+        CALL rad_losses(rho(ix,iy), temperature0(ix,iy), xi_n(ix,iy), rad, alf)
         alpha(ix,iy) = alf  
-        IF (yc(iy) > 10.0_num) THEN  
+        IF (yc(iy) > 1.0_num) THEN  
           radiation(ix,iy) =  rad 
         END IF    
       END DO
@@ -254,27 +242,31 @@ CONTAINS
                
                
 
-  SUBROUTINE rad_losses(density, temperature, rad, alf)  
+  SUBROUTINE rad_losses(density, temperature, xi, rad, alf)  
     ! returns the normalised RTV losses divided by normalised temperature
-    REAL(num), INTENT(IN) :: density, temperature  
+    REAL(num), INTENT(IN) :: density, temperature, xi  
     REAL(num), INTENT(OUT) :: rad, alf 
 
     REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num, 0.562_num,1.995_num,10.0_num /)
     REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, 0.3467_num, 1.0_num, 1.6218_num /)
     REAL(num), DIMENSION(6) :: alpha = (/0.0_num, 2.0_num, 0.0_num, -2.0_num, 0.0_num, -2.0_num/3.0_num /) 
-    REAL(num) :: tmk
+    REAL(num) :: tmk, factor
     INTEGER :: i
                       
-    tmk = temperature * t2tmk   
     rad = 0.0_num     
     alf = 0.0_num                           
+    IF(.NOT. radiation) RETURN
+
+    tmk = temperature * t2tmk   
     IF (tmk < trange(1) .OR. tmk > trange(7)) RETURN
                                                       
     DO i = 1, 6
       IF (tmk >= trange(i) .AND. tmk <= trange(i+1)) EXIT
     END DO 
-    
-    rad = density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
+                                                
+    factor = (1.0_num - xi)**2
+    IF (eos_number == EOS_IDEAL) factor = 1.0_num
+    rad = factor * density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
     rad = rad * h_star * lr_star * t2tmk   
     alf = alpha(i)
 
@@ -285,13 +277,36 @@ CONTAINS
   FUNCTION heating(density, t0) 
     REAL(num), INTENT(IN) :: density, t0
     REAL(num) :: heating
-    REAL(num) :: tmk      
-    ! input coronal heating function in W/M^3
+    REAL(num) :: tmk, a1, a2, rad, alf, height
+    LOGICAL :: first_call = .TRUE.
+    REAL(num) :: heat0 = 0.0_num      
+    REAL(num) :: rho_coronal = 0.0_num   
+    INTEGER :: loop
     
-    tmk = t0 * t2tmk                       
-    heating = 0.0_num
+    IF (first_call) THEN
+      a1 = 0.0_num     
+      IF (proc_y_max == MPI_PROC_NULL) THEN    
+         CALL rad_losses(rho(1,ny), temperature(1,ny), xi_n(1,ny), rad, alf)
+         a1 = rad * temperature(1,ny) / rho(1,ny)**2 
+      END IF               
+      CALL MPI_ALLREDUCE(a1, heat0, 1, mpireal, MPI_MAX, comm, errcode)  
+       
+      ! choose a reference density based on height   
+      height = 15.0_num  
+      a2 = 0.0_num
+      DO loop = 1, ny
+         IF (yb(loop) >= height .AND. yb(loop-1) < height) a2 = rho(1,loop)  
+      END DO 
+      CALL MPI_ALLREDUCE(a2, rho_coronal, 1, mpireal, MPI_MAX, comm, errcode)    
 
-    IF(density < rho_cor .AND. tmk > 0.02_num) heating = 100.0_num * heat0 * density**2
+      first_call = .FALSE.               
+    END IF     
+
+    heating = 0.0_num
+    IF (.NOT. coronal_heating) RETURN
+
+    tmk = t0 * t2tmk                       
+    IF(density < rho_coronal .AND. tmk > 0.02_num) heating = 100.0_num * heat0 * density**2
 
   END FUNCTION heating
   
