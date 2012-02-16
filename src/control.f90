@@ -16,7 +16,7 @@ CONTAINS
     ! Modules which are coded in SI units
  
     ! Gamma is the ratio of specific heat capacities
-    gamma = 5.0_num / 3.0_num 
+    gamma = 1.1_num  !5.0_num / 3.0_num 
  
     ! Average mass of an ion in proton masses
     ! The code assumes a single ion species with this mass
@@ -42,8 +42,8 @@ CONTAINS
   SUBROUTINE control_variables
  
     ! Set the number of gridpoints in x and y directions
-    nx_global = 4
-    ny_global = 256
+    nx_global = 64    !1024
+    ny_global = 256    !1024
  
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
@@ -51,7 +51,7 @@ CONTAINS
  
     ! The maximum runtime of the code
     ! If SI_Input is true then this is in seconds
-    t_end = 200.0_num
+    t_end = 40.0_num
  
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
@@ -71,7 +71,7 @@ CONTAINS
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
     x_start = 0.0_num
-    x_end = 2.8_num   !180.0_num 
+    x_end = 180.0_num 
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
  
@@ -83,7 +83,7 @@ CONTAINS
     y_stretch = .FALSE.
  
     ! Turn on or off the resistive parts of the MHD equations
-    resistive_mhd = .FALSE.
+    resistive_mhd = .TRUE.
  
     ! The background resistivity expressed as the inverse Lundquist number,
     ! i.e. the
@@ -108,15 +108,17 @@ CONTAINS
     ! with steep temperature gradients and very hot regions with
     ! large thermal conductivity. For many problems it is however
     ! fine. 
-    conduction = .TRUE.  
+    conduction = .FALSE.  
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit 
     ! This is an experimental feature
     heat_flux_limiter = .FALSE.
     ! Fraction of free streaming heat flux used in limiter
     flux_limiter = 0.05_num     
-    ! Use radiation as specified in SUBROUTINE rad_losses in src/core/conduct.f90
+    ! Use radiation as specified in SUBROUTINE rad_losses in src/core/conduct.f90   
+    ! Only matters if conduction = .TRUE. above
     radiation = .TRUE.
     ! Use coronal heating as specified in SUBROUTINE heating in src/core/conduct.f90
+    ! Only matters if conduction = .TRUE. above
     coronal_heating = .TRUE.
  
     ! Remap kinetic energy correction. LARE does not
@@ -138,7 +140,7 @@ CONTAINS
     ! applies the Cowling Resistivity to the MHD equations   
     ! only possible if not EOS_IDEAL    
     ! resistive_mhd must be TRUE for this to actaully be applied
-    cowling_resistivity = .FALSE.
+    cowling_resistivity = .TRUE.
  
     ! Set the boundary conditions on the four edges of the simulation domain
     ! Valid constants are
@@ -177,7 +179,7 @@ CONTAINS
  
     ! The interval between output snapshots. If SI_Input is true
     ! Then this is in seconds
-    dt_snapshots = 2.0_num
+    dt_snapshots = 0.5_num
  
     ! dump_mask is an array which specifies which quantities the
     ! code should output to disk in a data dump.
@@ -205,9 +207,9 @@ CONTAINS
     ! If the element is false then the field isn't dumped
     ! N.B. if dump_mask(1:8) not true then the restart will not work
     dump_mask = .FALSE.
-    dump_mask(1:10) = .TRUE.     
+    dump_mask(1:9) = .TRUE.     
     IF (eos_number /= EOS_IDEAL) dump_mask(14) = .TRUE.
-    IF (cowling_resistivity) dump_mask(15:16) = .TRUE.
+    IF (cowling_resistivity) dump_mask(12:16) = .TRUE.
  
   END SUBROUTINE set_output_dumps
  

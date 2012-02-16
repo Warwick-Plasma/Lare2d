@@ -12,51 +12,47 @@ MODULE initial_conditions
 CONTAINS
   
   
+
   SUBROUTINE set_initial_conditions
     ! This is about the most complicated example for initial conditions
     ! Used here as it covers including gravity and neutrals
-    ! The normalisation assumed is that from the defauls control.f90    
-  
-    INTEGER :: loop, i, j, k
-    INTEGER :: ix, iy, iz
-    REAL(num) :: a1, a2, blah, dg
-    ! Uncomment for tanh profile
-!    REAL(num) :: a=2.0_num, Tph=9.8_num, Tcor=980.0_num, ycor=8.0_num, wtr=0.6_num
-    ! Uncomment for logT profile
-    REAL(num) :: a=0.9_num, Tph=9.8_num, Tcor=980.0_num, ycor=11.78_num, wtr=0.4_num
+    ! The normalisation assumed is that from the default control.f90    
+
+    INTEGER :: loop
+    INTEGER :: ix, iy
+    REAL(num) :: a1, a2, dg
+    REAL(num) :: a=2.0_num, Tph=9.8_num, Tcor=980.0_num, ycor=11.78_num, wtr=0.4_num
     REAL(num) :: betafs=0.25_num, yfsl=-5.0_num, yfsu=0.0_num, wfsl=0.5_num, wfsu=0.5_num
-    REAL(num) :: r1, maxerr, xi_v, ran1
-    REAL(num) :: amp, wptb, yptb1, yptb2, yptb, np, randamp
+    REAL(num) :: r1, maxerr, xi_v
+    REAL(num) :: amp, wptb1, wptb2, wptb3, wptb4 
     REAL(num), DIMENSION(:), ALLOCATABLE :: yc_global, dyb_global, dyc_global
     REAL(num), DIMENSION(:), ALLOCATABLE :: grav_ref, temp_ref, rho_ref
-    REAL(num), DIMENSION(:), ALLOCATABLE :: beta_ref, mag_ref, mu_m, vy_ref
-    REAL rand
-      
+    REAL(num), DIMENSION(:), ALLOCATABLE :: beta_ref, mag_ref, mu_m
+    
     ALLOCATE(yc_global(-1:ny_global+1))
     ALLOCATE(dyb_global(-1:ny_global+1), dyc_global(-1:ny_global))
     ALLOCATE(grav_ref(-1:ny_global+2), temp_ref(-1:ny_global+2))
     ALLOCATE(rho_ref(-1:ny_global+2), mag_ref(-1:ny_global+2))
     ALLOCATE(beta_ref(-1:ny_global+2), mu_m(-1:ny_global+2))
-    ALLOCATE(vy_ref(-1:ny_global+2))
-  
+
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num
     bx = 0.0_num
     by = 0.0_num
     bz = 0.0_num
-  
+
     !fill in yc_global with the positions central to the yb_global points
     DO iy = -1,ny_global+1
        yc_global(iy) = 0.5_num * (yb_global(iy-1) + yb_global(iy))
     END DO
-  
+
     !fill in dyb_global and dyc_global
     DO iy = -1,ny_global
        dyb_global(iy) = yb_global(iy) - yb_global(iy-1)
        dyc_global(iy) = yc_global(iy+1) - yc_global(iy)
     END DO
-  
+
     !fill in the reference gravity array - lowering grav to zero at the top 
     !of the corona smoothly from a1 to grav=0 at a2 and above
     grav_ref = 11.78_num
@@ -73,7 +69,7 @@ CONTAINS
     END DO    
     grav_ref(-1) = grav_ref(0)
     grav_ref(ny_global+1:ny_global+2) = grav_ref(ny_global)
-  
+
     !beta profile from Archontis 2009 but in 2D
     !similar to that of Nozawa 1991
     !NB : The variable beta used here is actually 1/beta
@@ -85,13 +81,13 @@ CONTAINS
               (0.5_num * (1.0_num - TANH((yc_global(iy) - yfsu) / wfsu)))
       END IF
     END DO
-beta_ref = 0.0_num
-  
+
     !calculate the density profile, starting from the refence density at the
     !photosphere and calculating up and down from there including beta
     rho_ref = 1.0_num
     mu_m = 1.0_num
     IF (eos_number == EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
+
     DO loop = 1,1000
        maxerr = 0.0_num
        !Go from photosphere down
@@ -101,12 +97,12 @@ beta_ref = 0.0_num
                   * yc_global(iy) * grav_ref(iy) * mu_m(iy) / gamma 
           END IF
           IF (yc_global(iy) >= 0.0_num) THEN
-             temp_ref(iy) = Tph - 1.0 + ((Tcor - Tph)**(0.5_num &
+             temp_ref(iy) = Tph - 1.0_num + ((Tcor - Tph)**(0.5_num &
                   * (TANH((yc_global(iy) - ycor) / wtr) + 1.0_num)))
           END IF
        END DO
        temp_ref(ny_global+1:ny_global+2) = temp_ref(ny_global)
-         
+       
        DO iy = ny_global,0,-1
           IF (yc_global(iy) < 0.0_num) THEN  
              dg = 1.0_num / (dyb_global(iy) + dyb_global(iy-1))
@@ -136,15 +132,15 @@ beta_ref = 0.0_num
        END IF
        IF (maxerr < 1.e-16_num) EXIT
     END DO 
-  
+
     rho_ref(ny_global+1:ny_global+2) = rho_ref(ny_global)
-                                    
+                                  
     !magnetic flux sheet profile from Archontis2009
     !similar structure to the 2D version used in Nozawa1991 and Isobe2006
     DO iy= -1,ny_global+2,1
        mag_ref(iy) = SQRT(2.0_num * beta_ref(iy) * temp_ref(iy) * rho_ref(iy) / mu_m(iy))
     END DO
-  
+
     !fill in all the final arrays from the ref arrays
     grav(:) = grav_ref(coordinates(1)*ny-1:coordinates(1)*ny+ny+2)
     DO ix = -1,nx+2,1
@@ -168,37 +164,32 @@ beta_ref = 0.0_num
             / (gamma - 1.0_num)
        END DO
     END DO
-    DO ix=-1,nx+2,1
-        energy(ix,ny+2) = energy(ix,ny+1)
-    END DO
-  
-    !velocity perturbation
+
+    !add a velocity perturbation to the flux sheet
     amp = 0.01_num
-    wptb = 20.0_num
-  
-    CALL srand(0+coordinates(0))
-    DO ix=1,nx
-      randamp = rand(0)
-        DO iy=1,ny
-        IF ((yc(iy) .GT. yfsl) .AND. (yc(iy) .LT. yfsu)) THEN
-!           vy(ix,iy) = 0.44_num * (randamp - 0.5_num)
-!           IF ((xc(ix) .GT. 40.0) .AND. (xc(ix) .LT. 42.0)) THEN
-             vy(ix,iy) = 0.22
-!           END IF
-!           IF ((xc(ix) .GT. 65.0) .AND. (xc(ix) .LT. 67.0)) THEN
-!             vy(ix,iy) = 0.22
-!           END IF
-!           IF ((xc(ix) .GT. 138.0) .AND. (xc(ix) .LT. 140.0)) THEN
-!             vy(ix,iy) = 0.22
-!           END IF
-        END IF
-      END DO
-    END DO         
-  
+    wptb1 = 4.5_num
+    wptb2 = 36.0_num
+    wptb3 = 3.0_num
+    wptb4 = 60.0_num
+
+    DO iy=1,ny
+      IF ((yc_global(iy) .GT. yfsl) .AND. (yc_global(iy) .LT. yfsu)) THEN
+        DO ix=1,nx
+          vy(ix,iy) = (amp / 4.0_num) &
+              * (TANH((yb(iy)-yfsl)/wfsl)-TANH((yb(iy)-yfsu)/wfsu)) * ( &
+              SIN(2.0_num*pi*xb(ix)/wptb1) + &
+              SIN(2.0_num*pi*xb(ix)/wptb2) + &
+              SIN(2.0_num*pi*xb(ix)/wptb3) + & 
+              SIN(2.0_num*pi*xb(ix)/wptb4) )
+        END DO
+      END IF
+    END DO   
+
     DEALLOCATE(yc_global, dyb_global, dyc_global, mu_m)
     DEALLOCATE(grav_ref, temp_ref, rho_ref, beta_ref, mag_ref)
-  
-  
+
+
   END SUBROUTINE set_initial_conditions
+                                                   
   
 END MODULE initial_conditions
