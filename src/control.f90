@@ -42,8 +42,8 @@ CONTAINS
   SUBROUTINE control_variables
  
     ! Set the number of gridpoints in x and y directions
-    nx_global = 64    !1024
-    ny_global = 256    !1024
+    nx_global = 1024
+    ny_global = 1024
  
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
@@ -83,7 +83,7 @@ CONTAINS
     y_stretch = .FALSE.
  
     ! Turn on or off the resistive parts of the MHD equations
-    resistive_mhd = .TRUE.
+    resistive_mhd = .FALSE.
  
     ! The background resistivity expressed as the inverse Lundquist number,
     ! i.e. the
