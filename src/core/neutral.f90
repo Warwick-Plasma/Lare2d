@@ -121,12 +121,15 @@ CONTAINS
     REAL(num) :: bof, r, t_rad, dilution
     
     t_rad = tr
-    dilution = 0.5_num
+    dilution = 0.5_num     
+    ! set plasma below photospher neutral so same sub-photospheric
+    ! initial conditions can be used for ideal gas and partially ionized
+    ! simulations. 
     IF (height <= 0.0_num) THEN  
-!      get_neutral = 1.0_num
-!      RETURN
-       t_rad = t_v
-       dilution = 1.0_num  
+      get_neutral = 1.0_num
+      RETURN
+!       t_rad = t_v
+!       dilution = 1.0_num  
     END IF
       
     bof = 1.0_num / (dilution * f_bar * t_rad * SQRT(t_v)) &
