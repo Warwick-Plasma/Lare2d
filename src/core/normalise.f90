@@ -42,7 +42,7 @@ CONTAINS
   	!find the normalised temperature corresponding to 100MK
   	temperature_100mk = 1.e8_num / temp0      
   	
-   	!convertion factor to get temperature in MK from tempearture energy
+   	!convertion factor to get temperature in MK from temperature 
     t2tmk = temp0 / 1.e6_num     
      
     h_star = L0 / (rho0 * v0**3)   
