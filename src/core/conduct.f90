@@ -54,6 +54,11 @@ CONTAINS
     temperature = (gamma - 1.0_num) * (energy - (1.0_num - xi_n) * ionise_pot) &
                  / (2.0_num - xi_n)            
 
+    ! a wasteful but simple way to turn off conduction
+    ! mostly not needed so only needs to be improved if heating/radiation needed
+    ! without conduction
+    IF (.NOT. conduction) kappa_0 = 0.0_num
+
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1 
 
@@ -191,9 +196,9 @@ CONTAINS
               * (temperature(ix+1,iy) + temperature(ix+1,iy-1) - temperature(ix-1,iy) - temperature(ix-1,iy-1)) &
               / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ix-1))) 
 
-            a3 = (a1 + radiation(ix,iy) * alpha(ix,iy)) * temperature(ix,iy) / energy(ix,iy) 
+            a3 = (a1 + radiation(ix,iy) * alpha(ix,iy) / temperature0(ix,iy)) * temperature(ix,iy) / energy(ix,iy) 
 
-            a4 = a2 + heat_in(ix,iy)  - (1.0_num - alpha(ix,iy)) * radiation(ix,iy) * temperature0(ix,iy)
+            a4 = a2 + heat_in(ix,iy)  - (1.0_num - alpha(ix,iy)) * radiation(ix,iy) 
   
             a3 = a3 * dt / rho(ix, iy)     
             a4 = a4 * dt / rho(ix, iy)         
@@ -263,11 +268,13 @@ CONTAINS
     DO i = 1, 6
       IF (tmk >= trange(i) .AND. tmk <= trange(i+1)) EXIT
     END DO 
-                                                
+    
+    ! account for reduced electron number density due to neutrals                                            
     factor = (1.0_num - xi)**2
     IF (eos_number == EOS_IDEAL) factor = 1.0_num
-    rad = factor * density**2 * psi(i) * tmk**(alpha(i)-1.0_num)  
-    rad = rad * h_star * lr_star * t2tmk   
+
+    rad = factor * density**2 * psi(i) * tmk**alpha(i) 
+    rad = rad * h_star * lr_star 
     alf = alpha(i)
 
   END SUBROUTINE rad_losses  
@@ -280,14 +287,18 @@ CONTAINS
     REAL(num) :: tmk, a1, a2, rad, alf, height
     LOGICAL :: first_call = .TRUE.
     REAL(num) :: heat0 = 0.0_num      
-    REAL(num) :: rho_coronal = 0.0_num   
+    REAL(num) :: rho_coronal = 0.0_num  
+    LOGICAL :: store_state
     INTEGER :: loop
     
     IF (first_call) THEN
       a1 = 0.0_num     
-      IF (proc_y_max == MPI_PROC_NULL) THEN    
-         CALL rad_losses(rho(1,ny), temperature(1,ny), xi_n(1,ny), rad, alf)
-         a1 = rad * temperature(1,ny) / rho(1,ny)**2 
+      IF (proc_y_max == MPI_PROC_NULL) THEN  
+         store_state = radiation    
+         radiation = .TRUE.
+         CALL rad_losses(rho(1,ny), temperature(1,ny), xi_n(1,ny), rad, alf) 
+         radiation = store_state
+         a1 = rad / rho(1,ny)**2 
       END IF               
       CALL MPI_ALLREDUCE(a1, heat0, 1, mpireal, MPI_MAX, comm, errcode)  
        
@@ -312,53 +323,6 @@ CONTAINS
   
                 
 
-!  SUBROUTINE get_temperature                
-! Full iterative solution for T and xi_n below has been tested and gives same answer
-! as simple approach above for flux emergence to within 0.2%
-! Should routinely test on new problems to be sure.
-! 
-!     REAL(num) :: bof, r, T, rho0, e0, dx, x
-!     REAL(num), DIMENSION(2) :: ta, fa, xi_a
-!     INTEGER :: loop
-!                                                                      
-!     xi_n = 1.0_num                                                                 
-!     IF (eos_number == EOS_IDEAL .AND. (.NOT. neutral_gas)) xi_n = 0.0_num    
-!     temperature = (gamma - 1.0_num) * energy / (2.0_num - xi_n)
-!     IF (eos_number == EOS_IDEAL) RETURN
-! 
-!     ! Variable bof is b / f in the original version
-!     DO iy = -1, ny + 2
-!       DO ix = -1, nx + 2
-!         rho0 = rho(ix, iy)
-!         e0 = energy(ix, iy)
-!         ta = (gamma - 1.0_num) &
-!             * (/ MAX((e0 - ionise_pot) / 2.0_num, none_zero), e0 /)
-! 
-!         IF (ta(1) > ta(2)) THEN
-!           PRINT * , "Temperature bounds problem", ta
-!           STOP
-!         END IF
-! 
-!         dx = ta(2) - ta(1)
-!         t = ta(1)
-! 
-!         DO loop = 1, 100
-!           dx = dx / 2.0_num
-!           x = t  + dx
-!           xi_a(1) = get_neutral(x, rho0, yb(iy))   
-!           fa(1) = x - (gamma - 1.0_num) * (e0 &
-!               - (1.0_num - xi_a(1)) * ionise_pot) / (2.0_num - xi_a(1))
-!           IF (fa(1) <= 0.0_num) t = x
-!           IF (ABS(dx) < 1.e-8_num .OR. fa(1) == 0.0_num) EXIT
-!         END DO
-! 
-!         xi_n(ix, iy) = get_neutral(x, rho0, yb(iy))  
-!         temperature(ix,iy) = x 
-!       END DO
-!      END DO                   
-!
-!  END SUBROUTINE get_temperature
-                                     
 
 
 END MODULE conduct
