@@ -27,7 +27,7 @@ CONTAINS
 
     ! proc_x_max boundary
     IF (xbc_max == BC_OPEN .AND. proc_x_max == MPI_PROC_NULL) THEN
-      DO iy = -1, ny + 1
+      DO iy = 1, ny
         ! variables carried out of domain by Riemann invariants
         vxbc(1) = vx(nx, iy)
         vybc(1) = vy(nx, iy)
@@ -70,12 +70,12 @@ CONTAINS
         vx(nx+1, iy) = vxbc(0)
         vy(nx+1, iy) = vybc(0)
         vz(nx+1, iy) = vzbc(0)
-      END DO
+      END DO        
     END IF
 
     ! proc_x_min bounday
     IF (xbc_min == BC_OPEN .AND. proc_x_min == MPI_PROC_NULL) THEN
-      DO iy = -1, ny + 1
+      DO iy = 1, ny 
         vxbc(1) = - vx(0, iy)
         vybc(1) = vy(0, iy)
         vzbc(1) = vz(0, iy)
@@ -120,7 +120,7 @@ CONTAINS
 
     ! top boundary
     IF (ybc_max == BC_OPEN .AND. proc_y_max == MPI_PROC_NULL) THEN
-      DO ix = -1, nx + 1
+      DO ix = 1, nx 
         vxbc(1) = vy(ix, ny)
         vybc(1) = vx(ix, ny)
         vzbc(1) = vz(ix, ny)
@@ -166,7 +166,7 @@ CONTAINS
 
     ! bottom boundary
     IF (ybc_min == BC_OPEN .AND. proc_y_min == MPI_PROC_NULL) THEN
-      DO ix = -1, nx + 1
+      DO ix = 1, nx
         vxbc(1) = - vy(ix, 0)
         vybc(1) = vx(ix, 0)
         vzbc(1) = vz(ix, 0)
@@ -270,8 +270,7 @@ CONTAINS
   
       ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)  
       
-      vxbc(0) = 0.5_num &
-          * (vstar(1) + vstar(2))!  + (pstar(1) - pstar(2)) / (rhofar * cffar))
+      vxbc(0) = 0.5_num * (vstar(1) + vstar(2))
       vybc(0) = vybc(1)
       vzbc(0) = vzbc(1)   
     ELSE
