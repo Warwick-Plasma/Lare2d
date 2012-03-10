@@ -42,8 +42,8 @@ CONTAINS
   SUBROUTINE control_variables
  
     ! Set the number of gridpoints in x and y directions
-    nx_global = 1024
-    ny_global = 1024
+    nx_global = 128
+    ny_global = 4
  
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
@@ -70,15 +70,15 @@ CONTAINS
  
     ! The length of the domain in the x direction
     ! If SI_Input is true then this is in metres
-    x_start = 0.0_num
-    x_end = 180.0_num 
+    x_start = -5.0_num
+    x_end = 5.0_num 
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
  
     ! The length of the domain in the y direction
     ! If SI_Input is true then this is in metres
-    y_start = -20.0_num
-    y_end = 160.0_num
+    y_start = -5.0_num
+    y_end = 5.0_num
     ! Should the y grid be stretched of uniform
     y_stretch = .FALSE.
  
@@ -108,7 +108,7 @@ CONTAINS
     ! with steep temperature gradients and very hot regions with
     ! large thermal conductivity. For many problems it is however
     ! fine. 
-    conduction = .TRUE.  
+    conduction = .FALSE.  
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit 
     ! This is an experimental feature
     heat_flux_limiter = .FALSE.
@@ -116,10 +116,10 @@ CONTAINS
     flux_limiter = 0.05_num 
     ! Use radiation as specified in SUBROUTINE rad_losses in src/core/conduct.f90   
     ! Only matters if conduction = .TRUE. above
-    radiation = .TRUE.
+    radiation = .FALSE.
     ! Use coronal heating as specified in SUBROUTINE heating in src/core/conduct.f90
     ! Only matters if conduction = .TRUE. above
-    coronal_heating = .TRUE.
+    coronal_heating = .FALSE.
  
     ! Remap kinetic energy correction. LARE does not
     ! perfectly conserve kinetic energy during the remap step
@@ -147,10 +147,10 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN - Reimann characteristic boundary conditions
     ! BC_OTHER - Other boundary conditions specified in "boundary.f90"
-    xbc_min = BC_PERIODIC
-    xbc_max = BC_PERIODIC
-    ybc_max = BC_OPEN
-    ybc_min = BC_OTHER
+    xbc_min = BC_OPEN
+    xbc_max = BC_OPEN
+    ybc_max = BC_PERIODIC
+    ybc_min = BC_PERIODIC
  
     ! set to true to turn on routine for damped boundaries
     damping = .FALSE.
@@ -159,7 +159,7 @@ CONTAINS
     ! EOS_IDEAL - Simple ideal gas for perfectly ionised plasma
     ! EOS_PI - Simple ideal gas for partially ionised plasma
     ! EOS_ION - EOS_PI plus the ionisation potential
-    eos_number = EOS_ION
+    eos_number = EOS_IDEAL
     ! EOS_IDEAL also requires that you specific whether
     ! the gas is ionised or not. Some startified atmospheres
     ! only work for neutral hydrogen for example
@@ -179,7 +179,7 @@ CONTAINS
  
     ! The interval between output snapshots. If SI_Input is true
     ! Then this is in seconds
-    dt_snapshots = 2.0_num
+    dt_snapshots = 0.5_num
  
     ! dump_mask is an array which specifies which quantities the
     ! code should output to disk in a data dump.
