@@ -7,7 +7,8 @@
 MODULE diagnostics
 
   USE shared_data
-  USE boundary
+  USE boundary   
+  USE conduct
   USE output_cartesian
   USE output
   USE iocontrol
@@ -150,7 +151,6 @@ CONTAINS
                 / (2.0_num - xi_n(ix, iy))
           END DO
         END DO    
-        IF (eos_number == EOS_IDEAL .AND. neutral_gas) data = data * 2.0_num
         CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -270,13 +270,14 @@ CONTAINS
     ! with setting 'dt_multiplier' if you expect massive changes across
     ! cells.
 
-    REAL(num) :: cons, dt1, dt2, dt3, dt4, dt5, dt6, dt_local, dxlocal  
+    REAL(num) :: cons, dt1, dt2, dt3, dt4, dt5, dt6, dt_local, dxlocal, dt_rad  
     REAL(num) :: vxbp, vxbm, vybp, vybm, dvx, dvy, avxp, avxm, avyp, avym
-    REAL(num) :: dtr_local, dth_local, cs, area
+    REAL(num) :: dtr_local, dth_local, cs, area, rad, alf
 
     dt_local = largest_number
     dtr_local = largest_number
     dth_local = largest_number
+    dt_rad = largest_number
     cons = gamma * (gamma - 1.0_num)
 
     DO iy = 0, ny
@@ -312,9 +313,9 @@ CONTAINS
                                   
         area = dxb(ix) * dyb(iy)               
         dt5 = area / MAX(avxp, avxp, dvx, 1.e-10_num * area)
-        dt6 = area / MAX(avyp, avyp, dvy, 1.e-10_num * area)
-
-        dt_local = MIN(dt_local, dt5, dt6)
+        dt6 = area / MAX(avyp, avyp, dvy, 1.e-10_num * area)   
+                 
+        dt_local = MIN(dt_local, dt5, dt6, dt_rad)
 
         ! note resistive limits assumes uniform resistivity hence cautious
         ! factor 0.2
