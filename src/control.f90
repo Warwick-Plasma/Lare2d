@@ -23,10 +23,10 @@ CONTAINS
     mf = 1.2_num
  
     ! The equations describing the normalisation in LARE
-    ! Have three free parameters which must be specified by
-    ! The end user. These must be the normailisation used for
-    ! your initial conditions if not running in SI, otherwise
-    ! they are arbitrary.
+    ! have three free parameters which must be specified by
+    ! the user. These must be the normailisation used for
+    ! your initial conditions. Strictly only needed for 
+    ! non-ideal MHD terms.
  
     ! Magnetic field normalisation in Tesla
     B0 = 0.03_num
@@ -50,14 +50,12 @@ CONTAINS
     nsteps = -1
  
     ! The maximum runtime of the code
-    ! If SI_Input is true then this is in seconds
     t_end = 40.0_num
  
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
     visc2 = 0.5_num
-    ! Real viscosity expressed as the inverse Reynolds number, i.e. the
-    ! same for normalised and SI input
+    ! Real viscosity expressed as the inverse Reynolds number
     visc3 = 0.0_num
  
     ! Set these constants to manually
@@ -69,14 +67,12 @@ CONTAINS
     nprocy = 0
  
     ! The length of the domain in the x direction
-    ! If SI_Input is true then this is in metres
     x_start = -5.0_num
     x_end = 5.0_num 
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
  
     ! The length of the domain in the y direction
-    ! If SI_Input is true then this is in metres
     y_start = -5.0_num
     y_end = 5.0_num
     ! Should the y grid be stretched of uniform
@@ -85,16 +81,12 @@ CONTAINS
     ! Turn on or off the resistive parts of the MHD equations
     resistive_mhd = .FALSE.
  
-    ! The background resistivity expressed as the inverse Lundquist number,
-    ! i.e. the
-    ! same for normalised and SI input
+    ! The background resistivity expressed as the inverse Lundquist number
     eta_background = 0.0_num
  
     ! The critical current for triggering anomalous resistivity
-    ! and the resistivity when above the critical current
-    ! The resistivity is expressed as the inverse Lundquist number, i.e. the
-    ! same for normalised and SI input, bit the j_max must be in SI
-    ! if using SI units
+    ! and the resistivity when above the critical current.
+    ! The resistivity is expressed as the inverse Lundquist number. 
     j_max = 5.e16_num
     eta0 = 0.0_num
  
@@ -110,22 +102,19 @@ CONTAINS
     ! fine. 
     conduction = .FALSE.  
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit 
-    ! This is an experimental feature
     heat_flux_limiter = .FALSE.
-    ! Fraction of free streaming heat flux used in limiter
-    flux_limiter = 0.05_num 
+    ! Fraction of free streaming heat flux used in limiter     
+    flux_limiter = 0.05_num   
+    
     ! Use radiation as specified in SUBROUTINE rad_losses in src/core/conduct.f90   
-    ! Only matters if conduction = .TRUE. above
     radiation = .FALSE.
     ! Use coronal heating as specified in SUBROUTINE heating in src/core/conduct.f90
-    ! Only matters if conduction = .TRUE. above
     coronal_heating = .FALSE.
  
     ! Remap kinetic energy correction. LARE does not
     ! perfectly conserve kinetic energy during the remap step
     ! This missing energy can be added back into the simulation
-    ! as a uniform heating. Turning rke to true turns on this
-    ! addition
+    ! as heating. Setting rke to true turns on this addition
     rke = .FALSE.
  
     ! The code to choose the initial conditions. The valid choices are
@@ -145,7 +134,7 @@ CONTAINS
     ! Set the boundary conditions on the four edges of the simulation domain
     ! Valid constants are
     ! BC_PERIODIC - Periodic boundary conditions
-    ! BC_OPEN - Reimann characteristic boundary conditions
+    ! BC_OPEN - Reimann far-field characteristic boundary conditions
     ! BC_OTHER - Other boundary conditions specified in "boundary.f90"
     xbc_min = BC_OPEN
     xbc_max = BC_OPEN
@@ -161,8 +150,8 @@ CONTAINS
     ! EOS_ION - EOS_PI plus the ionisation potential
     eos_number = EOS_IDEAL
     ! EOS_IDEAL also requires that you specific whether
-    ! the gas is ionised or not. Some startified atmospheres
-    ! only work for neutral hydrogen for example
+    ! the gas is ionised or not. Some stratified atmospheres
+    ! only work for neutral hydrogen even though using MHD
     ! For fully ionised gas set .FALSE.
     ! For neutral hydrogen set .TRUE.
     ! This flag is ignored for all other EOS choices.
@@ -177,8 +166,7 @@ CONTAINS
     ! The output directory for the code
     data_dir = "Data"
  
-    ! The interval between output snapshots. If SI_Input is true
-    ! Then this is in seconds
+    ! The interval between output snapshots. 
     dt_snapshots = 0.5_num
  
     ! dump_mask is an array which specifies which quantities the

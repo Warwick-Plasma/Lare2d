@@ -13,12 +13,7 @@ MODULE conduct
 
 CONTAINS
 
-  ! Subroutine implementing Braginskii parallel thermal conduction
-  ! Note that this subroutine assumes that it is possible to
-  ! Convert from specific internal energy to temperature by a constant
-  ! factor.
-  ! For this as well as other reasons, this routine doesn't work properly
-  ! for partially ionised plasmas. 
+  ! Subroutine implementing Braginskii parallel thermal conduction. 
 	! Notation and algorithm in Appendix of Manual
   SUBROUTINE conduct_heat
 
@@ -138,7 +133,6 @@ CONTAINS
     
     converged = .FALSE. 
     w = 1.6_num       ! initial over-relaxation parameter  
-		! store energy^{n} 
 		energy0 = energy  
 		temperature0 = temperature  
 
@@ -248,7 +242,7 @@ CONTAINS
                
 
   SUBROUTINE rad_losses(density, temperature, xi, rad, alf)  
-    ! returns the normalised RTV losses divided by normalised temperature
+    ! returns the normalised RTV losses 
     REAL(num), INTENT(IN) :: density, temperature, xi  
     REAL(num), INTENT(OUT) :: rad, alf 
 
@@ -281,7 +275,8 @@ CONTAINS
        
   
   
-  FUNCTION heating(density, t0) 
+  FUNCTION heating(density, t0)    
+    ! for a given density and temperature returns a user specific heating function
     REAL(num), INTENT(IN) :: density, t0
     REAL(num) :: heating
     REAL(num) :: tmk, a1, a2, rad, alf, height
@@ -316,7 +311,8 @@ CONTAINS
     heating = 0.0_num
     IF (.NOT. coronal_heating) RETURN
 
-    tmk = t0 * t2tmk                       
+    tmk = t0 * t2tmk    
+    ! For low density and high temeprature define a heating course term                   
     IF(density < rho_coronal .AND. tmk > 0.02_num) heating = 100.0_num * heat0 * density**2
 
   END FUNCTION heating

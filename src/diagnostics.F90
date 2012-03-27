@@ -315,9 +315,6 @@ CONTAINS
         dt5 = area / MAX(avxp, avxp, dvx, 1.e-10_num * area)
         dt6 = area / MAX(avyp, avyp, dvy, 1.e-10_num * area)   
                  
-!         CALL rad_losses(rho(ix,iy), energy(ix,iy), rad, alf)  
-!         dt_rad = rho(ix,iy) / MAX(rad, none_zero)
-
         dt_local = MIN(dt_local, dt5, dt6, dt_rad)
 
         ! note resistive limits assumes uniform resistivity hence cautious

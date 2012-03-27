@@ -122,7 +122,7 @@ CONTAINS
     
     t_rad = tr
     dilution = 0.5_num     
-    ! set plasma below photospher neutral so same sub-photospheric
+    ! set plasma below photosphere to be neutral so same sub-photospheric
     ! initial conditions can be used for ideal gas and partially ionized
     ! simulations. 
     IF (height <= 0.0_num) THEN  

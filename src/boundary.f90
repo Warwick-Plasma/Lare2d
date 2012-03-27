@@ -1,7 +1,5 @@
 !*******************************************************************
 ! All the real ghost cell values are controlled by these routines.
-! To speed things up it may be worth having this routine hard coded
-! for each particular run, i.e. remove all if statements.
 !*******************************************************************
 
 MODULE boundary
@@ -69,54 +67,55 @@ CONTAINS
 
 
   SUBROUTINE damp_boundaries
-    ! note the damping in this routines may need to be customised for each problem
+    ! These are not generic, always work damping options.
+    ! Users should change the damping scheme for each problem
     REAL(num) :: a, d
   
     IF (damping) THEN
       ! proc_x_max boundary
-    IF (proc_x_max == MPI_PROC_NULL) THEN   
-      d = 0.7_num * x_end 
-      DO iy = -1, ny + 1
-        DO ix = -1, nx + 1
-          IF (xb(ix) > d) THEN
-            a = dt * (xb(ix) - d) / (x_end - d)
-            vx(ix, iy) = vx(ix, iy) / (1.0_num + a)
-            vy(ix, iy) = vy(ix, iy) / (1.0_num + a)
-            vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
-          END IF
-        END DO
-      END DO 
-    END IF
+      IF (proc_x_max == MPI_PROC_NULL) THEN   
+        d = 0.7_num * x_end 
+        DO iy = -1, ny + 1
+          DO ix = -1, nx + 1
+            IF (xb(ix) > d) THEN
+              a = dt * (xb(ix) - d) / (x_end - d)
+              vx(ix, iy) = vx(ix, iy) / (1.0_num + a)
+              vy(ix, iy) = vy(ix, iy) / (1.0_num + a)
+              vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
+            END IF
+          END DO
+        END DO 
+      END IF
 
       ! proc_x_min boundary
-    IF (proc_x_min == MPI_PROC_NULL) THEN   
-      d = 0.7_num * x_start 
-      DO iy = -1, ny + 1
-        DO ix = -1, nx + 1
-          IF (xb(ix) < d) THEN
-            a = dt * (xb(ix) - d) / (x_start - d)
-            vx(ix, iy) = vx(ix, iy) / (1.0_num + a)
-            vy(ix, iy) = vy(ix, iy) / (1.0_num + a)
-            vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
-          END IF
+      IF (proc_x_min == MPI_PROC_NULL) THEN   
+        d = 0.7_num * x_start 
+        DO iy = -1, ny + 1
+          DO ix = -1, nx + 1
+            IF (xb(ix) < d) THEN
+              a = dt * (xb(ix) - d) / (x_start - d)
+              vx(ix, iy) = vx(ix, iy) / (1.0_num + a)
+              vy(ix, iy) = vy(ix, iy) / (1.0_num + a)
+              vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
+            END IF
+          END DO
+        END DO  
+      END IF
+        
+      ! top boundary
+      IF (proc_y_max == MPI_PROC_NULL) THEN   
+        d = 0.7_num * y_end 
+        DO iy = -1, ny + 1
+          DO ix = -1, nx + 1
+            IF (yb(iy) > d) THEN
+              a = dt * (yb(iy) - d) / (y_end - d)
+              vx(ix, iy) = vx(ix, iy) / (1.0_num + a)
+              vy(ix, iy) = vy(ix, iy) / (1.0_num + a)
+              vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
+            END IF
+          END DO
         END DO
-      END DO  
-    END IF
-      
-    ! top boundary
-    IF (proc_y_max == MPI_PROC_NULL) THEN   
-      d = 0.7_num * y_end 
-      DO iy = -1, ny + 1
-        DO ix = -1, nx + 1
-          IF (yb(iy) > d) THEN
-            a = dt * (yb(iy) - d) / (y_end - d)
-            vx(ix, iy) = vx(ix, iy) / (1.0_num + a)
-            vy(ix, iy) = vy(ix, iy) / (1.0_num + a)
-            vz(ix, iy) = vz(ix, iy) / (1.0_num + a)
-          END IF
-        END DO
-      END DO
-    END IF     
+      END IF     
 
       ! bottom boundary    
       IF(proc_y_min == MPI_PROC_NULL) THEN
