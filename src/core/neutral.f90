@@ -106,7 +106,9 @@ CONTAINS
         END IF
 
       END DO
-    END DO
+    END DO      
+    
+    eta_perp = MIN(eta_perp, 100.0_num)
 
   END SUBROUTINE perpendicular_resistivity
 
@@ -119,10 +121,15 @@ CONTAINS
     REAL(num) :: bof, r, t_rad, dilution
     
     t_rad = tr
-    dilution = 0.5_num
-    IF (height <= 0.0_num) THEN
-      t_rad = t_v
-      dilution = 1.0_num  
+    dilution = 0.5_num     
+    ! set plasma below photosphere to be neutral so same sub-photospheric
+    ! initial conditions can be used for ideal gas and partially ionized
+    ! simulations. 
+    IF (height <= 0.0_num) THEN  
+      get_neutral = 1.0_num
+      RETURN
+!       t_rad = t_v
+!       dilution = 1.0_num  
     END IF
       
     bof = 1.0_num / (dilution * f_bar * t_rad * SQRT(t_v)) &
@@ -137,8 +144,8 @@ CONTAINS
 
   SUBROUTINE neutral_fraction
 
-    REAL(num) :: bof, r, T, rho0, e0, dx, x
-    REAL(num), DIMENSION(2) :: ta, fa, xi_a
+    REAL(num) :: bof, r, T, rho0, e0, dx, x, fa, xi_a
+    REAL(num), DIMENSION(2) :: ta
     INTEGER :: loop
 
     ! Variable bof is b / f in the original version
@@ -160,11 +167,11 @@ CONTAINS
         DO loop = 1, 100
           dx = dx / 2.0_num
           x = t  + dx
-          xi_a(1) = get_neutral(x, rho0, yb(iy))   
-          fa(1) = x - (gamma - 1.0_num) * (e0 &
-              - (1.0_num - xi_a(1)) * ionise_pot) / (2.0_num - xi_a(1))
-          IF (fa(1) <= 0.0_num) t = x
-          IF (ABS(dx) < 1.e-8_num .OR. fa(1) == 0.0_num) EXIT
+          xi_a = get_neutral(x, rho0, yb(iy))   
+          fa = x - (gamma - 1.0_num) * (e0 &
+              - (1.0_num - xi_a) * ionise_pot) / (2.0_num - xi_a)
+          IF (fa <= 0.0_num) t = x
+          IF (ABS(dx) < 1.e-8_num .OR. fa == 0.0_num) EXIT
         END DO
 
         xi_n(ix, iy) = get_neutral(x, rho0, yb(iy))   

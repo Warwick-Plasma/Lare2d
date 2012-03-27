@@ -27,7 +27,7 @@ CONTAINS
     eta_bar_0 = (mu0_si * L0 * v0) * rho0**2 * SQRT(temp0) / B0**2 
     eta_bar = eta_bar / eta_bar_0
   
-    ! Normalise ionise_pot 
+    ! Normalise ionise_pot - inioisation potential of hydrogen
     ionise_pot = ionise_pot_si / (energy0 * mbar)   
     IF (eos_number /= EOS_ION) ionise_pot = 0.0_num
          
@@ -42,16 +42,11 @@ CONTAINS
   	!find the normalised temperature corresponding to 100MK
   	temperature_100mk = 1.e8_num / temp0      
   	
-		! factor required to convert between normalised energy and normalised temperature 
-		! only distinguishes between fully ioned and neutral. Ok as only needed in conduction. 
-		e2t = (gamma - 1.0_num) / 2.0_num
-		IF (eos_number == EOS_IDEAL .AND. neutral_gas) e2t = e2t * 2.0_num
-
-   	!convertion factor to get temperature in MK from normalised energy
-    e2tmk = temp0 * e2t / 1.e6_num     
-     
-    h_star = L0 / (rho0 * v0**3)   
-     
+   	!convertion factor to get temperature in MK from temperature 
+    t2tmk = temp0 / 1.e6_num  
+    
+    ! constants used in radiative losses 
+    h_star = L0 / (rho0 * v0**3)        
     lr_star = 1.148e-35_num * (rho0 / mbar)**2
   
   END SUBROUTINE normalise_transport
