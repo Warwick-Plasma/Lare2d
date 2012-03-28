@@ -142,11 +142,9 @@ CONTAINS
     DO iy = 1, ny
       DO ix = 1, nx  
         heat_in(ix,iy) = heating(rho(ix,iy), temperature0(ix,iy))  
-        CALL rad_losses(rho(ix,iy), temperature0(ix,iy), xi_n(ix,iy), rad, alf)
+        CALL rad_losses(rho(ix,iy), temperature0(ix,iy), xi_n(ix,iy), yc(iy), rad, alf)
         alpha(ix,iy) = alf  
-        IF (yc(iy) > 1.0_num) THEN  
-          radiation(ix,iy) =  rad 
-        END IF    
+        radiation(ix,iy) =  rad 
       END DO
     END DO      
 
@@ -241,9 +239,9 @@ CONTAINS
                
                
 
-  SUBROUTINE rad_losses(density, temperature, xi, rad, alf)  
+  SUBROUTINE rad_losses(density, temperature, xi, height, rad, alf)  
     ! returns the normalised RTV losses 
-    REAL(num), INTENT(IN) :: density, temperature, xi  
+    REAL(num), INTENT(IN) :: density, temperature, xi, height  
     REAL(num), INTENT(OUT) :: rad, alf 
 
     REAL(num), DIMENSION(7) :: trange = (/0.02_num,0.0398_num,0.0794_num,0.251_num, 0.562_num,1.995_num,10.0_num /)
@@ -255,6 +253,7 @@ CONTAINS
     rad = 0.0_num     
     alf = 0.0_num                           
     IF(.NOT. radiation) RETURN
+    IF(height < 1.0_num) RETURN
 
     tmk = temperature * t2tmk   
     IF (tmk < trange(1) .OR. tmk > trange(7)) RETURN
@@ -291,7 +290,7 @@ CONTAINS
       IF (proc_y_max == MPI_PROC_NULL) THEN  
          store_state = radiation    
          radiation = .TRUE.
-         CALL rad_losses(rho(1,ny), temperature(1,ny), xi_n(1,ny), rad, alf) 
+         CALL rad_losses(rho(1,ny), temperature(1,ny), xi_n(1,ny), yc(ny), rad, alf) 
          radiation = store_state
          a1 = rad / rho(1,ny)**2 
       END IF               
