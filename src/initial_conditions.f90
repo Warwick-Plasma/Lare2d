@@ -167,25 +167,6 @@ CONTAINS
         energy(ix,ny+2) = energy(ix,ny+1)
     END DO
   
-    !add a velocity perturbation to the flux sheet
-    amp = 0.01_num
-    wptb1 = 4.5_num
-    wptb2 = 36.0_num
-    wptb3 = 3.0_num
-    wptb4 = 60.0_num
-  
-    DO iy=1,ny
-      IF ((yc_global(iy) .GT. yfsl) .AND. (yc_global(iy) .LT. yfsu)) THEN
-        DO ix=1,nx
-          vy(ix,iy) = (amp / 4.0_num) &
-              * (TANH((yb(iy)-yfsl)/wfsl)-TANH((yb(iy)-yfsu)/wfsu)) * ( &
-              SIN(2.0_num*pi*xb(ix)/wptb1) + &
-              SIN(2.0_num*pi*xb(ix)/wptb2) + &
-              SIN(2.0_num*pi*xb(ix)/wptb3) + & 
-              SIN(2.0_num*pi*xb(ix)/wptb4) )
-        END DO
-        END IF
-      END DO
   
     DEALLOCATE(yc_global, dyb_global, dyc_global, mu_m)
     DEALLOCATE(grav_ref, temp_ref, rho_ref, beta_ref, mag_ref)  
