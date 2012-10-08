@@ -18,7 +18,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: i
     INTEGER :: case_test
 
-    delta_ke = 0.0_num
+    IF (rke) delta_ke = 0.0_num
     xpass = 1
     ypass = 1
 
