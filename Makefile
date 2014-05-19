@@ -25,7 +25,7 @@ TARGET = lare2d
 SRCDIR = src
 OBJDIR = obj
 BINDIR = bin
-MODULEFLAG = -module
+MODULEFLAG = -I$(OBJDIR) -J$(OBJDIR)
 OPFLAGS = $(QMONO) $(QSINGLE) $(QFIRSTORDER)
 FC = mpif90 $(OPFLAGS)
 PREPROFLAGS = $(NONMPIIO)
@@ -45,14 +45,14 @@ VPATH = $(SRCDIR):$(OBJDIR):$(SRCDIR)/core:$(SRCDIR)/io/
 
 %.o: %.f90
 	@mkdir -p $(BINDIR) $(OBJDIR) 
-	$(FC) -c $(FFLAGS)  $(MODULEFLAG) $(OBJDIR) -o $(OBJDIR)/$@ $<
+	$(FC) -c $(FFLAGS)  $(MODULEFLAG) -o $(OBJDIR)/$@ $<
 
 %.o: %.F90
 	@mkdir -p $(BINDIR) $(OBJDIR) 
-	$(FC) -c $(FFLAGS)  $(MODULEFLAG) $(OBJDIR) -o $(OBJDIR)/$@ $(PREPROFLAGS) $<
+	$(FC) -c $(FFLAGS)  $(MODULEFLAG) -o $(OBJDIR)/$@ $(PREPROFLAGS) $<
 
 $(FULLTARGET): $(OBJFILES)
-	$(FC) $(FFLAGS) $(MODULEFLAG) $(OBJDIR) -o $@ $(addprefix $(OBJDIR)/,$(OBJFILES))
+	$(FC) $(FFLAGS) $(MODULEFLAG) -o $@ $(addprefix $(OBJDIR)/,$(OBJFILES))
 
 clean:
 	@rm -rf *~ $(BINDIR) $(OBJDIR) *.pbs.* *.sh.* $(SRCDIR)/*~ $(SRCDIR)/core/*~ $(SRCDIR)/io/*~ *.log
