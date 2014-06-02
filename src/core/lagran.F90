@@ -104,7 +104,7 @@ CONTAINS
       DO ix = 0, nx + 1
         dv = cv1(ix, iy) / cv(ix, iy) - 1.0_num
         ! predictor energy
-#ifdef Q_MONO
+#ifdef QMONO
         ! add shock viscosity
         pressure(ix, iy) = pressure(ix, iy) + p_visc(ix, iy)
 #endif
@@ -114,7 +114,7 @@ CONTAINS
         ! now define the predictor step pressures 
         pressure(ix,iy) = (e1 - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
             * (gamma - 1.0_num) * rho(ix,iy) * cv(ix, iy) / cv1(ix, iy)
-#ifdef Q_MONO
+#ifdef QMONO
         ! add shock viscosity
         pressure(ix, iy) = pressure(ix, iy) + p_visc(ix, iy)
 #endif
@@ -239,7 +239,7 @@ CONTAINS
         total_visc_heating = total_visc_heating &
               + dt * visc_heat(ix, iy) * cv(ix, iy)
 
-#ifdef Q_MONO
+#ifdef QMONO
         total_visc_heating = total_visc_heating &
             - p_visc(ix, iy) * dv * cv(ix, iy)
 #endif
@@ -352,7 +352,7 @@ CONTAINS
         qyz(ix, iy) = 0.0_num
         qxx(ix, iy) = 0.0_num
         qyy(ix, iy) = 0.0_num
-#ifndef Q_MONO
+#ifndef QMONO
         qxy(ix, iy) = sxy * (L2 * rho(ix, iy) &
             * (visc1 * cf + L2 * visc2 * ABS(sxy))) 
         qxz(ix, iy) = sxz * (L2 * rho(ix, iy) &   
@@ -479,7 +479,7 @@ CONTAINS
 
     REAL(num) :: dt6, half_dt
     REAL(num) :: jx1, jx2, jy1, jy2
-#ifdef Q_FOURTHORDER    
+#ifdef FOURTHORDER
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1x, k2x, k3x, k4x
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1y, k2y, k3y, k4y
     REAL(num), DIMENSION(:, :), ALLOCATABLE :: k1z, k2z, k3z, k4z
@@ -498,7 +498,7 @@ CONTAINS
     ! step 1
     CALL rkstep
 
-#ifndef Q_FOURTHORDER
+#ifndef FOURTHORDER
     DO iy = 0, ny
       DO ix = 1, nx
         by(ix, iy) = by1(ix, iy) &
@@ -723,7 +723,7 @@ CONTAINS
     ! Once more to get j_perp and j_par correct
     CALL rkstep
 
-#ifdef Q_FOURTHORDER
+#ifdef FOURTHORDER
     DEALLOCATE(k1x, k2x, k3x, k4x, k1y, k2y, k3y, k4y, k1z, k2z, k3z, k4z)
     DEALLOCATE(c1, c2, c3, c4)
 #endif

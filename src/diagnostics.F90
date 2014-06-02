@@ -429,7 +429,7 @@ CONTAINS
     WRITE(20, *) 'length_x = ', length_x 
     WRITE(20, *) 'length_y = ', length_y 
     WRITE(20, *)
-#ifndef Q_MONO
+#ifndef QMONO
     WRITE(20, *) 'tensor shock viscosity'
 #else
     WRITE(20, *) 'q_mono viscosity'

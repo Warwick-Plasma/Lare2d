@@ -10,13 +10,13 @@ FFLAGS = -O3
 TARGET = lare2d
 
 #Uncomment the following line to use Qmono viscosity
-#QMONO = -DQ_MONO
+#QMONO = -DQMONO
 
 #Uncomment the following line to run in single precision
-#QSINGLE = -DQ_SINGLE
+#QSINGLE = -DSINGLE
 
 #Uncomment the following line to use first order scheme for resistive update
-#QFOURTHORDER = -DQ_FOURTHORDER
+#QFOURTHORDER = -DFOURTHORDER
 
 # --------------------------------------------------
 # Shouldn't need to touch below here
