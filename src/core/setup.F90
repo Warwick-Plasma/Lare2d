@@ -1,3 +1,7 @@
+!******************************************************************************
+! Setup the sections of the code needed that aren't connected to MPI
+!******************************************************************************
+
 MODULE setup
 
   USE shared_data
@@ -17,7 +21,13 @@ MODULE setup
 
 CONTAINS
 
+  !****************************************************************************
+  ! Any variables that need to have default values before the user specified
+  ! ones in control.f90
+  !****************************************************************************
+
   SUBROUTINE before_control
+
     ! Setup basic variables which have to have default values
 
     nprocx = 0
@@ -26,13 +36,17 @@ CONTAINS
     time = 0.0_num
     gamma = 5.0_num / 3.0_num
 
-    IF (num .EQ. 4) mpireal = MPI_REAL
-
   END SUBROUTINE before_control
 
 
 
+  !****************************************************************************
+  ! Variables which need to be specified after the control.f90 is run,
+  ! MPI has been setup
+  !****************************************************************************
+
   SUBROUTINE after_control
+
     ! Setup arrays and other variables which can only be set after
     ! user input
 
@@ -56,8 +70,11 @@ CONTAINS
 
 
 
+  !****************************************************************************
+  ! Stretched and staggered grid
+  !****************************************************************************
 
-  SUBROUTINE grid ! stretched and staggered grid
+  SUBROUTINE grid
 
     REAL(num) :: dx, dy, xcstar, ycstar
     INTEGER :: ix, iy, n0, n1
@@ -75,34 +92,34 @@ CONTAINS
       nxp = (nx0 + 1) * nprocx - nx_global
     ELSE
       nxp = nprocx
-    ENDIF
+    END IF
     IF (ny0 * nprocy .NE. ny_global) THEN
       nyp = (ny0 + 1) * nprocy - ny_global
     ELSE
       nyp = nprocy
-    ENDIF
+    END IF
 
     ALLOCATE(dxnew(-2:nx_global+2))
     ALLOCATE(dynew(-2:ny_global+2))
 
-    ! initially assume uniform grid
+    ! Initially assume uniform grid
     dx = 1.0_num / REAL(nx_global, num)
     dy = 1.0_num / REAL(ny_global, num)
 
     length_x = x_end - x_start
     length_y = y_end - y_start
 
-    ! grid cell boundary for x coordinates
+    ! Grid cell boundary for x coordinates
     ! set to - 0.5_num to have x = 0 in centre of domain
     xb_global(0) = 0.0_num
-    DO ix = -2, nx_global+2
+    DO ix = -2, nx_global + 2
       xb_global(ix) = xb_global(0) + REAL(ix, num) * dx
     END DO
     xb_global = xb_global * length_x + x_start
 
     IF (x_stretch) CALL stretch_x ! stretch grid ?
 
-    ! define position of ghost cells using sizes of adjacent cells
+    ! Define position of ghost cells using sizes of adjacent cells
     IF (xbc_max == BC_PERIODIC) THEN
       xb_global(nx_global+1) = xb_global(nx_global) &
           + (xb_global(1) - xb_global(0))
@@ -128,18 +145,20 @@ CONTAINS
     ELSE
       n0 = nxp * nx0 + (cx - nxp) * (nx0 + 1)
       n1 = nxp * nx0 + (cx - nxp + 1) * (nx0 + 1)
-    ENDIF
+    END IF
 
     xb = xb_global(n0-2:n1+2)
 
-    DO ix = -1, nx+2
+    DO ix = -1, nx + 2
       ixm = ix - 1
-      xc(ix) = 0.5_num * (xb(ixm) + xb(ix)) ! cell centre
+      ! Cell centre
+      xc(ix) = 0.5_num * (xb(ixm) + xb(ix))
     END DO
 
-    DO ix = -1, nx+1
+    DO ix = -1, nx + 1
       ixp = ix + 1
-      dxc(ix) = xc(ixp) - xc(ix) ! distance between centres
+      ! Distance between centres
+      dxc(ix) = xc(ixp) - xc(ix)
     END DO
 
     IF (cx == nprocx - 1) THEN
@@ -149,13 +168,16 @@ CONTAINS
       dxc(nx+2) = xcstar - xc(nx+2)
     END IF
 
-    DO ix = -1, nx+2
+    DO ix = -1, nx + 2
       ixm = ix - 1
-      dxb(ix) = xb(ix) - xb(ixm) ! cell width
+      ! Cell width
+      dxb(ix) = xb(ix) - xb(ixm)
     END DO
 
-    yb_global(0) = 0.0_num ! repeat for y
-    DO iy = -2, ny_global+2
+    ! Repeat for y
+
+    yb_global(0) = 0.0_num
+    DO iy = -2, ny_global + 2
       yb_global(iy) = yb_global(0) + REAL(iy, num) * dy
     END DO
     yb_global = yb_global * length_y + y_start
@@ -187,16 +209,16 @@ CONTAINS
     ELSE
       n0 = nyp * ny0 + (cy - nyp) * (ny0 + 1)
       n1 = nyp * ny0 + (cy - nyp + 1) * (ny0 + 1)
-    ENDIF
+    END IF
 
     yb = yb_global(n0-2:n1+2)
 
-    DO iy = -1, ny+2
+    DO iy = -1, ny + 2
       iym = iy - 1
       yc(iy) = 0.5_num * (yb(iym) + yb(iy))
     END DO
 
-    DO iy = -1, ny+1
+    DO iy = -1, ny + 1
       iyp = iy + 1
       dyc(iy) = yc(iyp) - yc(iy)
     END DO
@@ -208,14 +230,15 @@ CONTAINS
       dyc(ny+2) = ycstar - yc(ny+2)
     END IF
 
-    DO iy = -1, ny+2
+    DO iy = -1, ny + 2
       iym = iy - 1
       dyb(iy) = yb(iy) - yb(iym)
     END DO
 
-    DO ix = -1, nx+2
-      DO iy = -1, ny+2
-        cv(ix, iy) = dxb(ix) * dyb(iy) ! define the cell area
+    ! Define the cell area
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
+        cv(ix,iy) = dxb(ix) * dyb(iy)
       END DO
     END DO
 
@@ -225,18 +248,22 @@ CONTAINS
 
 
 
+  !****************************************************************************
   ! Subroutine stretches the grid in the x direction
-  SUBROUTINE stretch_x ! replace with any stretching algorithm as needed
+  ! Replace with any stretching algorithm as needed
+  !****************************************************************************
+
+  SUBROUTINE stretch_x
 
     REAL(num) :: width, dx, L, f, lx_new
 
-    ! new total length
+    ! New total length
     lx_new = 200.0_num
 
-    ! centre of tanh stretching in unstretched coordinates
+    ! Centre of tanh stretching in unstretched coordinates
     L = length_x / 1.5_num
 
-    ! width of tanh stretching in unstretched coordinates
+    ! Width of tanh stretching in unstretched coordinates
     width = length_x / 10.0_num
 
     f = (lx_new - length_x) / (length_x - L) / 2.0_num
@@ -244,7 +271,7 @@ CONTAINS
     dx = length_x / REAL(nx_global, num)
     dxnew = dx + f * (1.0_num + TANH((ABS(xb_global) - L) / width)) * dx
 
-    DO ix = 1, nx_global+2
+    DO ix = 1, nx_global + 2
       xb_global(ix) = xb_global(ix-1) + dxnew(ix)
     END DO
 
@@ -254,18 +281,22 @@ CONTAINS
 
 
 
+  !****************************************************************************
   ! Subroutine stretches the domain in the y direction
-  SUBROUTINE stretch_y ! stretch domain upwards only
+  ! Stretch domain upwards only
+  !****************************************************************************
+
+  SUBROUTINE stretch_y
 
     REAL(num) :: width, dy, L, f, ly_new
 
-    ! new tolal length
+    ! New total length
     ly_new = 100.0_num
 
-    ! centre of tanh stretching in unstretched coordinates
+    ! Centre of tanh stretching in unstretched coordinates
     L = length_y / 1.5_num
 
-    ! width of tanh stretching in unstretched coordinates
+    ! Width of tanh stretching in unstretched coordinates
     width = length_y / 10.0_num
 
     f = (ly_new - length_y) / (length_y - L) / 2.0_num
@@ -273,7 +304,7 @@ CONTAINS
     dy = length_y / REAL(ny_global, num)
     dynew = dy + f * (1.0_num + TANH((ABS(yb_global) - L) / width)) * dy
 
-    DO iy = 1, ny_global+2
+    DO iy = 1, ny_global + 2
       yb_global(iy) = yb_global(iy-1) + dynew(iy)
     END DO
 
@@ -283,34 +314,37 @@ CONTAINS
 
 
 
-  ! Open the output diagnostic files
+  !****************************************************************************
+  ! Open the output diagnostic files.
+  !****************************************************************************
+
   SUBROUTINE open_files
 
-    CHARACTER(LEN = 11+data_dir_max_length) :: file2
-    CHARACTER(LEN = 7+data_dir_max_length) :: file3
+    CHARACTER(LEN=11+data_dir_max_length) :: file2
+    CHARACTER(LEN=7+data_dir_max_length) :: file3
     INTEGER :: ios
 
     IF (rank == 0) THEN
-      WRITE(file2, '(a, "/lare2d.dat")') TRIM(data_dir)
-      OPEN(unit = 20, STATUS = 'REPLACE', FILE = file2, iostat = ios)
+      WRITE(file2, '(a, ''/lare2d.dat'')') TRIM(data_dir)
+      OPEN(UNIT=20, STATUS='REPLACE', FILE=file2, iostat=ios)
 
       IF (ios .NE. 0) THEN
-        PRINT *, "Unable to open file lare2d.dat for writing. This is ", &
-                 "most commonly caused by the output directory not existing"
-        PRINT *, " "
-        PRINT *, " "
+        PRINT*, 'Unable to open file lare2d.dat for writing. This is ', &
+                'most commonly caused by the output directory not existing'
+        PRINT*
+        PRINT*
         CALL MPI_ABORT(comm, errcode)
       END IF
 
-      WRITE(file3, '(a, "/en.dat")') TRIM(data_dir)
-      OPEN(unit = 30, STATUS = 'REPLACE', FILE = file3, &
-          FORM="UNFORMATTED", ACCESS="STREAM", iostat = ios)
+      WRITE(file3, '(a, ''/en.dat'')') TRIM(data_dir)
+      OPEN(UNIT=30, STATUS='REPLACE', FILE=file3, &
+          FORM='UNFORMATTED', ACCESS='STREAM', iostat=ios)
 
       IF (ios .NE. 0) THEN
-        PRINT *, "Unable to open file en.dat for writing. This is ", &
-                 "most commonly caused by the output directory not existing"
-        PRINT *, " "
-        PRINT *, " "
+        PRINT*, 'Unable to open file en.dat for writing. This is ', &
+                'most commonly caused by the output directory not existing'
+        PRINT*
+        PRINT*
         CALL MPI_ABORT(comm, errcode)
       END IF
     END IF
@@ -319,19 +353,25 @@ CONTAINS
 
 
 
+  !****************************************************************************
   ! Close the output diagnostic files
+  !****************************************************************************
+
   SUBROUTINE close_files
 
     IF (rank == 0) THEN
-      CLOSE(unit = 20)
-      CLOSE(unit = 30)
+      CLOSE(UNIT=20)
+      CLOSE(UNIT=30)
     END IF
 
   END SUBROUTINE close_files
 
 
 
-  ! Subroutine to perform string comparisons
+  !****************************************************************************
+  ! Function to compare two strings.
+  !****************************************************************************
+
   FUNCTION str_cmp(str_in, str_test)
 
     CHARACTER(*), INTENT(IN) :: str_in, str_test
@@ -345,7 +385,7 @@ CONTAINS
       RETURN
     END IF
 
-    IF (str_trim(LEN(str_test)+1:LEN(str_test)+1) .NE. " ") THEN
+    IF (str_trim(LEN(str_test)+1:LEN(str_test)+1) .NE. ' ') THEN
       str_cmp = .FALSE.
       RETURN
     END IF
@@ -356,28 +396,31 @@ CONTAINS
 
 
 
-  ! Restart from previous output dumps
+  !****************************************************************************
+  ! Restart the code from a previous output dump.
+  !****************************************************************************
+
   SUBROUTINE restart_data
 
-    CHARACTER(LEN = 20+data_dir_max_length) :: filename
-    CHARACTER(LEN = 20) :: name, class, mesh_name, mesh_class
+    CHARACTER(LEN=20+data_dir_max_length) :: filename
+    CHARACTER(LEN=20) :: name, class, mesh_name, mesh_class
     INTEGER :: nblocks, type, nd, sof, snap
     INTEGER, DIMENSION(2) :: dims
     REAL(dbl) :: time_d
     REAL(num), DIMENSION(2) :: extent
     REAL(num), DIMENSION(2) :: stagger
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: data
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: data
 
     ! Create the filename for the last snapshot
 #ifdef MHDCLUSTER
-    WRITE(filename, '("nfs:", a, "/", i4.4, ".cfd")') &
+    WRITE(filename, '(''nfs:'', a, ''/'', i4.4, ''.cfd'')') &
         TRIM(data_dir), restart_snapshot
 #else
-    WRITE(filename, '(a, "/", i4.4, ".cfd")') &
+    WRITE(filename, '(a, ''/'', i4.4, ''.cfd'')') &
         TRIM(data_dir), restart_snapshot
 #endif
 
-    output_file = restart_snapshot
+    file_number = restart_snapshot
 
     ALLOCATE(data(0:nx, 0:ny))
     CALL cfd_open(filename, rank, comm, MPI_MODE_RDONLY)
@@ -386,7 +429,7 @@ CONTAINS
 
     DO ix = 1, nblocks
       CALL cfd_get_next_block_info_all(name, class, type)
-      IF (rank == 0) PRINT *, ix, name, class, type
+      IF (rank == 0) PRINT*, ix, name, class, type
 
       IF (type == TYPE_SNAPSHOT) THEN
         CALL cfd_get_snapshot(time_d, snap)
@@ -396,23 +439,23 @@ CONTAINS
       IF (type == TYPE_MESH) THEN
         ! Strangely, LARE doesn't actually read in the grid from a file
         ! This can be fixed, but for the moment, just go with the flow and
-        ! Replicate the old behaviour
+        ! replicate the old behaviour
 
-        CALL cfd_skip_block()
+        CALL cfd_skip_block
       ELSE IF (type == TYPE_MESH_VARIABLE) THEN
         CALL cfd_get_common_meshtype_metadata_all(type, nd, sof)
 
         IF (nd /= DIMENSION_2D) THEN
-          IF (rank == 0) PRINT *, "Non 2D Dataset found in input file, ", &
-              "ignoring and continuting."
-          CALL cfd_skip_block()
+          IF (rank == 0) PRINT*, 'Non 2D Dataset found in input file, ', &
+              'ignoring and continuting.'
+          CALL cfd_skip_block
           CYCLE
         END IF
 
         IF (type /= VAR_CARTESIAN) THEN
-          IF (rank == 0) PRINT *, "Non - Cartesian variable block found ", &
-              "in file, ignoring and continuing"
-          CALL cfd_skip_block()
+          IF (rank == 0) PRINT*, 'Non - Cartesian variable block found ', &
+              'in file, ignoring and continuing'
+          CALL cfd_skip_block
           CYCLE
         END IF
 
@@ -422,15 +465,15 @@ CONTAINS
             stagger, mesh_name, mesh_class)
 
         IF (dims(1) /= nx_global+1 .OR. dims(2) /= ny_global+1) THEN
-          IF (rank == 0) PRINT *, "Size of grid represented by one more ", &
-              "variables invalid. Continuing"
+          IF (rank == 0) PRINT*, 'Size of grid represented by one more ', &
+              'variables invalid. Continuing'
           CALL cfd_skip_block
           CYCLE
         END IF
 
         IF (sof /= num) THEN
-          IF (rank == 0) PRINT *, "Precision of data does not match ", &
-              "precision of code. Continuing."
+          IF (rank == 0) PRINT*, 'Precision of data does not match ', &
+              'precision of code. Continuing.'
           CALL cfd_skip_block
         END IF
 
@@ -441,49 +484,49 @@ CONTAINS
 
         ! Now have the data, just copy it to correct place
 
-        IF (str_cmp(name(1:3), "Rho")) THEN
+        IF (str_cmp(name(1:3), 'Rho')) THEN
           rho(0:nx, 0:ny) = data
         END IF
 
-        IF (str_cmp(name(1:6), "Energy")) THEN
+        IF (str_cmp(name(1:6), 'Energy')) THEN
           energy(0:nx, 0:ny) = data
         END IF
 
-        IF (str_cmp(name(1:2), "Vx")) THEN
+        IF (str_cmp(name(1:2), 'Vx')) THEN
           vx(0:nx, 0:ny) = data
         END IF
 
-        IF (str_cmp(name(1:2), "Vy")) THEN
+        IF (str_cmp(name(1:2), 'Vy')) THEN
           vy(0:nx, 0:ny) = data
         END IF
 
-        IF (str_cmp(name(1:2), "Vz")) THEN
+        IF (str_cmp(name(1:2), 'Vz')) THEN
           vz(0:nx, 0:ny) = data
         END IF
 
-        IF (str_cmp(name(1:2), "Bx")) THEN
+        IF (str_cmp(name(1:2), 'Bx')) THEN
           bx(0:nx, 0:ny) = data
         END IF
 
-        IF (str_cmp(name(1:2), "By")) THEN
+        IF (str_cmp(name(1:2), 'By')) THEN
           by(0:nx, 0:ny) = data
         END IF
 
-        IF (str_cmp(name(1:2), "Bz")) THEN
+        IF (str_cmp(name(1:2), 'Bz')) THEN
           bz(0:nx, 0:ny) = data
         END IF
 
         ! Should be at end of block, but force the point anyway
-        CALL cfd_skip_block()
+        CALL cfd_skip_block
       ELSE
         ! Unknown block, just skip it
-        CALL cfd_skip_block()
+        CALL cfd_skip_block
       END IF
     END DO
 
     DEALLOCATE(data)
 
-    CALL cfd_close()
+    CALL cfd_close
 
     CALL MPI_BARRIER(comm, errcode)
 

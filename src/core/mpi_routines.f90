@@ -1,3 +1,7 @@
+!******************************************************************************
+! Routines to set up the MPI routines and allocate dynamic arrays
+!******************************************************************************
+
 MODULE mpi_routines
 
   USE shared_data
@@ -9,6 +13,10 @@ MODULE mpi_routines
   REAL(dbl) :: start_time, end_time
 
 CONTAINS
+
+  !****************************************************************************
+  ! Start up the MPI layer, allocate arrays and set up MPI types
+  !****************************************************************************
 
   SUBROUTINE mpi_initialise
 
@@ -27,10 +35,10 @@ CONTAINS
     IF (MAX(dims(1), 1) * MAX(dims(2), 1) .GT. nproc) THEN
       dims = 0
       IF (rank .EQ. 0) THEN
-        PRINT *, "Too many processors requested in override."
-        PRINT *, "Reverting to automatic decomposition."
-        PRINT *, "******************************************"
-        PRINT *, ""
+        PRINT*, 'Too many processors requested in override.'
+        PRINT*, 'Reverting to automatic decomposition.'
+        PRINT*, '******************************************'
+        PRINT*
       END IF
     END IF
 
@@ -43,17 +51,17 @@ CONTAINS
     reorder = .TRUE.
 
     IF (xbc_min == BC_OTHER) periods(2) = .FALSE.
-    IF (ybc_max == BC_OTHER) periods(1) = .FALSE.
-    IF (xbc_min == BC_OPEN) periods(2) = .FALSE.
-    IF (ybc_max == BC_OPEN) periods(1) = .FALSE.
-
     IF (xbc_max == BC_OTHER) periods(2) = .FALSE.
     IF (ybc_min == BC_OTHER) periods(1) = .FALSE.
+    IF (ybc_max == BC_OTHER) periods(1) = .FALSE.
+
+    IF (xbc_min == BC_OPEN) periods(2) = .FALSE.
     IF (xbc_max == BC_OPEN) periods(2) = .FALSE.
     IF (ybc_min == BC_OPEN) periods(1) = .FALSE.
+    IF (ybc_max == BC_OPEN) periods(1) = .FALSE.
 
-    CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, &
-        reorder, comm, errcode)
+    CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, reorder, &
+        comm, errcode)
 
     CALL MPI_COMM_RANK(comm, rank, errcode)
     CALL MPI_CART_COORDS(comm, rank, 2, coordinates, errcode)
@@ -72,35 +80,35 @@ CONTAINS
     ny = ny0
 
     ! If the number of gridpoints cannot be exactly subdivided then fix
-    ! The first nxp processors have nx0 grid points
+    ! the first nxp processors have nx0 grid points
     ! The remaining processors have nx0+1 grid points
     IF (nx0 * nprocx .NE. nx_global) THEN
       nxp = (nx0 + 1) * nprocx - nx_global
       IF (cx .GE. nxp) nx = nx0 + 1
     ELSE
       nxp = nprocx
-    ENDIF
+    END IF
     IF (ny0 * nprocy .NE. ny_global) THEN
       nyp = (ny0 + 1) * nprocy - ny_global
       IF (cy .GE. nyp) ny = ny0 + 1
     ELSE
       nyp = nprocy
-    ENDIF
+    END IF
 
-    ! set up the starting point for my subgrid (assumes arrays start at 0)
+    ! Set up the starting point for my subgrid (assumes arrays start at 0)
 
     IF (cx .LT. nxp) THEN
       starts(1) = cx * nx0
     ELSE
       starts(1) = nxp * nx0 + (cx - nxp) * (nx0 + 1)
-    ENDIF
+    END IF
     IF (cy .LT. nyp) THEN
       starts(2) = cy * ny0
     ELSE
       starts(2) = nyp * ny0 + (cy - nyp) * (ny0 + 1)
-    ENDIF
+    END IF
 
-    ! the grid sizes
+    ! The grid sizes
     subsizes = (/ nx+1, ny+1 /)
     sizes = (/ nx_global+1, ny_global+1 /)
 
@@ -109,31 +117,30 @@ CONTAINS
 
     CALL MPI_TYPE_COMMIT(subtype, errcode)
 
-    ! Calculate initial displacement value:
-    ! nx, ny, nz, (xb, yb, zb, time) * size of float
-    initialdisp = 12 + (nx_global + ny_global + 3) * num
-
-    ALLOCATE(rho(-1:nx+2, -1:ny+2))
     ALLOCATE(energy(-1:nx+2, -1:ny+2))
-    ALLOCATE(vx(-2:nx+2, -2:ny+2))
-    ALLOCATE(vy(-2:nx+2, -2:ny+2))
-    ALLOCATE(vz(-2:nx+2, -2:ny+2))
+    ALLOCATE(p_visc(-1:nx+2, -1:ny+2))
+    ALLOCATE(rho(-1:nx+2, -1:ny+2))
+    ALLOCATE(vx (-2:nx+2, -2:ny+2))
+    ALLOCATE(vy (-2:nx+2, -2:ny+2))
+    ALLOCATE(vz (-2:nx+2, -2:ny+2))
     ALLOCATE(vx1(-2:nx+2, -2:ny+2))
     ALLOCATE(vy1(-2:nx+2, -2:ny+2))
     ALLOCATE(vz1(-2:nx+2, -2:ny+2))
-    ALLOCATE(bx(-2:nx+2, -1:ny+2))
-    ALLOCATE(by(-1:nx+2, -2:ny+2))
-    ALLOCATE(bz(-1:nx+2, -1:ny+2))
-    IF (rke) ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
-    ALLOCATE(p_visc(-1:nx+2, -1:ny+2))
+    ALLOCATE(bx (-2:nx+2, -1:ny+2))
+    ALLOCATE(by (-1:nx+2, -2:ny+2))
+    ALLOCATE(bz (-1:nx+2, -1:ny+2))
     ALLOCATE(eta(-1:nx+2, -1:ny+2))
+    IF (rke) ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
     ALLOCATE(lambda_i(0:nx, 0:ny))
-    ! shocked and resistive need to be larger to allow offset = 4 in shock_test
+
+    ! Shocked and resistive need to be larger to allow offset = 4 in shock_test
     ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1(-1:nx+2, -1:ny+2))
-    ALLOCATE(xc(-1:nx+2), xb(-2:nx+2), dxb(-1:nx+2), dxc(-1:nx+2))
-    ALLOCATE(yc(-1:ny+2), yb(-2:ny+2), dyb(-1:ny+2), dyc(-1:ny+2))
+    ALLOCATE(xc(-1:nx+2), xb(-2:nx+2), dxc(-1:nx+2), dxb(-1:nx+2))
+    ALLOCATE(yc(-1:ny+2), yb(-2:ny+2), dyc(-1:ny+2), dyb(-1:ny+2))
     ALLOCATE(grav(-1:ny+2))
-    ALLOCATE(jx_r(0:nx+1, 0:ny+1), jy_r(0:nx+1, 0:ny+1), jz_r(0:nx+1, 0:ny+1))
+    ALLOCATE(jx_r(0:nx+1, 0:ny+1))
+    ALLOCATE(jy_r(0:nx+1, 0:ny+1))
+    ALLOCATE(jz_r(0:nx+1, 0:ny+1))
 
     ALLOCATE(xb_global(-2:nx_global+2))
     ALLOCATE(yb_global(-2:ny_global+2))
@@ -147,6 +154,10 @@ CONTAINS
 
 
 
+  !****************************************************************************
+  ! Shutdown the MPI layer, deallocate arrays and set up timing info
+  !****************************************************************************
+
   SUBROUTINE mpi_close
 
     INTEGER :: seconds, minutes, hours, total
@@ -157,9 +168,9 @@ CONTAINS
       seconds = MOD(total, 60)
       minutes = MOD(total / 60, 60)
       hours = total / 3600
-      WRITE(20, *)
-      WRITE(20, '("runtime = ", i4, "h ", i2, "m ", i2, &
-          & "s on ", i4, " process elements.")') hours, minutes, seconds, nproc
+      WRITE(20,*)
+      WRITE(20,'(''runtime = '', i4, ''h '', i2, ''m '', i2, ''s on '', &
+          & i4, '' process elements.'')') hours, minutes, seconds, nproc
     END IF
 
     CALL MPI_BARRIER(comm, errcode)

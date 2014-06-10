@@ -23,7 +23,7 @@
     DO iy = -1, ny+2
        bx(:,iy) = b0* tanh(yc(iy) / lamda)
        rho(:,iy) = rho0 * (1.0_num / COSH(yc(iy) / lamda))**2 + rhoinf
-    ENDDO
+    END DO
 
     energy = 0.75_num
 
@@ -313,7 +313,7 @@ SUBROUTINE set_initial_conditions
      END IF
      !If there are any other cycles the use the real equation of state
      eos_this_cycle=eos_number
-  ENDDO
+  END DO
 
   by = 0.001_num
 

@@ -1,10 +1,10 @@
 Lare2D main code directory
 --------------------------
 Contains
-	boundary.f90
-	control.f90
-	diagnostics.f90
-	initial_conditions.f90
+  boundary.f90
+  control.f90
+  diagnostics.f90
+  initial_conditions.f90
 
 -----------------------------------------------------------------
 control.f90

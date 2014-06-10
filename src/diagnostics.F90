@@ -1,9 +1,8 @@
-!*************************************************************************
+!******************************************************************************
 ! Controls all I/O and diagnostics. Output files are 'lare2d.dat',
-! 'control.dat', 'en.dat' and a series of snapshots in 'fort.5x'
-! The idl package in 'plot.pro' gives simple loading and surface
-! plotting based on these files. This isn't documented but is very simple!
-!*************************************************************************
+! 'control.dat', 'en.dat' and a series of snapshots in 'nnnn.sdf'
+!******************************************************************************
+
 MODULE diagnostics
 
   USE shared_data
@@ -21,23 +20,26 @@ MODULE diagnostics
 
 CONTAINS
 
+  !****************************************************************************
+  ! Call the output routines
+  !****************************************************************************
+
   SUBROUTINE output_routines(i) ! i = step index
 
-    ! if halt set to false then code stops
     INTEGER, INTENT(IN) :: i
 
     INTEGER, PARAMETER :: out = 1000
     INTEGER, SAVE :: index = 1, step = 1
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: data
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: array
     LOGICAL :: print_arrays, last_call
     REAL(num), DIMENSION(2) :: stagger = 0.0_num
     INTEGER, DIMENSION(2) :: dims
 
-    ! this output routine uses the same sturcture as needed for mpi output
-    ! this is more complicated than need for the serial code
+    ! This output routine uses the same structure as needed for MPI output.
+    ! This is more complicated than need for the serial code
     ! rank always equals zero in this serial code
-    CHARACTER(LEN = 9+data_dir_max_length+n_zeros) :: filename
-    CHARACTER(LEN = 35) :: filename_desc
+    CHARACTER(LEN=9+data_dir_max_length+n_zeros) :: filename
+    CHARACTER(LEN=35) :: filename_desc
 
     REAL(num) :: t_out = 0.0_num
     REAL(num) :: en_ke = 0.0_num, en_int = 0.0_num
@@ -45,15 +47,19 @@ CONTAINS
     REAL(num) :: heating_ohmic = 0.0_num
     REAL(num) :: total
 
-    dims = (/ nx_global+1, ny_global+1 /)
+    dims = (/nx_global+1, ny_global+1/)
 
-    IF (nsteps >= out) step = nsteps / out + 1 ! make sure output fits arrays
-    IF (i == 0 .AND. rank == 0) THEN ! done just once at the start
+    ! Make sure output fits arrays
+    IF (nsteps >= out) step = nsteps / out + 1
+
+    ! Done just once at the start
+    IF (i == 0 .AND. rank == 0) THEN
       CALL output_log
       IF (.NOT. restart) WRITE(30) num, 6
     END IF
 
-    IF (MOD(i, step) .EQ. 0 .OR. last_call) THEN ! do every (step) steps
+    ! Do every (step) steps
+    IF (MOD(i, step) .EQ. 0 .OR. last_call) THEN
       t_out = time
       CALL energy_account(en_b, en_ke, en_int)
 
@@ -75,165 +81,174 @@ CONTAINS
       index = index + 1
     END IF
 
-    CALL io_test(i, print_arrays, last_call) ! check if snapshot is needed
+    ! Check if snapshot is needed
+    CALL io_test(i, print_arrays, last_call)
 
-    IF (print_arrays) THEN ! output a snapshot of arrays
+    ! Output a snapshot of arrays
+    IF (print_arrays) THEN
       IF (rank .EQ. 0) THEN
-        WRITE(20, *) "Dumping ", output_file, " at time", time
+        WRITE(20,*) 'Dumping ', file_number, ' at time', time
         CALL FLUSH(20)
       END IF
 
       ! Set the filename
       WRITE(filename_desc, '("(''nfs:'', a, ''/'', i", i3.3, ".", i3.3, &
           & ", ''.cfd'')")'), n_zeros, n_zeros
-      WRITE(filename, filename_desc) TRIM(data_dir), output_file
+      WRITE(filename, filename_desc) TRIM(data_dir), file_number
 
       CALL cfd_open(filename, rank, comm, MPI_MODE_CREATE + MPI_MODE_WRONLY)
       CALL cfd_write_snapshot_data(REAL(time, dbl), i, 0)
 
-      ALLOCATE(data(0:nx, 0:ny))
-      CALL cfd_write_2d_cartesian_grid("Grid", "Grid", &
+      ALLOCATE(array(0:nx,0:ny))
+
+      CALL cfd_write_2d_cartesian_grid('Grid', 'Grid', &
           xb_global(0:nx_global), yb_global(0:ny_global), 0)
 
       IF (dump_mask(1)) THEN
-        data = rho(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("Rho", "Fluid", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = rho(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('Rho', 'Fluid', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(2)) THEN
-        data = energy(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("Energy", "Fluid", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = energy(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('Energy', 'Fluid', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(3)) THEN
-        data = vx(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("Vx", "Velocity", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = vx(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('Vx', 'Velocity', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(4)) THEN
-        data = vy(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("Vy", "Velocity", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = vy(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('Vy', 'Velocity', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(5)) THEN
-        data = vz(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("Vz", "Velocity", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = vz(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('Vz', 'Velocity', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(6)) THEN
-        data = bx(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("Bx", "Magnetic_Field", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = bx(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('Bx', 'Magnetic_Field', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(7)) THEN
-        data = by(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("By", "Magnetic_Field", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = by(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('By', 'Magnetic_Field', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(8)) THEN
-        data = bz(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("Bz", "Magnetic_Field", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = bz(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('Bz', 'Magnetic_Field', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(9)) THEN
         DO iy = 0, ny
           DO ix = 0, nx
-            data(ix,iy) = (gamma - 1.0_num) &
-                * (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
-                / (2.0_num - xi_n(ix, iy))
+            array(ix,iy) = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) &
+                * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
           END DO
         END DO
-        CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel('Temperature', 'Fluid', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(10)) THEN
         DO iy = 0, ny
           DO ix = 0, nx
-            data(ix,iy) = (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
-                * (gamma - 1.0_num) * rho(ix,iy)
+            array(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
+                * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
           END DO
         END DO
-        CALL cfd_write_2d_cartesian_variable_parallel("Pressure", "Fluid", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        CALL cfd_write_2d_cartesian_variable_parallel('Pressure', 'Fluid', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(11)) THEN
-        data = SQRT(gamma*(gamma-1.0_num)*energy(0:nx,0:ny))
-        CALL cfd_write_2d_cartesian_variable_parallel("cs", "Fluid", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = SQRT(gamma * (gamma - 1.0_num) * energy(1:nx,1:ny))
+        CALL cfd_write_2d_cartesian_variable_parallel('cs', 'Fluid', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(12)) THEN
-        data = parallel_current(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("j_par", "PIP", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = parallel_current(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('j_par', 'PIP', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(13)) THEN
-        data = perp_current(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("j_perp", "PIP", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = perp_current(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('j_perp', 'PIP', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(14)) THEN
-        data = xi_n(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("neutral_fraction", &
-            "PIP", dims, stagger, "Grid", "Grid", data, subtype)
+        array = xi_n(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('neutral_fraction', &
+            'PIP', dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(15)) THEN
-        data = eta_perp(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("eta_perp", "PIP", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = eta_perp(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('eta_perp', 'PIP', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(16)) THEN
-        data = eta(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("eta", "PIP", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = eta(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('eta', 'PIP', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(17)) THEN
-        data = jx_r(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("jx", "current", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = jx_r(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('jx', 'current', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(18)) THEN
-        data = jy_r(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("jy", "current", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = jy_r(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('jy', 'current', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
       IF (dump_mask(19)) THEN
-        data = jz_r(0:nx, 0:ny)
-        CALL cfd_write_2d_cartesian_variable_parallel("jz", "current", &
-            dims, stagger, "Grid", "Grid", data, subtype)
+        array = jz_r(0:nx,0:ny)
+        CALL cfd_write_2d_cartesian_variable_parallel('jz', 'current', &
+            dims, stagger, 'Grid', 'Grid', array, subtype)
       END IF
 
+      DEALLOCATE(array)
+
       ! Close the file
-      CALL cfd_close()
+      CALL cfd_close
 
-      output_file = output_file + 1
-
+      file_number = file_number + 1
     END IF
 
-    IF (last_call .AND. rank == 0) THEN ! output energy diagnostics etc
-      WRITE(20, *) 'final nsteps / time = ', i, time
+    ! Output energy diagnostics etc
+    IF (last_call .AND. rank == 0) THEN
+      WRITE(20,*) 'final nsteps / time = ', i, time
     END IF
 
   END SUBROUTINE output_routines
 
 
+
+  !****************************************************************************
+  ! Test whether any of the conditions for doing output on the current
+  ! iteration are met
+  !****************************************************************************
 
   SUBROUTINE io_test(i, print_arrays, last_call)
 
@@ -266,13 +281,14 @@ CONTAINS
 
   SUBROUTINE set_dt ! sets CFL limited step
 
-    ! Assumes all variables are defined at the same point. Be careful
-    ! with setting 'dt_multiplier' if you expect massive changes across
-    ! cells.
+    ! Assumes all variables are defined at the same point. Be careful with
+    ! setting 'dt_multiplier' if you expect massive changes across cells.
 
-    REAL(num) :: cons, dt1, dt2, dt3, dt4, dt5, dt6, dt_local, dxlocal, dt_rad
-    REAL(num) :: vxbp, vxbm, vybp, vybm, dvx, dvy, avxp, avxm, avyp, avym
-    REAL(num) :: dtr_local, dth_local, cs, area, rad, alf
+    REAL(num) :: vxbm, vxbp, avxm, avxp, dvx, ax
+    REAL(num) :: vybm, vybp, avym, avyp, dvy, ay
+    REAL(num) :: cons, cs, area
+    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local, dt_rad
+    REAL(num) :: dt_locals(3), dt_min(3)
 
     dt_local = largest_number
     dtr_local = largest_number
@@ -281,71 +297,75 @@ CONTAINS
     cons = gamma * (gamma - 1.0_num)
 
     DO iy = 0, ny
+      iym = iy - 1
       DO ix = 0, nx
         ixm = ix - 1
-        iym = iy - 1
 
-        ! fix dt for Lagrangian step
-        w1 = bx(ix, iy)**2 + by(ix, iy)**2 + bz(ix, iy)**2
-        cs = cons * energy(ix,iy)    ! sound speed squared
+        ! Fix dt for Lagrangian step
+        w1 = bx(ix,iy)**2 + by(ix,iy)**2 + bz(ix,iy)**2
+        ! Sound speed squared
+        cs = cons * energy(ix,iy)
 
-        w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero) &
-            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))
+        w2 = SQRT(cs + w1 / MAX(rho(ix,iy), none_zero) &
+            + 2.0_num * p_visc(ix,iy) / MAX(rho(ix,iy), none_zero))
 
-        dt1 = dxb(ix) / w2
-        dt2 = dyb(iy) / w2
+        ! Find ideal MHD CFL limit for Lagrangian step
+        dt1 = MIN(dxb(ix), dyb(iy)) / w2
+        dt_local = MIN(dt_local, dt1)
 
-        ! find ideal MHD CFL limit
-        dt_local = MIN(dt_local, dt1, dt2)
-
-        ! now find dt for remap step
-        vxbp = 0.5_num * (vx(ix,iy) + vx(ix,iy-1)) * dyb(iy)
-        vxbm = 0.5_num * (vx(ixm,iy) + vx(ixm,iym)) * dyb(iy)
-        vybp = 0.5_num * (vy(ix,iy) + vy(ixm,iy)) * dxb(ix)
-        vybm = 0.5_num * (vy(ix,iym) + vy(ixm,iym)) * dxb(ix)
+        ! Now find dt for remap step
+        ax = 0.5_num * dyb(iy)
+        ay = 0.5_num * dxb(ix)
+        vxbm = (vx(ixm,iy ) + vx(ixm,iym)) * ax
+        vxbp = (vx(ix ,iy ) + vx(ix ,iym)) * ax
+        vybm = (vy(ix ,iym) + vy(ixm,iym)) * ay
+        vybp = (vy(ix ,iy ) + vy(ixm,iy )) * ay
 
         dvx = ABS(vxbp - vxbm)
         dvy = ABS(vybp - vybm)
-        avxp = ABS(vxbp)
         avxm = ABS(vxbm)
-        avyp = ABS(vybp)
+        avxp = ABS(vxbp)
         avym = ABS(vybm)
+        avyp = ABS(vybp)
 
         area = dxb(ix) * dyb(iy)
-        dt5 = area / MAX(avxp, avxp, dvx, 1.e-10_num * area)
-        dt6 = area / MAX(avyp, avyp, dvy, 1.e-10_num * area)
+        dt1 = area / MAX(avxm, avxp, dvx, 1.e-10_num * area)
+        dt2 = area / MAX(avym, avyp, dvy, 1.e-10_num * area)
 
-        dt_local = MIN(dt_local, dt5, dt6, dt_rad)
+        ! Fix dt for remap step
+        dt_local = MIN(dt_local, dt1, dt2, dt_rad)
 
-        ! note resistive limits assumes uniform resistivity hence cautious
+        ! Note resistive limits assumes uniform resistivity hence cautious
         ! factor 0.2
         dxlocal = 1.0_num / (1.0_num / dxb(ix)**2 + 1.0_num / dyb(iy)**2)
 
         IF (cowling_resistivity) THEN
-          dt3 = 0.2_num * dxlocal &
-              / MAX(MAX(eta(ix, iy), eta_perp(ix, iy)), none_zero)
+          dt1 = 0.2_num * dxlocal &
+              / MAX(MAX(eta(ix,iy), eta_perp(ix,iy)), none_zero)
         ELSE
-          dt3 = 0.2_num * dxlocal / MAX(eta(ix, iy), none_zero)
+          dt1 = 0.2_num * dxlocal / MAX(eta(ix,iy), none_zero)
         END IF
 
+        ! Adjust to accomodate resistive effects
+        dtr_local = MIN(dtr_local, dt1)
+
         ! Hall MHD CFL limit
-        dt4 = 0.75_num * rho(ix, iy) * MIN(dxb(ix), dyb(iy))**2 &
-            / MAX(lambda_i(ix, iy) * SQRT(w1), none_zero)
+        dt1 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
+            / MAX(lambda_i(ix,iy) * SQRT(w1), none_zero)
 
-        ! adjust to accomodate resistive effects
-        dtr_local = MIN(dtr_local, dt3)
-        dth_local = MIN(dth_local, dt4)
-
+        dth_local = MIN(dth_local, dt1)
       END DO
     END DO
 
-    CALL MPI_ALLREDUCE(dt_local, dt, 1, mpireal, MPI_MIN, comm, errcode)
-    CALL MPI_ALLREDUCE(dtr_local, dtr, 1, mpireal, MPI_MIN, comm, errcode)
-    CALL MPI_ALLREDUCE(dth_local, dth, 1, mpireal, MPI_MIN, comm, errcode)
+    dt_locals(1) = dt_local
+    dt_locals(2) = dtr_local
+    dt_locals(3) = dth_local
 
-    dtr = dt_multiplier * dtr
-    dth = dt_multiplier * dth
-    dt = dt_multiplier * dt
+    CALL MPI_ALLREDUCE(dt_locals, dt_min, 3, mpireal, MPI_MIN, comm, errcode)
+
+    dt  = dt_multiplier * dt_min(1)
+    dtr = dt_multiplier * dt_min(2)
+    dth = dt_multiplier * dt_min(3)
 
     time = time + dt
 
@@ -356,49 +376,67 @@ CONTAINS
   SUBROUTINE energy_account(energy_b, energy_ke, energy_int)
 
     REAL(num), INTENT(OUT) :: energy_b, energy_ke, energy_int
-    REAL(num) :: energy_b_local, energy_ke_local, energy_int_local
-    REAL(num) :: cv_v, rho_v
+    REAL(dbl) :: energy_b_local, energy_ke_local, energy_int_local
+    REAL(dbl) :: energy_local(3), energy_sum(3)
+    REAL(dbl) :: cv_v, rho_v, w1, w2, w3
 
-    energy_b_local = 0.0_num
-    energy_ke_local = 0.0_num
-    energy_int_local = 0.0_num
+    energy_b_local   = 0.0_dbl
+    energy_ke_local  = 0.0_dbl
+    energy_int_local = 0.0_dbl
 
     DO iy = 1, ny
+      iym = iy - 1
       DO ix = 1, nx
         ixm = ix - 1
-        iym = iy - 1
-        ixp = ix + 1
-        iyp = iy + 1
-        w2 = (bx(ix, iy)**2 + bx(ixm, iy)**2) / 2.0_num
-        w3 = (by(ix, iy)**2 + by(ix, iym)**2) / 2.0_num
-        w4 = bz(ix, iy)**2
-        w1 = (w2 + w3 + w4) / 2.0_num
-        energy_b_local = energy_b_local + w1 * cv(ix, iy)
+
+        w1 = (bx(ix,iy)**2 + bx(ixm,iy )**2) * 0.5_num
+        w2 = (by(ix,iy)**2 + by(ix ,iym)**2) * 0.5_num
+        w3 = bz(ix,iy)**2
+        w1 = (w1 + w2 + w3) * 0.5_dbl
+        energy_b_local = energy_b_local + w1 * cv(ix,iy)
 
         energy_int_local = energy_int_local &
-            + energy(ix, iy) * rho(ix, iy) * cv(ix, iy)
-
-        ! WARNING the KE is summed on the vertices
-        rho_v = rho(ix, iy) * cv(ix, iy) + rho(ixp, iy) * cv(ixp, iy) + &
-            rho(ix, iyp) * cv(ix, iyp) + rho(ixp, iyp) * cv(ixp, iyp)
-
-        cv_v = cv(ix, iy) + cv(ixp, iy) + cv(ix, iyp) + cv(ixp, iyp)
-
-        rho_v = rho_v / cv_v
-        cv_v = cv_v / 4.0_num
-        w1 = rho_v * cv_v * (vx(ix, iy)**2 + vy(ix, iy)**2 + vz(ix, iy)**2)
-        energy_ke_local = energy_ke_local + w1 / 2.0_num
+            + energy(ix,iy) * rho(ix,iy) * cv(ix,iy)
       END DO
     END DO
 
-    energy_b_local = energy_b_local
+    DO iy = 0, ny
+      iyp = iy + 1
+      DO ix = 0, nx
+        ixp = ix + 1
 
-    CALL MPI_ALLREDUCE(energy_ke_local, energy_ke, 1, mpireal, MPI_SUM, &
-        comm, errcode)
-    CALL MPI_ALLREDUCE(energy_b_local, energy_b, 1, mpireal, MPI_SUM, &
-        comm, errcode)
-    CALL MPI_ALLREDUCE(energy_int_local, energy_int, 1, mpireal, MPI_SUM, &
-        comm, errcode)
+        ! WARNING the KE is summed on the vertices
+        rho_v = rho(ix,iy ) * cv(ix,iy ) + rho(ixp,iy ) * cv(ixp,iy ) &
+              + rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
+
+        cv_v = cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp)
+
+        rho_v = rho_v / cv_v
+        cv_v = cv_v * 0.25_dbl
+        w1 = rho_v * cv_v * (vx(ix,iy)**2 + vy(ix,iy)**2 + vz(ix,iy)**2)
+
+        IF (ix == 0 .OR. ix == nx) THEN
+          w1 = w1 * 0.5_dbl
+        END IF
+
+        IF (iy == 0 .OR. iy == ny) THEN
+          w1 = w1 * 0.5_dbl
+        END IF
+
+        energy_ke_local = energy_ke_local + w1 * 0.5_dbl
+      END DO
+    END DO
+
+    energy_local(1) = energy_b_local
+    energy_local(2) = energy_ke_local
+    energy_local(3) = energy_int_local
+
+    CALL MPI_ALLREDUCE(energy_local, energy_sum, 3, MPI_DOUBLE_PRECISION, &
+        MPI_SUM, comm, errcode)
+
+    energy_b   = REAL(energy_sum(1), num)
+    energy_ke  = REAL(energy_sum(2), num)
+    energy_int = REAL(energy_sum(3), num)
 
   END SUBROUTINE energy_account
 
@@ -412,39 +450,42 @@ CONTAINS
 
     DO iy = 1, ny
       DO ix = 1, nx
-        energy(ix, iy) = energy(ix, iy) + delta_ke(ix, iy)
+        energy(ix,iy) = energy(ix,iy) + delta_ke(ix,iy)
       END DO
     END DO
+
     CALL energy_bcs
 
   END SUBROUTINE energy_correction
 
 
 
-  SUBROUTINE output_log ! writes basic data to 'lare2d.dat'
+  SUBROUTINE output_log
 
-    WRITE(20, *) 'nprocx, nprocy = ', nprocx, nprocy
-    WRITE(20, *) 'nx, ny = ', nx, ny
-    WRITE(20, *)
-    WRITE(20, *) 'length_x = ', length_x
-    WRITE(20, *) 'length_y = ', length_y
-    WRITE(20, *)
-#ifndef QMONO
-    WRITE(20, *) 'tensor shock viscosity'
+    ! Writes basic data to 'lare2d.dat'
+
+    WRITE(20,*) 'nprocx, nprocy = ', nprocx, nprocy
+    WRITE(20,*) 'nx, ny = ', nx, ny
+    WRITE(20,*)
+    WRITE(20,*) 'length_x = ', length_x
+    WRITE(20,*) 'length_y = ', length_y
+    WRITE(20,*)
+#ifdef QMONO
+    WRITE(20,*) 'q_mono viscosity'
 #else
-    WRITE(20, *) 'q_mono viscosity'
+    WRITE(20,*) 'tensor shock viscosity'
 #endif
-    WRITE(20, *) 'linear viscosity coeff = ', visc1
-    WRITE(20, *) 'quadratic viscosity coeff = ', visc2
-    WRITE(20, *) 'uniform tensor viscosity coeff = ', visc3
-    WRITE(20, *) 'j_max = ', j_max
-    WRITE(20, *) 'eta0 = ', eta0
-    WRITE(20, *) 'eta_background = ', eta_background
-    WRITE(20, *) 'kappa = ', kappa_0
-    WRITE(20, *)
-    WRITE(20, *) 't_start, t_end = ', time, t_end
-    WRITE(20, *) 'nsteps =', nsteps
-    WRITE(20, *)
+    WRITE(20,*) 'linear viscosity coeff = ', visc1
+    WRITE(20,*) 'quadratic viscosity coeff = ', visc2
+    WRITE(20,*) 'uniform tensor viscosity coeff = ', visc3
+    WRITE(20,*) 'j_max = ', j_max
+    WRITE(20,*) 'eta0 = ', eta0
+    WRITE(20,*) 'eta_background = ', eta_background
+    WRITE(20,*) 'kappa = ', kappa_0
+    WRITE(20,*)
+    WRITE(20,*) 't_start, t_end = ', time, t_end
+    WRITE(20,*) 'nsteps =', nsteps
+    WRITE(20,*)
 
   END SUBROUTINE output_log
 

@@ -1,7 +1,8 @@
-!-------------------------------------------------------------------------
-! mass coordinate based Van Leer limited remap.
+!******************************************************************************
+! Mass coordinate based Van Leer limited remap.
 ! See Bram van Leer, JCP, vol 135, p229, (1997)
-!-------------------------------------------------------------------------
+!******************************************************************************
+
 MODULE yremap
 
   USE shared_data; USE boundary
@@ -12,117 +13,138 @@ MODULE yremap
 
   PUBLIC :: remap_y
 
-  REAL(num), DIMENSION(:, :), ALLOCATABLE :: rho1, dm, cv2, flux
-  REAL(num), DIMENSION(:, :), ALLOCATABLE :: dyb1, rho_v, rho_v1, dyc1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: dyb1, dyc1, rho_v, rho_v1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: rho1, dm, cv2, flux
 
 CONTAINS
 
-  SUBROUTINE remap_y ! remap onto original Eulerian grid
+  ! Remap onto original Eulerian grid
+
+  SUBROUTINE remap_y
 
     REAL(num) :: vxb, vxbm, vyb, vybm, dv
 
-    ALLOCATE (rho1(-1:nx+2, -1:ny+2), dm(-1:nx+2, -1:ny+2), &
-        cv2(-1:nx+2, -1:ny+2), flux(-1:nx+2, -2:ny+2), &
-        dyb1(-1:nx+2, -1:ny+2), rho_v(-1:nx+2, -1:ny+2), &
-        rho_v1(-1:nx+2, -1:ny+2), dyc1(-1:nx+1, -1:ny+1))
+    ALLOCATE(rho1  (-1:nx+2, -1:ny+2))
+    ALLOCATE(dm    (-1:nx+2, -1:ny+2))
+    ALLOCATE(cv2   (-1:nx+2, -1:ny+2))
+    ALLOCATE(flux  (-1:nx+2, -2:ny+2))
+    ALLOCATE(dyb1  (-1:nx+2, -1:ny+2))
+    ALLOCATE(dyc1  (-1:nx+1, -1:ny+1))
+    ALLOCATE(rho_v (-1:nx+2, -1:ny+2))
+    ALLOCATE(rho_v1(-1:nx+2, -1:ny+2))
 
     dm = 0.0_num
-    rho1 = rho ! store initial density in rho1
+    ! Store initial density in rho1
+    rho1 = rho
 
-    DO iy = -1, ny+2
+    DO iy = -1, ny + 2
       iym = iy - 1
-      DO ix = -1, nx+2
+      DO ix = -1, nx + 2
         ixm = ix - 1
 
-        vxb = (vx1(ix, iy) + vx1(ix, iym)) * 0.5_num     ! vx at Ex(i, j)
-        vxbm = (vx1(ixm, iy) + vx1(ixm, iym)) * 0.5_num  ! vx at Ex(i-1, j)
-        vyb = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num     ! vy at Ey(i, j)
-        vybm = (vy1(ix, iym) + vy1(ixm, iym)) * 0.5_num  ! vy at Ey(i, j-1)
+        ! vx at Bx(i,j)
+        vxb  = (vx1(ix ,iy ) + vx1(ix ,iym)) * 0.5_num
+
+        ! vx at Bx(i-1,j)
+        vxbm = (vx1(ixm,iy ) + vx1(ixm,iym)) * 0.5_num
+
+        ! vy at By(i,j)
+        vyb  = (vy1(ix ,iy ) + vy1(ixm,iy )) * 0.5_num
+
+        ! vy at By(i,j-1)
+        vybm = (vy1(ix ,iym) + vy1(ixm,iym)) * 0.5_num
 
         dv = (REAL(xpass, num) * (vxb - vxbm) / dxb(ix) &
             + (vyb - vybm) / dyb(iy)) * dt
 
-        ! control volume before remap
-        cv1(ix, iy) = cv(ix, iy) * (1.0_num + dv)
+        ! Control volume before remap
+        cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
 
         dv = REAL(xpass, num) * (vxb - vxbm) / dxb(ix) * dt
 
-        ! control volume after remap
-        cv2(ix, iy) = cv(ix, iy) * (1.0_num + dv)
+        ! Control volume after remap
+        cv2(ix,iy) = cv(ix,iy) * (1.0_num + dv)
 
         ! dyb before remap
-        dyb1(ix, iy) = dyb(iy) + (vyb - vybm) * dt
+        dyb1(ix,iy) = dyb(iy) + (vyb - vybm) * dt
       END DO
     END DO
 
-    DO iy = -1, ny+1
-      DO ix = -1, nx+1
-        dyc1(ix, iy) = 0.5_num * (dyb1(ix, iy) + dyb1(ix, iy+1))
+    DO iy = -1, ny + 1
+      DO ix = -1, nx + 1
+        dyc1(ix,iy) = 0.5_num * (dyb1(ix,iy) + dyb1(ix,iy+1))
       END DO
     END DO
 
     ! Evans and Hawley (ApJ, vol 332, p650, (1988))
     ! constrained transport remap of magnetic fluxes
     CALL vy_bx_flux
+
     DO iy = 1, ny
       iym = iy - 1
       DO ix = 0, nx
-        bx(ix, iy) = bx(ix, iy) - flux(ix, iy) + flux(ix, iym)
+        bx(ix,iy) = bx(ix,iy) - flux(ix,iy) + flux(ix,iym)
       END DO
     END DO
 
     DO iy = 0, ny
       DO ix = 1, nx
         ixm = ix - 1
-        by(ix, iy) = by(ix, iy) + flux(ix, iy) - flux(ixm, iy)
+        by(ix,iy) = by(ix,iy) + flux(ix,iy) - flux(ixm,iy)
       END DO
     END DO
 
     CALL vy_bz_flux
+
     DO iy = 1, ny
       iym = iy - 1
       DO ix = 1, nx
-        bz(ix, iy) = bz(ix, iy) - flux(ix, iy) + flux(ix, iym)
+        bz(ix,iy) = bz(ix,iy) - flux(ix,iy) + flux(ix,iym)
       END DO
     END DO
 
-    ! remap of mass + calculation of mass fluxes (dm) needed for later remaps
-    CALL y_mass_flux ! calculates dm(0:nx, 0:ny+1)
-    CALL dm_y_bcs    ! need dm(-1:nx+1, 0:ny+1) for velocity remap
+    ! Remap of mass + calculation of mass fluxes (dm) needed for later remaps
+    ! Calculates dm(0:nx+1,0:ny)
+    CALL y_mass_flux
+    ! Need dm(0:nx+1,-1:ny+1) for velocity remap
+    CALL dm_y_bcs
+
     DO iy = 1, ny
       iym = iy - 1
       DO ix = 1, nx
-        rho(ix, iy) = (rho1(ix, iy) * cv1(ix, iy) &
-            + dm(ix, iym) - dm(ix, iy)) / cv2(ix, iy)
+        rho(ix,iy) = (rho1(ix,iy) * cv1(ix,iy) &
+            + dm(ix,iym) - dm(ix,iy)) / cv2(ix,iy)
       END DO
     END DO
 
-    ! remap specific energy density using mass coordinates
+    ! Remap specific energy density using mass coordinates
     CALL y_energy_flux
+
     DO iy = 1, ny
       iym = iy - 1
       DO ix = 1, nx
-        energy(ix, iy) = (energy(ix, iy) * cv1(ix, iy) * rho1(ix, iy) &
-            + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho(ix, iy))
+        energy(ix,iy) = (energy(ix,iy) * cv1(ix,iy) &
+            * rho1(ix,iy) + flux(ix,iym) - flux(ix,iy)) &
+            / (cv2(ix,iy) * rho(ix,iy))
       END DO
     END DO
 
-    ! redefine dyb1, cv1, cv2, dm and vy1 for velocity (vertex) cells
-    ! in some of these calculations the flux variable is used as a
+    ! Redefine dyb1, cv1, cv2, dm and vy1 for velocity (vertex) cells.
+    ! In some of these calculations the flux variable is used as a
     ! temporary array
-    DO iy = -1, ny+1
+    DO iy = -1, ny + 1
       iyp = iy + 1
       DO ix = 0, nx
         ixp = ix + 1
 
-        ! vertex density before remap
-        rho_v(ix, iy) = rho1(ix, iy) * cv1(ix, iy) &
-            + rho1(ixp, iy ) * cv1(ixp, iy ) &
-            + rho1(ix , iyp) * cv1(ix , iyp) &
-            + rho1(ixp, iyp) * cv1(ixp, iyp)
+        ! Vertex density before remap
+        rho_v(ix,iy) = rho1(ix,iy) * cv1(ix,iy) &
+            + rho1(ixp,iy ) * cv1(ixp,iy ) &
+            + rho1(ix ,iyp) * cv1(ix ,iyp) &
+            + rho1(ixp,iyp) * cv1(ixp,iyp)
 
-        rho_v(ix, iy) = rho_v(ix, iy) / (cv1(ix, iy) + cv1(ixp, iy) &
-            + cv1(ix, iyp) + cv1(ixp, iyp))
+        rho_v(ix,iy) = rho_v(ix,iy) &
+            / (cv1(ix,iy ) + cv1(ixp,iy ) + cv1(ix,iyp) + cv1(ixp,iyp))
       END DO
     END DO
 
@@ -130,35 +152,39 @@ CONTAINS
       iyp = iy + 1
       DO ix = 0, nx
         ixp = ix + 1
-        flux(ix, iy) = cv1(ix, iy) + cv1(ixp, iy) + cv1(ix, iyp) + cv1(ixp, iyp)
+        flux(ix,iy) = cv1(ix,iy) + cv1(ixp,iy) + cv1(ix,iyp) + cv1(ixp,iyp)
       END DO
     END DO
+
     ! cv1 = vertex CV before remap
-    cv1(0:nx, 0:ny) = flux(0:nx, 0:ny) * 0.25_num
+    cv1(0:nx,0:ny) = flux(0:nx,0:ny) * 0.25_num
 
     DO iy = 0, ny
       iyp = iy + 1
       DO ix = 0, nx
         ixp = ix + 1
-        flux(ix, iy) = cv2(ix, iy) + cv2(ixp, iy) + cv2(ix, iyp) + cv2(ixp, iyp)
+        flux(ix,iy) = cv2(ix,iy) + cv2(ixp,iy) + cv2(ix,iyp) + cv2(ixp,iyp)
       END DO
     END DO
-    ! cv2 = vertex CV after remap
-    cv2(0:nx, 0:ny) = flux(0:nx, 0:ny) * 0.25_num
 
-    DO iy = -2, ny+1
+    ! cv2 = vertex CV after remap
+    cv2(0:nx,0:ny) = flux(0:nx,0:ny) * 0.25_num
+
+    DO iy = -2, ny + 1
       iyp = iy + 1
       DO ix = 0, nx
-        flux(ix, iy) = (vy1(ix, iy) + vy1(ix, iyp)) * 0.5_num
+        flux(ix,iy) = (vy1(ix,iy) + vy1(ix,iyp)) * 0.5_num
       END DO
     END DO
-    ! vertex velocity used in remap
-    vy1(0:nx, -2:ny+1) = flux(0:nx, -2:ny+1)
 
-    DO iy = -1, ny+1
+    ! Vertex boundary velocity used in remap
+    vy1(0:nx,-2:ny+1) = flux(0:nx,-2:ny+1)
+
+    DO iy = -1, ny + 1
       iym = iy - 1
       DO ix = 0, nx
-        dyb1(ix, iy) = dyc(iy) + (vy1(ix, iy) - vy1(ix, iym)) * dt
+        ! dyb1 = width of vertex CV before remap
+        dyb1(ix,iy) = dyc(iy) + (vy1(ix,iy) - vy1(ix,iym)) * dt
       END DO
     END DO
 
@@ -166,51 +192,55 @@ CONTAINS
       iyp = iy + 1
       DO ix = 0, nx
         ixp = ix + 1
-        flux(ix, iy) = dm(ix, iy) + dm(ixp, iy) + dm(ix, iyp) + dm(ixp, iyp)
+        flux(ix,iy) = dm(ix,iy) + dm(ixp,iy) + dm(ix,iyp) + dm(ixp,iyp)
       END DO
     END DO
-    ! mass flux out of vertex CV
-    dm(0:nx, -1:ny) = flux(0:nx, -1:ny) * 0.25_num
+
+    ! Mass flux out of vertex CV
+    dm(0:nx,-1:ny) = flux(0:nx,-1:ny) * 0.25_num
 
     DO iy = 0, ny
       iym = iy - 1
       DO ix = 0, nx
-        ! vertex density after remap
-        rho_v1(ix, iy) = (rho_v(ix, iy) * cv1(ix, iy) &
-            + dm(ix, iym) - dm(ix, iy)) / cv2(ix, iy)
-      END DO
-    END DO
-
-    CALL y_momz_flux
-    DO iy = 0, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        vz(ix, iy) = (rho_v(ix, iy) * vz(ix, iy) * cv1(ix, iy) &
-            + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho_v1(ix, iy))
+        ! Vertex density after remap
+        rho_v1(ix,iy) = (rho_v(ix,iy) * cv1(ix,iy) &
+            + dm(ix,iym) - dm(ix,iy)) / cv2(ix,iy)
       END DO
     END DO
 
     CALL y_momx_flux
+
     DO iy = 0, ny
       iym = iy - 1
       DO ix = 0, nx
-        vx(ix, iy) = (rho_v(ix, iy) * vx(ix, iy) * cv1(ix, iy) &
-            + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho_v1(ix, iy))
+        vx(ix,iy) = (rho_v(ix,iy) * vx(ix,iy) * cv1(ix,iy) &
+            + flux(ix,iym) - flux(ix,iy)) / (cv2(ix,iy) * rho_v1(ix,iy))
       END DO
     END DO
 
     CALL y_momy_flux
+
     DO iy = 0, ny
       iym = iy - 1
       DO ix = 0, nx
-        vy(ix, iy) = (rho_v(ix, iy) * vy(ix, iy) * cv1(ix, iy) &
-            + flux(ix, iym) - flux(ix, iy)) / (cv2(ix, iy) * rho_v1(ix, iy))
+        vy(ix,iy) = (rho_v(ix,iy) * vy(ix,iy) * cv1(ix,iy) &
+            + flux(ix,iym) - flux(ix,iy)) / (cv2(ix,iy) * rho_v1(ix,iy))
+      END DO
+    END DO
+
+    CALL y_momz_flux
+
+    DO iy = 0, ny
+      iym = iy - 1
+      DO ix = 0, nx
+        vz(ix,iy) = (rho_v(ix,iy) * vz(ix,iy) * cv1(ix,iy) &
+            + flux(ix,iym) - flux(ix,iy)) / (cv2(ix,iy) * rho_v1(ix,iy))
       END DO
     END DO
 
     CALL boundary_conditions
 
-    DEALLOCATE (rho1, dm, cv2, flux, dyb1, rho_v, rho_v1, dyc1)
+    DEALLOCATE (rho1, dm, cv2, flux, dyb1, dyc1, rho_v, rho_v1)
     ypass = 0
 
   END SUBROUTINE remap_y
@@ -220,7 +250,9 @@ CONTAINS
   SUBROUTINE vy_bx_flux
 
     REAL(num) :: v_advect, vad_p, vad_m
-    REAL(num) :: db, dbyp, dbyp2, dbym
+    REAL(num) :: fm, fi, fp, fp2, fu, dfm, dfi, dfp, dfu, sign_v
+    REAL(num) :: dyci, dycu, dybu, phi, ss, Da, Di
+    REAL(num) :: dyu, dby, dbyp, dbyp2, dbym
     INTEGER :: iyp2
 
     DO iy = 0, ny
@@ -230,47 +262,48 @@ CONTAINS
       DO ix = 0, nx
         ixp = ix + 1
 
-        v_advect = vy1(ix, iy)
+        v_advect = vy1(ix,iy)
 
-        db    = (dyb1(ix, iy  ) + dyb1(ixp, iy  )) * 0.5_num
-        dbyp  = (dyb1(ix, iyp ) + dyb1(ixp, iyp )) * 0.5_num
-        dbyp2 = (dyb1(ix, iyp2) + dyb1(ixp, iyp2)) * 0.5_num
-        dbym  = (dyb1(ix, iym ) + dyb1(ixp, iym )) * 0.5_num
+        dby   = (dyb1(ix,iy  ) + dyb1(ixp,iy  )) * 0.5_num
+        dbyp  = (dyb1(ix,iyp ) + dyb1(ixp,iyp )) * 0.5_num
+        dbyp2 = (dyb1(ix,iyp2) + dyb1(ixp,iyp2)) * 0.5_num
+        dbym  = (dyb1(ix,iym ) + dyb1(ixp,iym )) * 0.5_num
 
-        w4 = bx(ix, iy ) / db
-        w5 = bx(ix, iyp) / dbyp
+        fm  = bx(ix,iym ) / dbym
+        fi  = bx(ix,iy  ) / dby
+        fp  = bx(ix,iyp ) / dbyp
+        fp2 = bx(ix,iyp2) / dbyp2
 
-        flux(ix, iy) = (MAX(0.0_num, v_advect) * w4 &
-            + MIN(0.0_num, v_advect) * w5) * dt
-
-        w1 = bx(ix, iyp ) / dbyp  - bx(ix, iy ) / db
-        w2 = bx(ix, iy  ) / db    - bx(ix, iym) / dbym
-        w3 = bx(ix, iyp2) / dbyp2 - bx(ix, iyp) / dbyp
+        dfm = fi - fm
+        dfi = fp - fi
+        dfp = fp2 - fp
 
         ! vad_p and vad_m are logical switches which determine v_advect>=0
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
-        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
+        sign_v = SIGN(1.0_num, v_advect)
+        vad_p = (sign_v + 1.0_num) * 0.5_num
+        vad_m = 1.0_num - vad_p
 
-        w7 = ABS(v_advect) * dt / (db * vad_p + dbyp * vad_m)
+        fu = fi * vad_p + fp * vad_m
+        dfu = dfm * vad_p + dfp * vad_m
+        dyci = dyc1(ix,iy)
+        dycu = dyc1(ix,iym) * vad_p + dyc1(ix,iyp) * vad_m
+        dybu = dyb1(ix,iy ) * vad_p + dyb1(ix,iyp) * vad_m
 
-        w9 = (2.0_num - w7) * ABS(w1) / dyc1(ix, iy) &
-            + (1.0_num + w7) * (ABS(w2) / dyc1(ix, iym) * vad_p &
-            + ABS(w3) / dyc1(ix, iyp) * vad_m)
+        dyu = dby * vad_p + dbyp * vad_m
+        phi = ABS(v_advect) * dt / dyu
 
-        w9 = w9 * sixth
+        Da =  (2.0_num - phi) * ABS(dfi) / dyci &
+            + (1.0_num + phi) * ABS(dfu) / dycu
+        Da = Da * sixth
 
-        w8 = 0.5_num * (SIGN(1.0_num, w1) &
-            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+        ss = 0.5_num * (SIGN(1.0_num, dfi) + SIGN(1.0_num, dfu))
 
-        w6 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w9) * (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m), &
-            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+        Di = sign_v * ss * MIN(ABS(Da) * dybu, ABS(dfi), ABS(dfu))
 
-        flux(ix, iy) = flux(ix, iy) &
-            + v_advect * dt * w6 * (1.0_num - w7)
+        flux(ix,iy) = (fu + Di * (1.0_num - phi)) * v_advect * dt
       END DO
     END DO
 
@@ -281,50 +314,60 @@ CONTAINS
   SUBROUTINE vy_bz_flux
 
     REAL(num) :: v_advect, vad_p, vad_m
+    REAL(num) :: fm, fi, fp, fp2, fu, dfm, dfi, dfp, dfu, sign_v
+    REAL(num) :: dyci, dycu, dybu, phi, ss, Da, Di
+    REAL(num) :: dyu, dby, dbyp, dbyp2, dbym
     INTEGER :: iyp2
 
     DO iy = 0, ny
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      DO ix = 1, nx
+      DO ix = 0, nx
         ixm = ix - 1
 
-        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num
+        v_advect = (vy1(ix,iy) + vy1(ixm,iy)) * 0.5_num
 
-        w4 = bz(ix, iy ) / dyb1(ix, iy )
-        w5 = bz(ix, iyp) / dyb1(ix, iyp)
+        dby   = dyb1(ix,iy  )
+        dbyp  = dyb1(ix,iyp )
+        dbyp2 = dyb1(ix,iyp2)
+        dbym  = dyb1(ix,iym )
 
-        flux(ix, iy) = (MAX(0.0_num, v_advect) * w4 &
-            + MIN(0.0_num, v_advect) * w5) * dt
+        fm  = bz(ix,iym ) / dbym
+        fi  = bz(ix,iy  ) / dby
+        fp  = bz(ix,iyp ) / dbyp
+        fp2 = bz(ix,iyp2) / dbyp2
 
-        w1 = bz(ix, iyp ) / dyb1(ix, iyp ) - bz(ix, iy ) / dyb1(ix, iy )
-        w2 = bz(ix, iy  ) / dyb1(ix, iy  ) - bz(ix, iym) / dyb1(ix, iym)
-        w3 = bz(ix, iyp2) / dyb1(ix, iyp2) - bz(ix, iyp) / dyb1(ix, iyp)
+        dfm = fi - fm
+        dfi = fp - fi
+        dfp = fp2 - fp
 
         ! vad_p and vad_m are logical switches which determine v_advect>=0
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
-        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
+        sign_v = SIGN(1.0_num, v_advect)
+        vad_p = (sign_v + 1.0_num) * 0.5_num
+        vad_m = 1.0_num - vad_p
 
-        w7 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+        fu = fi * vad_p + fp * vad_m
+        dfu = dfm * vad_p + dfp * vad_m
+        dyci = dyc1(ix,iy)
+        dycu = dyc1(ix,iym) * vad_p + dyc1(ix,iyp) * vad_m
+        dybu = dyb1(ix,iy ) * vad_p + dyb1(ix,iyp) * vad_m
 
-        w9 = (2.0_num - w7) * ABS(w1) / dyc1(ix, iy) &
-            + (1.0_num + w7) * (ABS(w2) / dyc1(ix, iym) * vad_p &
-            + ABS(w3) / dyc1(ix, iyp) * vad_m)
+        dyu = dby * vad_p + dbyp * vad_m
+        phi = ABS(v_advect) * dt / dyu
 
-        w9 = w9 * sixth
-        w8 = 0.5_num * (SIGN(1.0_num, w1) &
-            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+        Da =  (2.0_num - phi) * ABS(dfi) / dyci &
+            + (1.0_num + phi) * ABS(dfu) / dycu
+        Da = Da * sixth
 
-        w6 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w9) * (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m), &
-            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+        ss = 0.5_num * (SIGN(1.0_num, dfi) + SIGN(1.0_num, dfu))
 
-        flux(ix, iy) = flux(ix, iy) &
-            + v_advect * dt * w6 * (1.0_num - w7)
+        Di = sign_v * ss * MIN(ABS(Da) * dybu, ABS(dfi), ABS(dfu))
+
+        flux(ix,iy) = (fu + Di * (1.0_num - phi)) * v_advect * dt
       END DO
     END DO
 
@@ -334,49 +377,56 @@ CONTAINS
 
   SUBROUTINE y_mass_flux
 
-    REAL(num) :: v_advect, flux_rho, vad_p, vad_m
+    REAL(num) :: v_advect, vad_p, vad_m
+    REAL(num) :: fm, fi, fp, fp2, fu, dfm, dfi, dfp, dfu, sign_v
+    REAL(num) :: dyci, dycu, dybu, phi, ss, Da, Di
+    REAL(num) :: area
     INTEGER :: iyp2
 
     DO iy = 0, ny
       iym  = iy - 1
       iyp  = iy + 1
       iyp2 = iy + 2
-      DO ix = 0, nx+1
+      DO ix = 0, nx + 1
         ixm = ix - 1
+        area = dxb(ix)
 
-        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num
+        v_advect = (vy1(ix,iy) + vy1(ixm,iy)) * 0.5_num
 
-        dm(ix, iy) = (MAX(0.0_num, v_advect) * rho(ix, iy) &
-            + MIN(0.0_num, v_advect) * rho(ix, iyp)) * dt
+        fm  = rho(ix,iym )
+        fi  = rho(ix,iy  )
+        fp  = rho(ix,iyp )
+        fp2 = rho(ix,iyp2)
 
-        w1 = rho(ix, iyp ) - rho(ix, iy )
-        w2 = rho(ix, iy  ) - rho(ix, iym)
-        w3 = rho(ix, iyp2) - rho(ix, iyp)
+        dfm = fi - fm
+        dfi = fp - fi
+        dfp = fp2 - fp
 
         ! vad_p and vad_m are logical switches which determine v_advect>=0
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
-        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
+        sign_v = SIGN(1.0_num, v_advect)
+        vad_p = (sign_v + 1.0_num) * 0.5_num
+        vad_m = 1.0_num - vad_p
 
-        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+        fu = fi * vad_p + fp * vad_m
+        dfu = dfm * vad_p + dfp * vad_m
+        dyci = dyc1(ix,iy)
+        dycu = dyc1(ix,iym) * vad_p + dyc1(ix,iyp) * vad_m
+        dybu = dyb1(ix,iy ) * vad_p + dyb1(ix,iyp) * vad_m
 
-        w4 = (2.0_num - w5) * ABS(w1) / dyc1(ix, iy) &
-            + (1.0_num + w5) * (ABS(w2) / dyc1(ix, iym) * vad_p &
-            + ABS(w3) / dyc1(ix, iyp) * vad_m)
+        phi = ABS(v_advect) * dt / dybu
 
-        w4 = w4 * sixth
-        w8 = 0.5_num * (SIGN(1.0_num, w1) &
-            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+        Da =  (2.0_num - phi) * ABS(dfi) / dyci &
+            + (1.0_num + phi) * ABS(dfu) / dycu
+        Da = Da * sixth
 
-        w6 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w4) * (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m), &
-            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+        ss = 0.5_num * (SIGN(1.0_num, dfi) + SIGN(1.0_num, dfu))
 
-        flux_rho = v_advect * dt * w6 * (1.0_num - w5)
+        Di = sign_v * ss * MIN(ABS(Da) * dybu, ABS(dfi), ABS(dfu))
 
-        dm(ix, iy) = (flux_rho + dm(ix, iy)) * dxb(ix)
+        dm(ix,iy) = (fu + Di * (1.0_num - phi)) * v_advect * dt * area
       END DO
     END DO
 
@@ -384,9 +434,14 @@ CONTAINS
 
 
 
-  SUBROUTINE y_energy_flux ! energy remap in mass coordinates
+  ! Energy remap in mass coordinates
+
+  SUBROUTINE y_energy_flux
 
     REAL(num) :: v_advect, vad_p, vad_m
+    REAL(num) :: fm, fi, fp, fp2, fu, dfm, dfi, dfp, dfu, sign_v
+    REAL(num) :: dyci, dycu, dybu, phi, ss, Da, Di
+    REAL(num) :: area, rhou, dmu
     INTEGER :: iyp2
 
     DO iy = 0, ny
@@ -395,40 +450,47 @@ CONTAINS
       iyp2 = iy + 2
       DO ix = 0, nx
         ixm = ix - 1
+        area = dxb(ix)
 
-        v_advect = (vy1(ix, iy) + vy1(ixm, iy)) * 0.5_num
+        v_advect = (vy1(ix,iy) + vy1(ix,iym)) * 0.5_num
 
-        w1 = energy(ix, iyp ) - energy(ix, iy )
-        w2 = energy(ix, iy  ) - energy(ix, iym)
-        w3 = energy(ix, iyp2) - energy(ix, iyp)
+        fm  = energy(ix,iym )
+        fi  = energy(ix,iy  )
+        fp  = energy(ix,iyp )
+        fp2 = energy(ix,iyp2)
+
+        dfm = fi - fm
+        dfi = fp - fi
+        dfp = fp2 - fp
 
         ! vad_p and vad_m are logical switches which determine v_advect>=0
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
-        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
+        sign_v = SIGN(1.0_num, v_advect)
+        vad_p = (sign_v + 1.0_num) * 0.5_num
+        vad_m = 1.0_num - vad_p
 
-        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+        fu = fi * vad_p + fp * vad_m
+        dfu = dfm * vad_p + dfp * vad_m
+        dyci = dyc1(ix,iy)
+        dycu = dyc1(ix,iym) * vad_p + dyc1(ix,iyp) * vad_m
+        dybu = dyb1(ix,iy ) * vad_p + dyb1(ix,iyp) * vad_m
 
-        w7 = energy(ix, iy) * vad_p + energy(ix, iyp) * vad_m
+        phi = ABS(v_advect) * dt / dybu
 
-        w6 = ABS(dm(ix, iy)) / ((rho1(ix, iy) * dyb1(ix, iy) * vad_p + &
-            rho1(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxb(ix))
+        Da =  (2.0_num - phi) * ABS(dfi) / dyci &
+            + (1.0_num + phi) * ABS(dfu) / dycu
+        Da = Da * sixth
 
-        w4 = (2.0_num - w5) * ABS(w1) / dyc(iy) &
-            + (1.0_num + w5) * (ABS(w2) / dyc(iym) * vad_p &
-            + ABS(w3) / dyc(iyp) * vad_m)
+        ss = 0.5_num * (SIGN(1.0_num, dfi) + SIGN(1.0_num, dfu))
 
-        w4 = w4 * sixth
-        w8 = 0.5_num * (SIGN(1.0_num, w1) &
-            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+        Di = sign_v * ss * MIN(ABS(Da) * dybu, ABS(dfi), ABS(dfu))
 
-        w9 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w4) * (dyb(iy) * vad_p + dyb(iyp) * vad_m), &
-            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+        rhou = rho1(ix,iy) * vad_p + rho1(ix,iyp) * vad_m
+        dmu = ABS(dm(ix,iy)) / area / dybu / rhou
 
-        flux(ix, iy) = dm(ix, iy) * (w7 + w9 * (1.0_num - w6))
+        flux(ix,iy) = (fu + Di * (1.0_num - dmu)) * dm(ix,iy)
       END DO
     END DO
 
@@ -436,9 +498,12 @@ CONTAINS
 
 
 
-  SUBROUTINE y_momx_flux ! energy remap in mass coordinates
+  SUBROUTINE y_momx_flux
 
-    REAL(num) :: v_advect, m, mp, ai, aip, dk, vad_p, vad_m
+    REAL(num) :: v_advect, vad_p, vad_m
+    REAL(num) :: fm, fi, fp, fp2, fu, dfm, dfi, dfp, dfu, sign_v
+    REAL(num) :: dyci, dycu, dybu, phi, ss, Da, Di
+    REAL(num) :: area, rhou, dmu, m, mp, ai, aip, dk
     INTEGER :: iyp2
 
     DO iy = -1, ny
@@ -446,161 +511,90 @@ CONTAINS
       iyp  = iy + 1
       iyp2 = iy + 2
       DO ix = 0, nx
+        area = dxc(ix)
 
-        v_advect = vy1(ix, iy)
+        v_advect = vy1(ix,iy)
 
-        w1 = vx(ix, iyp ) - vx(ix, iy )
-        w2 = vx(ix, iy  ) - vx(ix, iym)
-        w3 = vx(ix, iyp2) - vx(ix, iyp)
+        fm  = vx(ix,iym )
+        fi  = vx(ix,iy  )
+        fp  = vx(ix,iyp )
+        fp2 = vx(ix,iyp2)
+
+        dfm = fi - fm
+        dfi = fp - fi
+        dfp = fp2 - fp
 
         ! vad_p and vad_m are logical switches which determine v_advect>=0
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
-        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
+        sign_v = SIGN(1.0_num, v_advect)
+        vad_p = (sign_v + 1.0_num) * 0.5_num
+        vad_m = 1.0_num - vad_p
 
-        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+        fu = fi * vad_p + fp * vad_m
+        dfu = dfm * vad_p + dfp * vad_m
+        dyci = dyb1(ix,iy)
+        dycu = dyb1(ix,iy) * vad_p + dyb1(ix,iyp2) * vad_m
+        dybu = dyc1(ix,iy) * vad_p + dyc1(ix,iyp ) * vad_m
 
-        w7 = vx(ix, iy) * vad_p + vx(ix, iyp) * vad_m
+        phi = ABS(v_advect) * dt / dybu
 
-        w6 = ABS(dm(ix, iy)) / ((rho_v(ix, iy) * dyb1(ix, iy) * vad_p + &
-            rho_v(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxc(ix))
+        Da =  (2.0_num - phi) * ABS(dfi) / dyci &
+            + (1.0_num + phi) * ABS(dfu) / dycu
+        Da = Da * sixth
 
-        w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-            + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
-            + ABS(w3) / dyb(iyp2) * vad_m)
+        ss = 0.5_num * (SIGN(1.0_num, dfi) + SIGN(1.0_num, dfu))
 
-        w4 = w4 * sixth
-        w8 = 0.5_num * (SIGN(1.0_num, w1) &
-            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+        Di = sign_v * ss * MIN(ABS(Da) * dybu, ABS(dfi), ABS(dfu))
 
-        w9 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w4) * (dyc(iy) * vad_p + dyc(iyp) * vad_m), &
-            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+        rhou = rho_v(ix,iy) * vad_p + rho_v(ix,iyp) * vad_m
+        dmu = ABS(dm(ix,iy)) / area / dybu / rhou
 
-        flux(ix, iy) = w7 + w9 * (1.0_num - w6)
+        flux(ix,iy) = fu + Di * (1.0_num - dmu)
       END DO
     END DO
 
     IF (rke) THEN
-      DO iy = 0, ny-1
+      DO iy = 0, ny - 1
         iym = iy - 1
         iyp = iy + 1
         DO ix = 0, nx
           ixp = ix + 1
 
-          m = rho_v1(ix, iy) * cv2(ix, iy)
-          mp = rho_v1(ix, iyp) * cv2(ix, iyp)
+          m  = rho_v1(ix,iy ) * cv2(ix,iy )
+          mp = rho_v1(ix,iyp) * cv2(ix,iyp)
 
-          ai = (vx(ix, iy) - flux(ix, iym)) * dm(ix, iym) / m &
-              + (flux(ix, iy) - vx(ix, iy)) * dm(ix, iy) / m
+          ai =  (vx(ix,iy ) - flux(ix,iym)) * dm(ix,iym) / m &
+              - (vx(ix,iy ) - flux(ix,iy )) * dm(ix,iy ) / m
 
-          aip = (vx(ix, iyp) - flux(ix, iy)) * dm(ix, iy) / mp &
-              + (flux(ix, iyp) - vx(ix, iyp)) * dm(ix, iyp) / mp
+          aip = (vx(ix,iyp) - flux(ix,iy )) * dm(ix,iy ) / mp &
+              - (vx(ix,iyp) - flux(ix,iyp)) * dm(ix,iyp) / mp
 
-          dk = (vx(ix, iyp) - vx(ix, iy)) * (flux(ix, iy) &
-              - 0.5_num * (vx(ix, iyp) + vx(ix, iy))) &
-              + 0.5_num * ai * (flux(ix, iy) - vx(ix, iy)) &
-              + 0.5_num * aip * (vx(ix, iyp) - flux(ix, iy))
+          dk = (vx(ix,iyp) - vx(ix,iy)) * (flux(ix,iy) &
+              - 0.5_num * (vx(ix,iyp) + vx(ix,iy))) &
+              - 0.5_num * ai  * (vx(ix,iy ) - flux(ix,iy)) &
+              + 0.5_num * aip * (vx(ix,iyp) - flux(ix,iy))
 
-          dk = dk * dm(ix, iy) * 0.5_num
-          delta_ke(ix , iyp) = delta_ke(ix , iyp) + dk
-          delta_ke(ixp, iyp) = delta_ke(ixp, iyp) + dk
+          dk = dk * dm(ix,iy) * 0.25_num
+          delta_ke(ix ,iyp) = delta_ke(ix ,iyp) + dk
+          delta_ke(ixp,iyp) = delta_ke(ixp,iyp) + dk
         END DO
       END DO
     END IF
 
-    flux(0:nx, -1:ny) = flux(0:nx, -1:ny) * dm(0:nx, -1:ny)
+    flux(0:nx,-1:ny) = flux(0:nx,-1:ny) * dm(0:nx,-1:ny)
 
   END SUBROUTINE y_momx_flux
 
 
 
-  SUBROUTINE y_momz_flux ! energy remap in mass coordinates
-
-    REAL(num) :: v_advect, m, mp, ai, aip, dk, vad_p, vad_m
-    INTEGER :: iyp2
-
-    DO iy = -1, ny
-      iym  = iy - 1
-      iyp  = iy + 1
-      iyp2 = iy + 2
-      DO ix = 0, nx
-
-        v_advect = vy1(ix, iy)
-
-        w1 = vz(ix, iyp ) - vz(ix, iy )
-        w2 = vz(ix, iy  ) - vz(ix, iym)
-        w3 = vz(ix, iyp2) - vz(ix, iyp)
-
-        ! vad_p and vad_m are logical switches which determine v_advect>=0
-        ! and v_advect<0 respectively. It's written this way to allow vector
-        ! optimization
-
-        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
-        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
-
-        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
-
-        w7 = vz(ix, iy) * vad_p + vz(ix, iyp) * vad_m
-
-        w6 = ABS(dm(ix, iy)) / ((rho_v(ix, iy) * dyb1(ix, iy) * vad_p + &
-            rho_v(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxc(ix))
-
-        w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-            + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
-            + ABS(w3) / dyb(iyp2) * vad_m)
-
-        w4 = w4 * sixth
-        w8 = 0.5_num * (SIGN(1.0_num, w1) &
-            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
-
-        w9 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w4) * (dyc(iy) * vad_p + dyc(iyp) * vad_m), &
-            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
-
-        flux(ix, iy) = w7 + w9 * (1.0_num - w6)
-      END DO
-    END DO
-
-    IF (rke) THEN
-      DO iy = 0, ny-1
-        iym = iy - 1
-        iyp = iy + 1
-        DO ix = 0, nx
-          ixp = ix + 1
-
-          m = rho_v1(ix, iy) * cv2(ix, iy)
-          mp = rho_v1(ix, iyp) * cv2(ix, iyp)
-
-          ai = (vz(ix, iy) - flux(ix, iym)) * dm(ix, iym) / m &
-              + (flux(ix, iy) - vz(ix, iy)) * dm(ix, iy) / m
-
-          aip = (vz(ix, iyp) - flux(ix, iy)) * dm(ix, iy) / mp &
-              + (flux(ix, iyp) - vz(ix, iyp)) * dm(ix, iyp) / mp
-
-          dk = (vz(ix, iyp) - vz(ix, iy)) * (flux(ix, iy) &
-              - 0.5_num * (vz(ix, iyp) + vz(ix, iy))) &
-              + 0.5_num * ai * (flux(ix, iy) - vz(ix, iy)) &
-              + 0.5_num * aip * (vz(ix, iyp) - flux(ix, iy))
-
-          dk = dk * dm(ix, iy) * 0.5_num
-          delta_ke(ix , iyp) = delta_ke(ix , iyp) + dk
-          delta_ke(ixp, iyp) = delta_ke(ixp, iyp) + dk
-        END DO
-      END DO
-    END IF
-
-    flux(0:nx, -1:ny) = flux(0:nx, -1:ny) * dm(0:nx, -1:ny)
-
-  END SUBROUTINE y_momz_flux
-
-
-
   SUBROUTINE y_momy_flux
 
-    REAL(num) :: v_advect, m, mp, ai, aip, dk, vad_p, vad_m
+    REAL(num) :: v_advect, vad_p, vad_m
+    REAL(num) :: fm, fi, fp, fp2, fu, dfm, dfi, dfp, dfu, sign_v
+    REAL(num) :: dyci, dycu, dybu, phi, ss, Da, Di
+    REAL(num) :: area, rhou, dmu, m, mp, ai, aip, dk
     INTEGER :: iyp2
 
     DO iy = -1, ny
@@ -608,92 +602,192 @@ CONTAINS
       iyp  = iy + 1
       iyp2 = iy + 2
       DO ix = 0, nx
+        area = dxc(ix)
 
-        v_advect = vy1(ix, iy)
+        v_advect = vy1(ix,iy)
 
-        w1 = vy(ix, iyp ) - vy(ix, iy )
-        w2 = vy(ix, iy  ) - vy(ix, iym)
-        w3 = vy(ix, iyp2) - vy(ix, iyp)
+        fm  = vy(ix,iym )
+        fi  = vy(ix,iy  )
+        fp  = vy(ix,iyp )
+        fp2 = vy(ix,iyp2)
+
+        dfm = fi - fm
+        dfi = fp - fi
+        dfp = fp2 - fp
 
         ! vad_p and vad_m are logical switches which determine v_advect>=0
         ! and v_advect<0 respectively. It's written this way to allow vector
         ! optimization
 
-        vad_p = MAX(SIGN(1.0_num, v_advect  ), 0.0_num)
-        vad_m = - MIN(SIGN(1.0_num, v_advect  ), 0.0_num)
+        sign_v = SIGN(1.0_num, v_advect)
+        vad_p = (sign_v + 1.0_num) * 0.5_num
+        vad_m = 1.0_num - vad_p
 
-        w5 = ABS(v_advect) * dt / (dyb1(ix, iy) * vad_p + dyb1(ix, iyp) * vad_m)
+        fu = fi * vad_p + fp * vad_m
+        dfu = dfm * vad_p + dfp * vad_m
+        dyci = dyb1(ix,iy)
+        dycu = dyb1(ix,iy) * vad_p + dyb1(ix,iyp2) * vad_m
+        dybu = dyc1(ix,iy) * vad_p + dyc1(ix,iyp ) * vad_m
 
-        w7 = vy(ix, iy) * vad_p + vy(ix, iyp) * vad_m
+        phi = ABS(v_advect) * dt / dybu
 
-        w6 = ABS(dm(ix, iy)) / ((rho_v(ix, iy) * dyb1(ix, iy) * vad_p &
-            + rho_v(ix, iyp) * dyb1(ix, iyp) * vad_m) * dxc(ix))
+        Da =  (2.0_num - phi) * ABS(dfi) / dyci &
+            + (1.0_num + phi) * ABS(dfu) / dycu
+        Da = Da * sixth
 
-        w4 = (2.0_num - w5) * ABS(w1) / dyb(iyp) &
-            + (1.0_num + w5) * (ABS(w2) / dyb(iy) * vad_p &
-            + ABS(w3) / dyb(iyp2) * vad_m)
+        ss = 0.5_num * (SIGN(1.0_num, dfi) + SIGN(1.0_num, dfu))
 
-        w4 = w4 * sixth
-        w8 = 0.5_num * (SIGN(1.0_num, w1) &
-            + SIGN(1.0_num, w2 * vad_p + w3 * vad_m))
+        Di = sign_v * ss * MIN(ABS(Da) * dybu, ABS(dfi), ABS(dfu))
 
-        w9 = SIGN(1.0_num, v_advect) * w8 &
-            * MIN(ABS(w4) * (dyc(iy) * vad_p + dyc(iyp) * vad_m), &
-            ABS(w1), ABS(w2 * vad_p + w3 * vad_m))
+        rhou = rho_v(ix,iy) * vad_p + rho_v(ix,iyp) * vad_m
+        dmu = ABS(dm(ix,iy)) / area / dybu / rhou
 
-        flux(ix, iy) = w7 + w9 * (1.0_num - w6)
+        flux(ix,iy) = fu + Di * (1.0_num - dmu)
       END DO
     END DO
 
     IF (rke) THEN
-      DO iy = 0, ny-1
+      DO iy = 0, ny - 1
         iym = iy - 1
         iyp = iy + 1
         DO ix = 0, nx
           ixp = ix + 1
 
-          m = rho_v1(ix, iy) * cv2(ix, iy)
-          mp = rho_v1(ix, iyp) * cv2(ix, iyp)
+          m  = rho_v1(ix,iy ) * cv2(ix,iy )
+          mp = rho_v1(ix,iyp) * cv2(ix,iyp)
 
-          ai = (vy(ix, iy) - flux(ix, iym)) * dm(ix, iym) / m &
-              + (flux(ix, iy) - vy(ix, iy)) * dm(ix, iy) / m
+          ai =  (vy(ix,iy ) - flux(ix,iym)) * dm(ix,iym) / m &
+              - (vy(ix,iy ) - flux(ix,iy )) * dm(ix,iy ) / m
 
-          aip = (vy(ix, iyp) - flux(ix, iy)) * dm(ix, iy) / mp &
-              + (flux(ix, iyp) - vy(ix, iyp)) * dm(ix, iyp) / mp
+          aip = (vy(ix,iyp) - flux(ix,iy )) * dm(ix,iy ) / mp &
+              - (vy(ix,iyp) - flux(ix,iyp)) * dm(ix,iyp) / mp
 
-          dk = (vy(ix, iyp) - vy(ix, iy)) * (flux(ix, iy) &
-              - 0.5_num * (vy(ix, iyp) + vy(ix, iy))) &
-              + 0.5_num * ai * (flux(ix, iy) - vy(ix, iy)) &
-              + 0.5_num * aip * (vy(ix, iyp) - flux(ix, iy))
+          dk = (vy(ix,iyp) - vy(ix,iy)) * (flux(ix,iy) &
+              - 0.5_num * (vy(ix,iyp) + vy(ix,iy))) &
+              - 0.5_num * ai  * (vy(ix,iy ) - flux(ix,iy)) &
+              + 0.5_num * aip * (vy(ix,iyp) - flux(ix,iy))
 
-          dk = dk * dm(ix, iy) * 0.5_num
-          delta_ke(ix , iyp) = delta_ke(ix , iyp) + dk
-          delta_ke(ixp, iyp) = delta_ke(ixp, iyp) + dk
+          dk = dk * dm(ix,iy) * 0.25_num
+          delta_ke(ix ,iyp) = delta_ke(ix ,iyp) + dk
+          delta_ke(ixp,iyp) = delta_ke(ixp,iyp) + dk
         END DO
       END DO
     END IF
 
-    flux(0:nx, -1:ny) = flux(0:nx, -1:ny) * dm(0:nx, -1:ny)
+    flux(0:nx,-1:ny) = flux(0:nx,-1:ny) * dm(0:nx,-1:ny)
 
   END SUBROUTINE y_momy_flux
 
 
 
+  SUBROUTINE y_momz_flux
+
+    REAL(num) :: v_advect, vad_p, vad_m
+    REAL(num) :: fm, fi, fp, fp2, fu, dfm, dfi, dfp, dfu, sign_v
+    REAL(num) :: dyci, dycu, dybu, phi, ss, Da, Di
+    REAL(num) :: area, rhou, dmu, m, mp, ai, aip, dk
+    INTEGER :: iyp2
+
+    DO iy = -1, ny
+      iym  = iy - 1
+      iyp  = iy + 1
+      iyp2 = iy + 2
+      DO ix = 0, nx
+        area = dxc(ix)
+
+        v_advect = vy1(ix,iy)
+
+        fm  = vz(ix,iym )
+        fi  = vz(ix,iy  )
+        fp  = vz(ix,iyp )
+        fp2 = vz(ix,iyp2)
+
+        dfm = fi - fm
+        dfi = fp - fi
+        dfp = fp2 - fp
+
+        ! vad_p and vad_m are logical switches which determine v_advect>=0
+        ! and v_advect<0 respectively. It's written this way to allow vector
+        ! optimization
+
+        sign_v = SIGN(1.0_num, v_advect)
+        vad_p = (sign_v + 1.0_num) * 0.5_num
+        vad_m = 1.0_num - vad_p
+
+        fu = fi * vad_p + fp * vad_m
+        dfu = dfm * vad_p + dfp * vad_m
+        dyci = dyb1(ix,iy)
+        dycu = dyb1(ix,iy) * vad_p + dyb1(ix,iyp2) * vad_m
+        dybu = dyc1(ix,iy) * vad_p + dyc1(ix,iyp ) * vad_m
+
+        phi = ABS(v_advect) * dt / dybu
+
+        Da =  (2.0_num - phi) * ABS(dfi) / dyci &
+            + (1.0_num + phi) * ABS(dfu) / dycu
+        Da = Da * sixth
+
+        ss = 0.5_num * (SIGN(1.0_num, dfi) + SIGN(1.0_num, dfu))
+
+        Di = sign_v * ss * MIN(ABS(Da) * dybu, ABS(dfi), ABS(dfu))
+
+        rhou = rho_v(ix,iy) * vad_p + rho_v(ix,iyp) * vad_m
+        dmu = ABS(dm(ix,iy)) / area / dybu / rhou
+
+        flux(ix,iy) = fu + Di * (1.0_num - dmu)
+      END DO
+    END DO
+
+    IF (rke) THEN
+      DO iy = 0, ny - 1
+        iym = iy - 1
+        iyp = iy + 1
+        DO ix = 0, nx
+          ixp = ix + 1
+
+          m  = rho_v1(ix,iy ) * cv2(ix,iy )
+          mp = rho_v1(ix,iyp) * cv2(ix,iyp)
+
+          ai =  (vz(ix,iy ) - flux(ix,iym)) * dm(ix,iym) / m &
+              - (vz(ix,iy ) - flux(ix,iy )) * dm(ix,iy ) / m
+
+          aip = (vz(ix,iyp) - flux(ix,iy )) * dm(ix,iy ) / mp &
+              - (vz(ix,iyp) - flux(ix,iyp)) * dm(ix,iyp) / mp
+
+          dk = (vz(ix,iyp) - vz(ix,iy)) * (flux(ix,iy) &
+              - 0.5_num * (vz(ix,iyp) + vz(ix,iy))) &
+              - 0.5_num * ai  * (vz(ix,iy ) - flux(ix,iy)) &
+              + 0.5_num * aip * (vz(ix,iyp) - flux(ix,iy))
+
+          dk = dk * dm(ix,iy) * 0.25_num
+          delta_ke(ix ,iyp) = delta_ke(ix ,iyp) + dk
+          delta_ke(ixp,iyp) = delta_ke(ixp,iyp) + dk
+        END DO
+      END DO
+    END IF
+
+    flux(0:nx,-1:ny) = flux(0:nx,-1:ny) * dm(0:nx,-1:ny)
+
+  END SUBROUTINE y_momz_flux
+
+
+
   SUBROUTINE dm_y_bcs
 
-    CALL MPI_SENDRECV(dm(0:nx+1, 1), nx+2, mpireal, &
-        proc_y_min, tag, dm(0:nx+1, ny+1), nx+2, mpireal, &
-        proc_y_max, tag, comm, status, errcode)
+    CALL MPI_SENDRECV(&
+        dm(0:nx+1,1   ), nx+2, mpireal, proc_y_min, tag, &
+        dm(0:nx+1,ny+1), nx+2, mpireal, proc_y_max, tag, &
+        comm, status, errcode)
 
     IF (proc_y_max == MPI_PROC_NULL) &
-        dm(0:nx+1, ny+1) = dm(0:nx+1, ny)
+        dm(0:nx+1,ny+1) = dm(0:nx+1,ny)
 
-    CALL MPI_SENDRECV(dm(0:nx+1, ny-1), nx+2, mpireal, &
-        proc_y_max, tag, dm(0:nx+1, -1), nx+2, mpireal, &
-        proc_y_min, tag, comm, status, errcode)
+    CALL MPI_SENDRECV(&
+        dm(0:nx+1,ny-1), nx+2, mpireal, proc_y_max, tag, &
+        dm(0:nx+1,-1  ), nx+2, mpireal, proc_y_min, tag, &
+        comm, status, errcode)
 
     IF (proc_y_min == MPI_PROC_NULL) &
-        dm(0:nx+1, -1) = dm(0:nx+1, 0)
+        dm(0:nx+1,-1) = dm(0:nx+1,0)
 
   END SUBROUTINE dm_y_bcs
 
