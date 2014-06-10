@@ -174,16 +174,16 @@ CONTAINS
     DEALLOCATE(xc, xb, dxb, dxc)
     DEALLOCATE(yc, yb, dyb, dyc)
     DEALLOCATE(grav)
-    DEALLOCATE(jx_r, jy_r, jz_r)  
+    DEALLOCATE(jx_r, jy_r, jz_r)
     DEALLOCATE(xb_global, yb_global)
-    DEALLOCATE(lambda_i)     
-    
+    DEALLOCATE(lambda_i)
+
     IF (ALLOCATED(xi_n)) DEALLOCATE(xi_n)
     IF (ALLOCATED(delta_ke)) DEALLOCATE(delta_ke)
     IF (ALLOCATED(eta_perp)) DEALLOCATE(eta_perp)
     IF (ALLOCATED(parallel_current)) DEALLOCATE(parallel_current)
     IF (ALLOCATED(perp_current)) DEALLOCATE(perp_current)
-    
+
   END SUBROUTINE mpi_close
 
 END MODULE mpi_routines

@@ -30,7 +30,7 @@ CONTAINS
         visc_heat(-1:nx+2, -1:ny+2), pressure(-1:nx+2, -1:ny+2), &
         flux_x(0:nx, 0:ny), flux_y(0:nx, 0:ny), flux_z(0:nx, 0:ny), &
         curlb(0:nx, 0:ny))
-      
+
     IF (resistive_mhd .OR. hall_mhd) THEN
       ! if subcycling isn't wanted set dt = dtr in set_dt, don't just
       ! set substeps to 1.
@@ -56,10 +56,10 @@ CONTAINS
       END DO
 
       dt = actual_dt
-    END IF               
-    
-    IF (conduction .OR. coronal_heating .OR. radiation) CALL conduct_heat  
-     
+    END IF
+
+    IF (conduction .OR. coronal_heating .OR. radiation) CALL conduct_heat
+
     DO iy = 0, ny + 1
        DO ix = 0, nx + 1
          ixm = ix - 1
@@ -69,15 +69,15 @@ CONTAINS
        END DO
      END DO
      bz1 = bz(0:nx+1, 0:ny+1) ! bz1 = bz at C
- 
+
      CALL predictor_corrector_step
- 
+
      DEALLOCATE (bx1, by1, bz1, qxy, qxz, qyz, qxx, qyy, visc_heat, pressure, &
          flux_x, flux_y, flux_z, curlb)
- 
+
       CALL energy_bcs
       CALL density_bcs
-      CALL velocity_bcs  
+      CALL velocity_bcs
 
   END SUBROUTINE lagrangian_step
 
@@ -111,7 +111,7 @@ CONTAINS
         e1 = energy(ix, iy) - pressure(ix, iy) * dv / rho(ix, iy)
         e1 = e1 + visc_heat(ix, iy) * dt2 / rho(ix, iy)
 
-        ! now define the predictor step pressures 
+        ! now define the predictor step pressures
         pressure(ix,iy) = (e1 - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
             * (gamma - 1.0_num) * rho(ix,iy) * cv(ix, iy) / cv1(ix, iy)
 #ifdef QMONO
@@ -264,9 +264,9 @@ CONTAINS
     p_visc = 0.0_num
 
     DO iy = -1, ny + 2
-      DO ix = -1, nx + 2   
+      DO ix = -1, nx + 2
         pressure(ix,iy) = (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
-            * (gamma - 1.0_num) * rho(ix,iy) 
+            * (gamma - 1.0_num) * rho(ix,iy)
       END DO
     END DO
 
@@ -354,21 +354,21 @@ CONTAINS
         qyy(ix, iy) = 0.0_num
 #ifndef QMONO
         qxy(ix, iy) = sxy * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(sxy))) 
-        qxz(ix, iy) = sxz * (L2 * rho(ix, iy) &   
-            * (visc1 * cf + L2 * visc2 * ABS(sxz))) 
+            * (visc1 * cf + L2 * visc2 * ABS(sxy)))
+        qxz(ix, iy) = sxz * (L2 * rho(ix, iy) &
+            * (visc1 * cf + L2 * visc2 * ABS(sxz)))
         qyz(ix, iy) = syz * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(syz))) 
+            * (visc1 * cf + L2 * visc2 * ABS(syz)))
         qxx(ix, iy) = sxx * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(sxx))) 
+            * (visc1 * cf + L2 * visc2 * ABS(sxx)))
         qyy(ix, iy) = syy * (L2 * rho(ix, iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(syy))) 
+            * (visc1 * cf + L2 * visc2 * ABS(syy)))
 #endif
-        qxy(ix, iy) = qxy(ix, iy) + 2.0_num * sxy * rho(ix, iy) * visc3 
-        qxz(ix, iy) = qxz(ix, iy) + 2.0_num * sxz * rho(ix, iy) * visc3 
-        qyz(ix, iy) = qyz(ix, iy) + 2.0_num * syz * rho(ix, iy) * visc3 
-        qxx(ix, iy) = qxx(ix, iy) + 2.0_num * sxx * rho(ix, iy) * visc3 
-        qyy(ix, iy) = qyy(ix, iy) + 2.0_num * syy * rho(ix, iy) * visc3 
+        qxy(ix, iy) = qxy(ix, iy) + 2.0_num * sxy * rho(ix, iy) * visc3
+        qxz(ix, iy) = qxz(ix, iy) + 2.0_num * sxz * rho(ix, iy) * visc3
+        qyz(ix, iy) = qyz(ix, iy) + 2.0_num * syz * rho(ix, iy) * visc3
+        qxx(ix, iy) = qxx(ix, iy) + 2.0_num * sxx * rho(ix, iy) * visc3
+        qyy(ix, iy) = qyy(ix, iy) + 2.0_num * syy * rho(ix, iy) * visc3
 
         visc_heat(ix, iy) = qxy(ix, iy) * dvxy + qxz(ix, iy) * dvzdx &
               + qyz(ix, iy) * dvzdy + qxx(ix, iy) * dvxdx + qyy(ix, iy) * dvydy
@@ -447,7 +447,7 @@ CONTAINS
         DO ix = -1, nx + 1
           ixp = ix + 1
           iyp = iy + 1
-  
+
           jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
           jx2 = (bz(ixp, iyp) - bz(ixp, iy)) / dyc(iy)
           jy1 = -(bz(ixp, iy) - bz(ix, iy)) / dxc(ix)
@@ -456,17 +456,17 @@ CONTAINS
           jy = (jy1 + jy2) * 0.5_num
           jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
               - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
-  
+
           IF (SQRT(jx**2 + jy**2 + jz**2) .GT. j_max) THEN
             eta(ix, iy) = eta_background + eta0
           ELSE
             eta(ix, iy) = eta_background
           END IF
-  
+
         END DO
       END DO
     ELSE
-        eta = 0.0_num        
+        eta = 0.0_num
     END IF
 
   END SUBROUTINE eta_calc
@@ -505,14 +505,14 @@ CONTAINS
             + (-flux_z(ix, iy) + flux_z(ix-1, iy)) * dt / dxb(ix)
       END DO
     END DO
-    
+
     DO iy = 1, ny
       DO ix = 0, nx
         bx(ix, iy) = bx1(ix, iy) &
             + (flux_z(ix, iy) - flux_z(ix, iy-1)) * dt / dyb(iy)
       END DO
     END DO
-    
+
     DO iy = 1, ny
       DO ix = 1, nx
         ixm = ix - 1
@@ -522,9 +522,9 @@ CONTAINS
         bz(ix, iy) = bz1(ix, iy) + w2 * dt / cv(ix, iy)
       END DO
     END DO
-    
+
     CALL bfield_bcs
-    
+
     DO iy = 1, ny
       DO ix = 1, nx
         ixm = ix - 1
@@ -533,7 +533,7 @@ CONTAINS
             + (curlb(ix, iy) + curlb(ixm, iy) + curlb(ix, iym) + curlb(ixm, iym)) &
             * dt / (4.0_num * rho(ix, iy))
       END DO
-    END DO  
+    END DO
     CALL energy_bcs
 
     DO iy = 0, ny
@@ -547,11 +547,11 @@ CONTAINS
         END IF
         total_ohmic_heating = total_ohmic_heating + w1
       END DO
-    END DO    
+    END DO
 #else
-    half_dt = dt * 0.5_num 
+    half_dt = dt * 0.5_num
     dt6 = dt * sixth
-          
+
     k1x = flux_x
     k1y = flux_y
     k1z = flux_z
@@ -744,9 +744,9 @@ CONTAINS
     REAL(num) :: magn_j_perp, magn_j_par
 
     IF (.NOT. cowling_resistivity) THEN
-      DO iy = 0, ny 
+      DO iy = 0, ny
         iyp = iy + 1
-        DO ix = 0, nx 
+        DO ix = 0, nx
           ixp = ix + 1
 
           jx1 = (bz(ix, iyp) - bz(ix, iy)) / dyc(iy)
@@ -756,12 +756,12 @@ CONTAINS
           jx = (jx1 + jx2) * 0.5_num
           jy = (jy1 + jy2) * 0.5_num
           jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
-              - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy) 
-           
+              - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
+
           flux_x(ix, iy) = -jx * eta(ix, iy) * dxc(ix) * 0.5_num
           flux_y(ix, iy) = -jy * eta(ix, iy) * dyc(iy) * 0.5_num
           flux_z(ix, iy) = -jz * eta(ix, iy)
-          curlb(ix, iy) = eta(ix, iy) * (jx**2 + jy**2 + jz**2)                        
+          curlb(ix, iy) = eta(ix, iy) * (jx**2 + jy**2 + jz**2)
         END DO
       END DO
     ELSE
@@ -779,7 +779,7 @@ CONTAINS
           jy = (jy1 + jy2) * 0.5_num
           jz = (by(ixp, iy) - by(ix, iy)) / dxc(ix) &
               - (bx(ix, iyp) - bx(ix, iy)) / dyc(iy)
-          
+
           ! B at vertices
           bxv = (bx(ix, iy) + bx(ix, iyp)) * 0.5_num
           byv = (by(ix, iy) + by(ixp, iy)) * 0.5_num

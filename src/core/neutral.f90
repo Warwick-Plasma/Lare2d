@@ -19,40 +19,40 @@ CONTAINS
     REAL(num) :: mbar
 
     ALLOCATE(xi_n(-1:nx+2, -1:ny+2))
-    xi_n = 0.0_num       
+    xi_n = 0.0_num
 
     IF (cowling_resistivity) THEN
       ALLOCATE(eta_perp(-1:nx+2, -1:ny+2))
       ALLOCATE(parallel_current(0:nx, 0:ny))
       ALLOCATE(perp_current(0:nx, 0:ny))
     END IF
-    
+
     ! Temperature of the photospheric radiation field
     tr = 6420.0_num
-    
+
     ! Calculate fbar^(2 / 3) in (k^-1 m^-2)
     f_bar = 2.0_num * pi * (me_si / hp_si) * (kb_si / hp_si)
     f_bar = f_bar**(3.0_num / 2.0_num)
-    
+
     ! Calculate tbar in (K)
     t_bar = ionise_pot_si / kb_si
-    
+
     ! Calculate rbar in (kg^-1)
-    mbar = mh_si * mf                     
+    mbar = mh_si * mf
     r_bar = 4.0_num / mbar
-    
+
     ! Calculate eta_bar in (m^4 / (k s kg^2))
     eta_bar = 2.0_num * mbar &
         / (SQRT(16.0_num * kb_si / (pi * mbar)) * sigma_in)
-    
+
   END SUBROUTINE setup_neutral
 
 
-                                        
+
   SUBROUTINE perpendicular_resistivity
 
     ! This subroutine calculates the cross field resistivity at the current
-    ! temperature. 
+    ! temperature.
 
     REAL(num) :: f, xi_v, bxv, byv, bzv, bfieldsq, rho_v, t_v, T
     INTEGER :: ixp, iyp
@@ -106,8 +106,8 @@ CONTAINS
         END IF
 
       END DO
-    END DO      
-    
+    END DO
+
     eta_perp = MIN(eta_perp, 100.0_num)
 
   END SUBROUTINE perpendicular_resistivity
@@ -115,23 +115,23 @@ CONTAINS
 
 
   FUNCTION get_neutral(t_v, rho_v, height)
-    
+
     REAL(num), INTENT(IN) :: t_v, rho_v, height
     REAL(num) :: get_neutral
     REAL(num) :: bof, r, t_rad, dilution
-    
+
     t_rad = tr
-    dilution = 0.5_num     
+    dilution = 0.5_num
     ! set plasma below photosphere to be neutral so same sub-photospheric
     ! initial conditions can be used for ideal gas and partially ionized
-    ! simulations. 
-    IF (height <= 0.0_num) THEN  
+    ! simulations.
+    IF (height <= 0.0_num) THEN
       get_neutral = 1.0_num
       RETURN
 !       t_rad = t_v
-!       dilution = 1.0_num  
+!       dilution = 1.0_num
     END IF
-      
+
     bof = 1.0_num / (dilution * f_bar * t_rad * SQRT(t_v)) &
         * EXP((0.25_num * (t_v / t_rad - 1.0_num) + 1.0_num) &
         * T_bar / t_v)
@@ -167,14 +167,14 @@ CONTAINS
         DO loop = 1, 100
           dx = dx / 2.0_num
           x = t  + dx
-          xi_a = get_neutral(x, rho0, yb(iy))   
+          xi_a = get_neutral(x, rho0, yb(iy))
           fa = x - (gamma - 1.0_num) * (e0 &
               - (1.0_num - xi_a) * ionise_pot) / (2.0_num - xi_a)
           IF (fa <= 0.0_num) t = x
           IF (ABS(dx) < 1.e-8_num .OR. fa == 0.0_num) EXIT
         END DO
 
-        xi_n(ix, iy) = get_neutral(x, rho0, yb(iy))   
+        xi_n(ix, iy) = get_neutral(x, rho0, yb(iy))
       END DO
     END DO
 

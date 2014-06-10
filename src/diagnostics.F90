@@ -7,7 +7,7 @@
 MODULE diagnostics
 
   USE shared_data
-  USE boundary   
+  USE boundary
   USE conduct
   USE output_cartesian
   USE output
@@ -79,7 +79,7 @@ CONTAINS
 
     IF (print_arrays) THEN ! output a snapshot of arrays
       IF (rank .EQ. 0) THEN
-        WRITE(20, *) "Dumping ", output_file, " at time", time 
+        WRITE(20, *) "Dumping ", output_file, " at time", time
         CALL FLUSH(20)
       END IF
 
@@ -96,37 +96,37 @@ CONTAINS
           xb_global(0:nx_global), yb_global(0:ny_global), 0)
 
       IF (dump_mask(1)) THEN
-        data = rho(0:nx, 0:ny) 
+        data = rho(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("Rho", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(2)) THEN
-        data = energy(0:nx, 0:ny) 
+        data = energy(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("Energy", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(3)) THEN
-        data = vx(0:nx, 0:ny) 
+        data = vx(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("Vx", "Velocity", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(4)) THEN
-        data = vy(0:nx, 0:ny) 
+        data = vy(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("Vy", "Velocity", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(5)) THEN
-        data = vz(0:nx, 0:ny) 
+        data = vz(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("Vz", "Velocity", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(6)) THEN
-        data = bx(0:nx, 0:ny) 
+        data = bx(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("Bx", "Magnetic_Field", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -150,14 +150,14 @@ CONTAINS
                 * (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
                 / (2.0_num - xi_n(ix, iy))
           END DO
-        END DO    
+        END DO
         CALL cfd_write_2d_cartesian_variable_parallel("Temperature", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(10)) THEN
         DO iy = 0, ny
-          DO ix = 0, nx   
+          DO ix = 0, nx
             data(ix,iy) = (energy(ix,iy) - (1.0_num - xi_n(ix, iy)) * ionise_pot) &
                 * (gamma - 1.0_num) * rho(ix,iy)
           END DO
@@ -167,19 +167,19 @@ CONTAINS
       END IF
 
       IF (dump_mask(11)) THEN
-        data = SQRT(gamma*(gamma-1.0_num)*energy(0:nx,0:ny)) 
+        data = SQRT(gamma*(gamma-1.0_num)*energy(0:nx,0:ny))
         CALL cfd_write_2d_cartesian_variable_parallel("cs", "Fluid", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(12)) THEN
-        data = parallel_current(0:nx, 0:ny) 
+        data = parallel_current(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("j_par", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(13)) THEN
-        data = perp_current(0:nx, 0:ny) 
+        data = perp_current(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("j_perp", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -191,13 +191,13 @@ CONTAINS
       END IF
 
       IF (dump_mask(15)) THEN
-        data = eta_perp(0:nx, 0:ny) 
+        data = eta_perp(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("eta_perp", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(16)) THEN
-        data = eta(0:nx, 0:ny) 
+        data = eta(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("eta", "PIP", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -209,13 +209,13 @@ CONTAINS
       END IF
 
       IF (dump_mask(18)) THEN
-        data = jy_r(0:nx, 0:ny) 
+        data = jy_r(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("jy", "current", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
 
       IF (dump_mask(19)) THEN
-        data = jz_r(0:nx, 0:ny) 
+        data = jz_r(0:nx, 0:ny)
         CALL cfd_write_2d_cartesian_variable_parallel("jz", "current", &
             dims, stagger, "Grid", "Grid", data, subtype)
       END IF
@@ -228,7 +228,7 @@ CONTAINS
     END IF
 
     IF (last_call .AND. rank == 0) THEN ! output energy diagnostics etc
-      WRITE(20, *) 'final nsteps / time = ', i, time 
+      WRITE(20, *) 'final nsteps / time = ', i, time
     END IF
 
   END SUBROUTINE output_routines
@@ -270,7 +270,7 @@ CONTAINS
     ! with setting 'dt_multiplier' if you expect massive changes across
     ! cells.
 
-    REAL(num) :: cons, dt1, dt2, dt3, dt4, dt5, dt6, dt_local, dxlocal, dt_rad  
+    REAL(num) :: cons, dt1, dt2, dt3, dt4, dt5, dt6, dt_local, dxlocal, dt_rad
     REAL(num) :: vxbp, vxbm, vybp, vybm, dvx, dvy, avxp, avxm, avyp, avym
     REAL(num) :: dtr_local, dth_local, cs, area, rad, alf
 
@@ -288,33 +288,33 @@ CONTAINS
         ! fix dt for Lagrangian step
         w1 = bx(ix, iy)**2 + by(ix, iy)**2 + bz(ix, iy)**2
         cs = cons * energy(ix,iy)    ! sound speed squared
-        
-        w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero) &
-            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero)) 
 
-        dt1 = dxb(ix) / w2 
-        dt2 = dyb(iy) / w2   
-        
+        w2 = SQRT(cs + w1 / MAX(rho(ix, iy), none_zero) &
+            + 2.0_num * p_visc(ix, iy) / MAX(rho(ix, iy), none_zero))
+
+        dt1 = dxb(ix) / w2
+        dt2 = dyb(iy) / w2
+
         ! find ideal MHD CFL limit
         dt_local = MIN(dt_local, dt1, dt2)
-                                            
-        ! now find dt for remap step                                    
+
+        ! now find dt for remap step
         vxbp = 0.5_num * (vx(ix,iy) + vx(ix,iy-1)) * dyb(iy)
         vxbm = 0.5_num * (vx(ixm,iy) + vx(ixm,iym)) * dyb(iy)
         vybp = 0.5_num * (vy(ix,iy) + vy(ixm,iy)) * dxb(ix)
         vybm = 0.5_num * (vy(ix,iym) + vy(ixm,iym)) * dxb(ix)
-        
+
         dvx = ABS(vxbp - vxbm)
-        dvy = ABS(vybp - vybm) 
+        dvy = ABS(vybp - vybm)
         avxp = ABS(vxbp)
         avxm = ABS(vxbm)
         avyp = ABS(vybp)
         avym = ABS(vybm)
-                                  
-        area = dxb(ix) * dyb(iy)               
+
+        area = dxb(ix) * dyb(iy)
         dt5 = area / MAX(avxp, avxp, dvx, 1.e-10_num * area)
-        dt6 = area / MAX(avyp, avyp, dvy, 1.e-10_num * area)   
-                 
+        dt6 = area / MAX(avyp, avyp, dvy, 1.e-10_num * area)
+
         dt_local = MIN(dt_local, dt5, dt6, dt_rad)
 
         ! note resistive limits assumes uniform resistivity hence cautious
@@ -421,13 +421,13 @@ CONTAINS
 
 
 
-  SUBROUTINE output_log ! writes basic data to 'lare2d.dat'  
-  
+  SUBROUTINE output_log ! writes basic data to 'lare2d.dat'
+
     WRITE(20, *) 'nprocx, nprocy = ', nprocx, nprocy
     WRITE(20, *) 'nx, ny = ', nx, ny
     WRITE(20, *)
-    WRITE(20, *) 'length_x = ', length_x 
-    WRITE(20, *) 'length_y = ', length_y 
+    WRITE(20, *) 'length_x = ', length_x
+    WRITE(20, *) 'length_y = ', length_y
     WRITE(20, *)
 #ifndef QMONO
     WRITE(20, *) 'tensor shock viscosity'
@@ -436,13 +436,13 @@ CONTAINS
 #endif
     WRITE(20, *) 'linear viscosity coeff = ', visc1
     WRITE(20, *) 'quadratic viscosity coeff = ', visc2
-    WRITE(20, *) 'uniform tensor viscosity coeff = ', visc3 
-    WRITE(20, *) 'j_max = ', j_max 
-    WRITE(20, *) 'eta0 = ', eta0 
+    WRITE(20, *) 'uniform tensor viscosity coeff = ', visc3
+    WRITE(20, *) 'j_max = ', j_max
+    WRITE(20, *) 'eta0 = ', eta0
     WRITE(20, *) 'eta_background = ', eta_background
-    WRITE(20, *) 'kappa = ', kappa_0 
+    WRITE(20, *) 'kappa = ', kappa_0
     WRITE(20, *)
-    WRITE(20, *) 't_start, t_end = ', time, t_end 
+    WRITE(20, *) 't_start, t_end = ', time, t_end
     WRITE(20, *) 'nsteps =', nsteps
     WRITE(20, *)
 

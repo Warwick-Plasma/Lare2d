@@ -40,7 +40,7 @@ CONTAINS
 
     p_visc = 0.0_num
     eta = 0.0_num
-    grav = 0.0_num  
+    grav = 0.0_num
     lambda_i = 0.0_num
 
     rho = 0.0_num
@@ -362,7 +362,7 @@ CONTAINS
     CHARACTER(LEN = 20+data_dir_max_length) :: filename
     CHARACTER(LEN = 20) :: name, class, mesh_name, mesh_class
     INTEGER :: nblocks, type, nd, sof, snap
-    INTEGER, DIMENSION(2) :: dims 
+    INTEGER, DIMENSION(2) :: dims
     REAL(dbl) :: time_d
     REAL(num), DIMENSION(2) :: extent
     REAL(num), DIMENSION(2) :: stagger

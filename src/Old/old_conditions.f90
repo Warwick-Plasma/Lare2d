@@ -25,7 +25,7 @@
        rho(:,iy) = rho0 * (1.0_num / COSH(yc(iy) / lamda))**2 + rhoinf
     ENDDO
 
-    energy = 0.75_num 
+    energy = 0.75_num
 
   END SUBROUTINE set_initial_conditions
 
@@ -116,24 +116,24 @@ SUBROUTINE set_initial_conditions
     vy = 0.0_num
     vz = 0.0_num
     bz = 0.0_num
-    b1 = 0.75_num 
-    b2 = 1.0_num 
+    b1 = 0.75_num
+    b2 = 1.0_num
 
     DO ix = -1, nx+2
        DO iy = -1, ny+2
           x = xc(ix) + 0.5_num / SQRT(2.0_num)
           y = yc(iy) + 0.5_num / SQRT(2.0_num)
-          s = (x + y) / SQRT(2.0_num) 
+          s = (x + y) / SQRT(2.0_num)
           IF (s > 0.5_num + 0.1_num*dxb(1)) THEN
              rho(ix,iy) = 0.125_num
              energy(ix,iy) = 0.1_num / (gamma - 1.0_num)
-             bx(ix,iy) = (b1 + b2) / SQRT(2.0_num) 
+             bx(ix,iy) = (b1 + b2) / SQRT(2.0_num)
              by(ix,iy) = (b1 - b2) / SQRT(2.0_num)
           ELSE
              rho(ix,iy) = 1.0_num
              energy(ix,iy) = 1.0_num / (gamma - 1.0_num)
              bx(ix,iy) = (b1 - b2) / SQRT(2.0_num)
-             by(ix,iy) = (b1 + b2) / SQRT(2.0_num) 
+             by(ix,iy) = (b1 + b2) / SQRT(2.0_num)
           END IF
        END DO
     END DO
@@ -214,7 +214,7 @@ SUBROUTINE set_initial_conditions
     DO ix = -1, nx+2
        DO iy = -1, ny+2
           r = xb(ix)*COS(angle) + yb(iy)*SIN(angle)
-          vpar = 0.0_num 
+          vpar = 0.0_num
           vperp = a * SIN(k*r)
           vx(ix,iy) = vpar * COS(angle) - vperp * SIN(angle)
           vy(ix,iy) = vpar * SIN(angle) + vperp * COS(angle)
@@ -280,8 +280,8 @@ SUBROUTINE set_initial_conditions
       DO ix = -1,nx+2
           DO iy = -1,ny+2
             IF (yc(iy) < 0.0_num) THEN
-                T = t_ph - (a * grav(iy) * yc(iy) * mbar/kb/ (m+1.0_num) )    
-            ELSE 
+                T = t_ph - (a * grav(iy) * yc(iy) * mbar/kb/ (m+1.0_num) )
+            ELSE
               T = t_ph + &
                    ((t_cor-t_ph)*0.5_num * (TANH((yc(iy)-y_cor)/wtr)+1.0_num))
             END IF
