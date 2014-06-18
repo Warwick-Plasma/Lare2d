@@ -231,7 +231,6 @@ CONTAINS
     REAL(num) :: c0, ct, cf
     REAL(num) :: pg, rhog, cffar, c0far, ctfar
     REAL(num) :: pmagg
-    REAL(num) :: var_min, var_max
     REAL(num) :: beta
     REAL(num), DIMENSION(3) :: vtest, pstar, vstar, rhostar, pmagstar
     REAL(num), DIMENSION(3) :: bystar, bzstar
@@ -314,7 +313,6 @@ CONTAINS
     REAL(num) :: c0, cx
     REAL(num) :: pg, rhog, c0far, cxfar
     REAL(num) :: pmagg, lambdag, beta
-    REAL(num) :: var_min, var_max
     REAL(num), DIMENSION(5) :: vtest, pstar, uxstar, rhostar, pmagstar
     REAL(num), DIMENSION(5) :: uystar, lambdaystar, lambdazstar, uzstar
     INTEGER :: i

@@ -138,11 +138,10 @@ CONTAINS
 
   SUBROUTINE neutral_fraction
 
-    REAL(num) :: bof, r, T, rho0, e0, dx, x, fa, xi_a
+    REAL(num) :: T, rho0, e0, dx, x, fa, xi_a
     REAL(num), DIMENSION(2) :: ta
     INTEGER :: loop
 
-    ! Variable bof is b / f in the original version
     DO iy = -1, ny + 2
       DO ix = -1, nx + 2
         rho0 = rho(ix,iy)

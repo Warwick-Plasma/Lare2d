@@ -93,7 +93,7 @@ CONTAINS
 
       ! Set the filename
       WRITE(filename_desc, '("(''nfs:'', a, ''/'', i", i3.3, ".", i3.3, &
-          & ", ''.cfd'')")'), n_zeros, n_zeros
+          & ", ''.cfd'')")') n_zeros, n_zeros
       WRITE(filename, filename_desc) TRIM(data_dir), file_number
 
       CALL cfd_open(filename, rank, comm, MPI_MODE_CREATE + MPI_MODE_WRONLY)

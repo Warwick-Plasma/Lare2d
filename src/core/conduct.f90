@@ -25,7 +25,7 @@ CONTAINS
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: energy0, limiter, temperature0
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: radiation, heat_in, alpha
     REAL(num) :: txb, tyb
-    REAL(num) :: b, bxc, byc, bzc, bpx, bpy
+    REAL(num) :: bxc, byc, bzc, bpx, bpy
     REAL(num) :: ux, uy
     REAL(num) :: pow = 5.0_num / 2.0_num
     REAL(num) :: a1, a2, a3, a4, error, errmax, rad, alf, limit
