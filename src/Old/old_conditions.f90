@@ -267,11 +267,11 @@ SUBROUTINE set_initial_conditions
     gamma = 5.0_num / 3.0_num
 
     grav = 274.0_num
-    IF (coordinates(1) .EQ. 0) grav(0) = 0.0_num
-    IF (coordinates(1) .EQ. nprocy-1) grav(ny) = 0.0_num
+    IF (coordinates(1) == 0) grav(0) = 0.0_num
+    IF (coordinates(1) == nprocy-1) grav(ny) = 0.0_num
 
     max_cycles=100
-    IF (eos_number .EQ. EOS_IDEAL) max_cycles=1
+    IF (eos_number == EOS_IDEAL) max_cycles=1
 
     !First cycle always use ideal gas equation of state for first guess
     eos_this_cycle=EOS_IDEAL

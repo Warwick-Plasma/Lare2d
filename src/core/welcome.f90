@@ -18,7 +18,7 @@ CONTAINS
     CHARACTER, DIMENSION(4) :: clrstr = (/ ' ', '[', '2', 'J' /)
     INTEGER :: ix, iy
 
-    IF (rank .NE. 0) RETURN
+    IF (rank /= 0) RETURN
 
     clrstr(1) = CHAR(27)
     WRITE(*, '(1x, 4a1)') clrstr

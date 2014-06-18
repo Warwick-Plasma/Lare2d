@@ -579,7 +579,7 @@ CONTAINS
           jx = (jx + jxp) * 0.5_num
           jy = (jy + jyp) * 0.5_num
 
-          IF (SQRT(jx**2 + jy**2 + jz**2) .GT. j_max) THEN
+          IF (SQRT(jx**2 + jy**2 + jz**2) > j_max) THEN
             eta(ix,iy) = eta_background + eta0
           ELSE
             eta(ix,iy) = eta_background

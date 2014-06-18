@@ -94,7 +94,7 @@ CONTAINS
         xi_v = get_neutral(t_v, rho_v, yb(iy))
 
         f = MAX(1.0_num - xi_v, none_zero)
-        IF (f .GT. 0) THEN
+        IF (f > 0) THEN
           eta_perp(ix,iy) = eta_bar * xi_v / f * bfieldsq &
               / rho_v**2 / SQRT(t_v)
         ELSE
