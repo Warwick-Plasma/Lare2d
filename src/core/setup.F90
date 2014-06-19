@@ -9,6 +9,7 @@ MODULE setup
   USE iocontrol
   USE input
   USE input_cartesian
+  USE sdf_job_info
 
   IMPLICIT NONE
 
@@ -33,6 +34,9 @@ CONTAINS
 
     time = 0.0_num
     gamma = 5.0_num / 3.0_num
+
+    CALL get_job_id(jobid)
+    run_date = get_unix_time()
 
   END SUBROUTINE before_control
 
