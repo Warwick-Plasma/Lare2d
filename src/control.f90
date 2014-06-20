@@ -80,14 +80,14 @@ CONTAINS
     nprocy = 0
 
     ! The length of the domain in the x direction
-    x_start = -5.0_num
-    x_end = 5.0_num
+    x_min = -5.0_num
+    x_max = 5.0_num
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
     ! The length of the domain in the y direction
-    y_start = -20.0_num
-    y_end = 80.0_num
+    y_min = -20.0_num
+    y_max = 80.0_num
     ! Should the y grid be stretched or uniform
     y_stretch = .FALSE.
 

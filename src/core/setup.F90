@@ -106,8 +106,8 @@ CONTAINS
     dx = 1.0_num / REAL(nx_global, num)
     dy = 1.0_num / REAL(ny_global, num)
 
-    length_x = x_end - x_start
-    length_y = y_end - y_start
+    length_x = x_max - x_min
+    length_y = y_max - y_min
 
     ! Grid cell boundary for x coordinates
     ! set to - 0.5_num to have x = 0 in centre of domain
@@ -115,7 +115,7 @@ CONTAINS
     DO ix = -2, nx_global + 2
       xb_global(ix) = xb_global(0) + REAL(ix, num) * dx
     END DO
-    xb_global = xb_global * length_x + x_start
+    xb_global = xb_global * length_x + x_min
 
     IF (x_stretch) CALL stretch_x ! stretch grid ?
 
@@ -173,7 +173,7 @@ CONTAINS
     DO iy = -2, ny_global + 2
       yb_global(iy) = yb_global(0) + REAL(iy, num) * dy
     END DO
-    yb_global = yb_global * length_y + y_start
+    yb_global = yb_global * length_y + y_min
 
     IF (y_stretch) CALL stretch_y
 
