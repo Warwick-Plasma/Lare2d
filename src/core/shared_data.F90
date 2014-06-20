@@ -142,7 +142,9 @@ MODULE shared_data
   REAL(num) :: eta_bar
 
   ! MPI data
-  INTEGER :: coordinates(c_ndims)
+  INTEGER :: coordinates(c_ndims), n_global_min(c_ndims), n_global_max(c_ndims)
+  INTEGER, DIMENSION(:), ALLOCATABLE :: cell_nx_mins, cell_nx_maxs
+  INTEGER, DIMENSION(:), ALLOCATABLE :: cell_ny_mins, cell_ny_maxs
   INTEGER :: nprocx, proc_x_min, proc_x_max
   INTEGER :: nprocy, proc_y_min, proc_y_max
   INTEGER :: rank, errcode, comm, tag, nproc

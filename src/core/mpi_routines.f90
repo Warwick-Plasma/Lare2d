@@ -19,17 +19,119 @@ CONTAINS
   !****************************************************************************
 
   SUBROUTINE mpi_initialise
-
-    LOGICAL :: periods(c_ndims), reorder
+ 
+    INTEGER, PARAMETER :: ng = 1
+    LOGICAL, PARAMETER :: allow_cpu_reduce = .FALSE.
+    INTEGER :: dims(c_ndims), icoord, old_comm, ierr
+    LOGICAL :: periods(c_ndims), reorder, reset
     INTEGER :: starts(c_ndims), sizes(c_ndims), subsizes(c_ndims)
-    INTEGER :: dims(c_ndims)
+    INTEGER :: ix, iy
     INTEGER :: nx0, ny0
     INTEGER :: nxp, nyp
-    INTEGER :: cx, cy
+    INTEGER :: nxsplit, nysplit
+    INTEGER :: x_coords, y_coords
+    INTEGER :: area, minarea
+    INTEGER :: ranges(3,1), nproc_orig, oldgroup, newgroup
 
     CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc, errcode)
 
-    dims = (/ nprocy, nprocx /)
+    nproc_orig = nproc
+
+    IF (nx_global < ng .OR. ny_global < ng) THEN
+      IF (rank == 0) THEN
+        PRINT*,'*** ERROR ***'
+        PRINT*,'Simulation domain is too small.'
+        PRINT*,'There must be at least ', ng, ' cells in each direction.'
+      ENDIF
+      CALL MPI_ABORT(MPI_COMM_WORLD, errcode, ierr)
+    ENDIF
+
+    reset = .FALSE.
+    IF (MAX(nprocx,1) * MAX(nprocy,1) > nproc) THEN
+      reset = .TRUE.
+    ELSE IF (nprocx * nprocy > 0) THEN
+      ! Sanity check
+      nxsplit = nx_global / nprocx
+      nysplit = ny_global / nprocy
+      IF (nxsplit < ng .OR. nysplit < ng) &
+          reset = .TRUE.
+    ENDIF
+
+    IF (reset) THEN
+      IF (rank == 0) THEN
+        PRINT *, 'Unable to use requested processor subdivision. Using ' &
+            // 'default division.'
+      ENDIF
+      nprocx = 0
+      nprocy = 0
+    ENDIF
+
+    IF (nprocx * nprocy == 0) THEN
+      DO WHILE (nproc > 1)
+        ! Find the processor split which minimizes surface area of
+        ! the resulting domain
+
+        minarea = nx_global + ny_global
+
+        DO ix = 1, nproc
+          iy = nproc / ix
+          IF (ix * iy /= nproc) CYCLE
+
+          nxsplit = nx_global / ix
+          nysplit = ny_global / iy
+          ! Actual domain must be bigger than the number of ghostcells
+          IF (nxsplit < ng .OR. nysplit < ng) CYCLE
+
+          area = nxsplit + nysplit
+          IF (area < minarea) THEN
+            nprocx = ix
+            nprocy = iy
+            minarea = area
+          ENDIF
+        ENDDO
+
+        IF (nprocx > 0) EXIT
+
+        ! If we get here then no suitable split could be found. Decrease the
+        ! number of processors and try again.
+
+        nproc = nproc - 1
+      ENDDO
+    ENDIF
+
+    IF (nproc_orig /= nproc) THEN
+      IF (.NOT.allow_cpu_reduce) THEN
+        IF (rank == 0) THEN
+          PRINT*,'*** ERROR ***'
+          PRINT*,'Cannot split the domain using the requested number of CPUs.'
+          PRINT*,'Try reducing the number of CPUs to ', nproc
+        ENDIF
+        CALL MPI_ABORT(MPI_COMM_WORLD, errcode, ierr)
+        STOP
+      ENDIF
+      IF (rank == 0) THEN
+        PRINT*,'*** WARNING ***'
+        PRINT*,'Cannot split the domain using the requested number of CPUs.'
+        PRINT*,'Reducing the number of CPUs to ', nproc
+      ENDIF
+      ranges(1,1) = nproc
+      ranges(2,1) = nproc_orig - 1
+      ranges(3,1) = 1
+      old_comm = comm
+      CALL MPI_COMM_GROUP(old_comm, oldgroup, errcode)
+      CALL MPI_GROUP_RANGE_EXCL(oldgroup, 1, ranges, newgroup, errcode)
+      CALL MPI_COMM_CREATE(old_comm, newgroup, comm, errcode)
+      IF (comm == MPI_COMM_NULL) THEN
+        CALL MPI_FINALIZE(errcode)
+        STOP
+      ENDIF
+      CALL MPI_GROUP_FREE(oldgroup, errcode)
+      CALL MPI_GROUP_FREE(newgroup, errcode)
+      CALL MPI_COMM_FREE(old_comm, errcode)
+    ENDIF
+
+    dims = (/nprocy, nprocx/)
+    CALL MPI_DIMS_CREATE(nproc, c_ndims, dims, errcode)
 
     IF (PRODUCT(MAX(dims, 1)) > nproc) THEN
       dims = 0
@@ -45,6 +147,9 @@ CONTAINS
 
     nprocx = dims(c_ndims  )
     nprocy = dims(c_ndims-1)
+
+    ALLOCATE(cell_nx_mins(0:nprocx-1), cell_nx_maxs(0:nprocx-1))
+    ALLOCATE(cell_ny_mins(0:nprocy-1), cell_ny_maxs(0:nprocy-1))
 
     periods = .TRUE.
     reorder = .TRUE.
@@ -67,49 +172,63 @@ CONTAINS
     CALL MPI_CART_SHIFT(comm, c_ndims-1, 1, proc_x_min, proc_x_max, errcode)
     CALL MPI_CART_SHIFT(comm, c_ndims-2, 1, proc_y_min, proc_y_max, errcode)
 
-    cx = coordinates(c_ndims  )
-    cy = coordinates(c_ndims-1)
+    x_coords = coordinates(c_ndims  )
+    y_coords = coordinates(c_ndims-1)
 
     ! Create the subarray for this problem: subtype decribes where this
     ! process's data fits into the global picture.
 
     nx0 = nx_global / nprocx
     ny0 = ny_global / nprocy
-    nx = nx0
-    ny = ny0
 
     ! If the number of gridpoints cannot be exactly subdivided then fix
-    ! the first nxp processors have nx0 grid points
+    ! The first nxp processors have nx0 grid points
     ! The remaining processors have nx0+1 grid points
     IF (nx0 * nprocx /= nx_global) THEN
       nxp = (nx0 + 1) * nprocx - nx_global
-      IF (cx >= nxp) nx = nx0 + 1
     ELSE
       nxp = nprocx
     END IF
+
     IF (ny0 * nprocy /= ny_global) THEN
       nyp = (ny0 + 1) * nprocy - ny_global
-      IF (cy >= nyp) ny = ny0 + 1
     ELSE
       nyp = nprocy
     END IF
 
     ! Set up the starting point for my subgrid (assumes arrays start at 0)
 
-    IF (cx < nxp) THEN
-      starts(1) = cx * nx0
-    ELSE
-      starts(1) = nxp * nx0 + (cx - nxp) * (nx0 + 1)
-    END IF
-    IF (cy < nyp) THEN
-      starts(2) = cy * ny0
-    ELSE
-      starts(2) = nyp * ny0 + (cy - nyp) * (ny0 + 1)
-    END IF
+    DO icoord = 0, nxp - 1
+      cell_nx_mins(icoord) = icoord * nx0 + 1
+      cell_nx_maxs(icoord) = (icoord + 1) * nx0
+    END DO
+    DO icoord = nxp, nprocx - 1
+      cell_nx_mins(icoord) = nxp * nx0 + (icoord - nxp) * (nx0 + 1) + 1
+      cell_nx_maxs(icoord) = nxp * nx0 + (icoord - nxp + 1) * (nx0 + 1)
+    END DO
+
+    DO icoord = 0, nyp - 1
+      cell_ny_mins(icoord) = icoord * ny0 + 1
+      cell_ny_maxs(icoord) = (icoord + 1) * ny0
+    END DO
+    DO icoord = nyp, nprocy - 1
+      cell_ny_mins(icoord) = nyp * ny0 + (icoord - nyp) * (ny0 + 1) + 1
+      cell_ny_maxs(icoord) = nyp * ny0 + (icoord - nyp + 1) * (ny0 + 1)
+    END DO
+
+    n_global_min(1) = cell_nx_mins(x_coords) - 1
+    n_global_max(1) = cell_nx_maxs(x_coords)
+
+    n_global_min(2) = cell_ny_mins(y_coords) - 1
+    n_global_max(2) = cell_ny_maxs(y_coords)
+
+    nx = n_global_max(1) - n_global_min(1)
+    ny = n_global_max(2) - n_global_min(2)
 
     ! The grid sizes
     subsizes = (/ nx+1, ny+1 /)
     sizes = (/ nx_global+1, ny_global+1 /)
+    starts = n_global_min
 
     CALL MPI_TYPE_CREATE_SUBARRAY(c_ndims, sizes, subsizes, starts, &
         MPI_ORDER_FORTRAN, mpireal, subtype, errcode)
@@ -187,6 +306,8 @@ CONTAINS
     DEALLOCATE(jx_r, jy_r, jz_r)
     DEALLOCATE(xb_global, yb_global)
     DEALLOCATE(lambda_i)
+    DEALLOCATE(cell_nx_mins, cell_nx_maxs)
+    DEALLOCATE(cell_ny_mins, cell_ny_maxs)
 
     IF (ALLOCATED(xi_n)) DEALLOCATE(xi_n)
     IF (ALLOCATED(delta_ke)) DEALLOCATE(delta_ke)
