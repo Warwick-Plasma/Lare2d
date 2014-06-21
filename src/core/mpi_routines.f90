@@ -134,8 +134,8 @@ CONTAINS
 
     ! Shocked and resistive need to be larger to allow offset = 4 in shock_test
     ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1(-1:nx+2, -1:ny+2))
-    ALLOCATE(xc(-1:nx+2), xb(-2:nx+2), dxc(-1:nx+2), dxb(-1:nx+2))
-    ALLOCATE(yc(-1:ny+2), yb(-2:ny+2), dyc(-1:ny+2), dyb(-1:ny+2))
+    ALLOCATE(xc(-1:nx+2), xb(-2:nx+2), dxc(-1:nx+1), dxb(-1:nx+2))
+    ALLOCATE(yc(-1:ny+2), yb(-2:ny+2), dyc(-1:ny+1), dyb(-1:ny+2))
     ALLOCATE(grav(-1:ny+2))
     ALLOCATE(jx_r(0:nx+1, 0:ny+1))
     ALLOCATE(jy_r(0:nx+1, 0:ny+1))

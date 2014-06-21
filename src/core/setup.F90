@@ -76,7 +76,7 @@ CONTAINS
 
   SUBROUTINE grid
 
-    REAL(num) :: dx, dy, xcstar, ycstar
+    REAL(num) :: dx, dy
     INTEGER :: ix, iy, n0, n1
     INTEGER :: nx0, ny0
     INTEGER :: nxp, nyp
@@ -161,13 +161,6 @@ CONTAINS
       dxc(ix) = xc(ixp) - xc(ix)
     END DO
 
-    IF (cx == nprocx - 1) THEN
-      dxc(nx+2) = dxc(nx+1)
-    ELSE
-      xcstar = 0.5_num * (xb(nx+2) + xb_global(n1+3))
-      dxc(nx+2) = xcstar - xc(nx+2)
-    END IF
-
     DO ix = -1, nx + 2
       ixm = ix - 1
       ! Cell width
@@ -222,13 +215,6 @@ CONTAINS
       iyp = iy + 1
       dyc(iy) = yc(iyp) - yc(iy)
     END DO
-
-    IF (cy == nprocy - 1) THEN
-      dyc(ny+2) = dyc(ny+1)
-    ELSE
-      ycstar = 0.5_num * (yb(ny+2) + yb_global(n1+3))
-      dyc(ny+2) = ycstar - yc(ny+2)
-    END IF
 
     DO iy = -1, ny + 2
       iym = iy - 1
