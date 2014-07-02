@@ -138,7 +138,7 @@ CONTAINS
       xb_global(-2) = 2.0_num * xb_global(0) - xb_global(2)
     END IF
 
-    cx = coordinates(2)
+    cx = coordinates(c_ndims)
     IF (cx .LT. nxp) THEN
       n0 = cx * nx0
       n1 = (cx + 1) * nx0
@@ -202,7 +202,7 @@ CONTAINS
       yb_global(-2) = 2.0_num * yb_global(0) - yb_global(2)
     END IF
 
-    cy = coordinates(1)
+    cy = coordinates(c_ndims-1)
     IF (cy .LT. nyp) THEN
       n0 = cy * ny0
       n1 = (cy + 1) * ny0
@@ -405,10 +405,10 @@ CONTAINS
     CHARACTER(LEN=20+data_dir_max_length) :: filename
     CHARACTER(LEN=20) :: name, class, mesh_name, mesh_class
     INTEGER :: nblocks, type, nd, sof, snap
-    INTEGER, DIMENSION(2) :: dims
+    INTEGER, DIMENSION(c_ndims) :: dims, global_dims
     REAL(dbl) :: time_d
-    REAL(num), DIMENSION(2) :: extent
-    REAL(num), DIMENSION(2) :: stagger
+    REAL(num), DIMENSION(c_ndims) :: extent
+    REAL(num), DIMENSION(c_ndims) :: stagger
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: data
 
     ! Create the filename for the last snapshot
@@ -421,6 +421,7 @@ CONTAINS
 #endif
 
     file_number = restart_snapshot
+    global_dims = (/ nx_global+1, ny_global+1 /)
 
     ALLOCATE(data(0:nx, 0:ny))
     CALL cfd_open(filename, rank, comm, MPI_MODE_RDONLY)
@@ -464,7 +465,7 @@ CONTAINS
         CALL cfd_get_nd_cartesian_variable_metadata_all(nd, dims, extent, &
             stagger, mesh_name, mesh_class)
 
-        IF (dims(1) /= nx_global+1 .OR. dims(2) /= ny_global+1) THEN
+        IF (ANY(dims(1:c_ndims) /= global_dims(1:c_ndims))) THEN
           IF (rank == 0) PRINT*, 'Size of grid represented by one more ', &
               'variables invalid. Continuing'
           CALL cfd_skip_block

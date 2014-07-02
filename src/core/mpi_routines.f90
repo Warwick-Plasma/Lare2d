@@ -20,19 +20,18 @@ CONTAINS
 
   SUBROUTINE mpi_initialise
 
-    INTEGER :: ndims, dims(2)
-    LOGICAL :: periods(2), reorder
-    INTEGER :: starts(2), sizes(2), subsizes(2)
+    LOGICAL :: periods(c_ndims), reorder
+    INTEGER :: starts(c_ndims), sizes(c_ndims), subsizes(c_ndims)
+    INTEGER :: dims(c_ndims)
     INTEGER :: nx0, ny0
     INTEGER :: nxp, nyp
     INTEGER :: cx, cy
 
     CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc, errcode)
 
-    ndims = 2
     dims = (/ nprocy, nprocx /)
 
-    IF (MAX(dims(1), 1) * MAX(dims(2), 1) .GT. nproc) THEN
+    IF (PRODUCT(MAX(dims, 1)) .GT. nproc) THEN
       dims = 0
       IF (rank .EQ. 0) THEN
         PRINT*, 'Too many processors requested in override.'
@@ -42,34 +41,34 @@ CONTAINS
       END IF
     END IF
 
-    CALL MPI_DIMS_CREATE(nproc, ndims, dims, errcode)
+    CALL MPI_DIMS_CREATE(nproc, c_ndims, dims, errcode)
 
-    nprocx = dims(2)
-    nprocy = dims(1)
+    nprocx = dims(c_ndims  )
+    nprocy = dims(c_ndims-1)
 
     periods = .TRUE.
     reorder = .TRUE.
 
-    IF (xbc_min == BC_OTHER) periods(2) = .FALSE.
-    IF (xbc_max == BC_OTHER) periods(2) = .FALSE.
-    IF (ybc_min == BC_OTHER) periods(1) = .FALSE.
-    IF (ybc_max == BC_OTHER) periods(1) = .FALSE.
+    IF (xbc_min == BC_OTHER) periods(c_ndims  ) = .FALSE.
+    IF (xbc_max == BC_OTHER) periods(c_ndims  ) = .FALSE.
+    IF (ybc_min == BC_OTHER) periods(c_ndims-1) = .FALSE.
+    IF (ybc_max == BC_OTHER) periods(c_ndims-1) = .FALSE.
 
-    IF (xbc_min == BC_OPEN) periods(2) = .FALSE.
-    IF (xbc_max == BC_OPEN) periods(2) = .FALSE.
-    IF (ybc_min == BC_OPEN) periods(1) = .FALSE.
-    IF (ybc_max == BC_OPEN) periods(1) = .FALSE.
+    IF (xbc_min == BC_OPEN) periods(c_ndims  ) = .FALSE.
+    IF (xbc_max == BC_OPEN) periods(c_ndims  ) = .FALSE.
+    IF (ybc_min == BC_OPEN) periods(c_ndims-1) = .FALSE.
+    IF (ybc_max == BC_OPEN) periods(c_ndims-1) = .FALSE.
 
-    CALL MPI_CART_CREATE(MPI_COMM_WORLD, ndims, dims, periods, reorder, &
+    CALL MPI_CART_CREATE(MPI_COMM_WORLD, c_ndims, dims, periods, reorder, &
         comm, errcode)
 
     CALL MPI_COMM_RANK(comm, rank, errcode)
-    CALL MPI_CART_COORDS(comm, rank, 2, coordinates, errcode)
-    CALL MPI_CART_SHIFT(comm, 1, 1, proc_x_min, proc_x_max, errcode)
-    CALL MPI_CART_SHIFT(comm, 0, 1, proc_y_min, proc_y_max, errcode)
+    CALL MPI_CART_COORDS(comm, rank, c_ndims, coordinates, errcode)
+    CALL MPI_CART_SHIFT(comm, c_ndims-1, 1, proc_x_min, proc_x_max, errcode)
+    CALL MPI_CART_SHIFT(comm, c_ndims-2, 1, proc_y_min, proc_y_max, errcode)
 
-    cx = coordinates(2)
-    cy = coordinates(1)
+    cx = coordinates(c_ndims  )
+    cy = coordinates(c_ndims-1)
 
     ! Create the subarray for this problem: subtype decribes where this
     ! process's data fits into the global picture.
@@ -112,7 +111,7 @@ CONTAINS
     subsizes = (/ nx+1, ny+1 /)
     sizes = (/ nx_global+1, ny_global+1 /)
 
-    CALL MPI_TYPE_CREATE_SUBARRAY(ndims, sizes, subsizes, starts, &
+    CALL MPI_TYPE_CREATE_SUBARRAY(c_ndims, sizes, subsizes, starts, &
         MPI_ORDER_FORTRAN, mpireal, subtype, errcode)
 
     CALL MPI_TYPE_COMMIT(subtype, errcode)
