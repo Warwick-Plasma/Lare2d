@@ -64,6 +64,7 @@ MODULE shared_data
 
   USE constants
   USE sdf_job_info
+  USE sdf
 
   IMPLICIT NONE
 
@@ -71,8 +72,10 @@ MODULE shared_data
 
 #ifdef SINGLE
   INTEGER, PARAMETER :: mpireal = MPI_REAL
+  INTEGER, PARAMETER :: sdf_num = c_datatype_real4
 #else
   INTEGER, PARAMETER :: mpireal = MPI_DOUBLE_PRECISION
+  INTEGER, PARAMETER :: sdf_num = c_datatype_real8
 #endif
 
   INTEGER :: nx_global, ny_global
@@ -165,14 +168,26 @@ MODULE shared_data
   INTEGER :: initial
   INTEGER, PARAMETER :: n_zeros = 4
   INTEGER :: file_number = 0
+#ifdef FILEPREFIX
+  CHARACTER(LEN=4), PARAMETER :: filesystem = 'nfs:'
+#else
+  CHARACTER(LEN=1), PARAMETER :: filesystem = ''
+#endif
+  CHARACTER(LEN=1), PARAMETER :: file_prefix = ''
   TYPE(jobid_type) :: jobid
   INTEGER :: run_date = 0
+
+  INTEGER, PARAMETER :: c_stagger_bx = c_stagger_edge_x
+  INTEGER, PARAMETER :: c_stagger_by = c_stagger_edge_y
+  INTEGER, PARAMETER :: c_stagger_bz = c_stagger_edge_z
 
   ! Number of variables to dump
   LOGICAL, DIMENSION(19) :: dump_mask
 
   INTEGER, PARAMETER :: stat_unit = 20
   INTEGER, PARAMETER :: en_unit = 30
+
+  INTEGER, PARAMETER :: c_max_string_length = 64
 
 END MODULE shared_data
 

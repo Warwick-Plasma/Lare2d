@@ -271,6 +271,7 @@ CONTAINS
 
     INTEGER :: seconds, minutes, hours, total
 
+#ifndef NO_IO
     IF (rank == 0) THEN
       end_time = MPI_WTIME()
       total = INT(end_time - start_time)
@@ -281,6 +282,7 @@ CONTAINS
       WRITE(stat_unit,'(''runtime = '', i4, ''h '', i2, ''m '', i2, ''s on '', &
           & i4, '' process elements.'')') hours, minutes, seconds, nproc
     END IF
+#endif
 
     CALL MPI_BARRIER(comm, errcode)
 

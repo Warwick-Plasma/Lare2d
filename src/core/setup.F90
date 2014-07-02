@@ -274,6 +274,10 @@ CONTAINS
     CHARACTER(LEN=7+data_dir_max_length) :: file3
     INTEGER :: ios
 
+#ifdef NO_IO
+    RETURN
+#endif
+
     IF (rank == 0) THEN
       WRITE(file2, '(a, ''/lare2d.dat'')') TRIM(data_dir)
       OPEN(UNIT=stat_unit, STATUS='REPLACE', FILE=file2, iostat=ios)
@@ -308,6 +312,10 @@ CONTAINS
   !****************************************************************************
 
   SUBROUTINE close_files
+
+#ifdef NO_IO
+    RETURN
+#endif
 
     IF (rank == 0) THEN
       CLOSE(UNIT=stat_unit)
