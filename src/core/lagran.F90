@@ -628,35 +628,7 @@ CONTAINS
 
     ! Default is first order in time
 #ifndef FOURTHORDER
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (flux_z(ix,iy ) - flux_z(ix,iym)) * dt / dyb(iy)
-      END DO
-    END DO
-
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (flux_z(ix ,iy) - flux_z(ixm,iy)) * dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (flux_y(ix ,iy ) - flux_y(ixm,iy ) &
-            +  flux_y(ix ,iym) - flux_y(ixm,iym) &
-            -  flux_x(ix ,iy ) + flux_x(ix ,iym) &
-            -  flux_x(ixm,iy ) + flux_x(ixm,iym)) * dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
+    CALL bstep(flux_x, flux_y, flux_z, dt)
 
     DO iy = 1, ny
       iym = iy - 1
@@ -696,35 +668,8 @@ CONTAINS
     c1 = curlb
 
     ! Step 2
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k1z(ix,iy ) - k1z(ix,iym)) * half_dt / dyb(iy)
-      END DO
-    END DO
+    CALL bstep(k1x, k1y, k1z, half_dt)
 
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k1z(ix ,iy) - k1z(ixm,iy)) * half_dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k1y(ix ,iy ) - k1y(ixm,iy ) &
-            +  k1y(ix ,iym) - k1y(ixm,iym) &
-            -  k1x(ix ,iy ) + k1x(ix ,iym) &
-            -  k1x(ixm,iy ) + k1x(ixm,iym)) * half_dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
     CALL rkstep
 
     k2x = flux_x
@@ -733,35 +678,8 @@ CONTAINS
     c2 = curlb
 
     ! Step 3
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k2z(ix,iy ) - k2z(ix,iym)) * half_dt / dyb(iy)
-      END DO
-    END DO
+    CALL bstep(k2x, k2y, k2z, half_dt)
 
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k2z(ix ,iy) - k2z(ixm,iy)) * half_dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k2y(ix ,iy ) - k2y(ixm,iy ) &
-            +  k2y(ix ,iym) - k2y(ixm,iym) &
-            -  k2x(ix ,iy ) + k2x(ix ,iym) &
-            -  k2x(ixm,iy ) + k2x(ixm,iym)) * half_dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
     CALL rkstep
 
     k3x = flux_x
@@ -770,35 +688,8 @@ CONTAINS
     c3 = curlb
 
     ! Step 4
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k3z(ix,iy ) - k3z(ix,iym)) * dt / dyb(iy)
-      END DO
-    END DO
+    CALL bstep(k3x, k3y, k3z, dt)
 
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k3z(ix ,iy) - k3z(ixm,iy)) * dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k3y(ix ,iy ) - k3y(ixm,iy ) &
-            +  k3y(ix ,iym) - k3y(ixm,iym) &
-            -  k3x(ix ,iy ) + k3x(ix ,iym) &
-            -  k3x(ixm,iy ) + k3x(ixm,iym)) * dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
     CALL rkstep
 
     k4x = flux_x
@@ -812,35 +703,7 @@ CONTAINS
     k1z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
     c1 = c1 + 2.0_num * c2 + 2.0_num * c3 + c4
 
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k1z(ix,iy ) - k1z(ix,iym)) * dt6 / dyb(iy)
-      END DO
-    END DO
-
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k1z(ix ,iy) - k1z(ixm,iy)) * dt6 / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k1y(ix ,iy ) - k1y(ixm,iy ) &
-            +  k1y(ix ,iym) - k1y(ixm,iym) &
-            -  k1x(ix ,iy ) + k1x(ix ,iym) &
-            -  k1x(ixm,iy ) + k1x(ixm,iym)) * dt6 / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
+    CALL bstep(k1x, k1y, k1z, dt6)
 
     DO iy = 1, ny
       iym = iy - 1
@@ -1011,7 +874,7 @@ CONTAINS
 
   SUBROUTINE hall_effects
 
-    REAL(num) :: dt6, half_dt, full_dt
+    REAL(num) :: dt6, half_dt
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1x, k2x, k3x, k4x
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1y, k2y, k3y, k4y
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1z, k2z, k3z, k4z
@@ -1020,126 +883,42 @@ CONTAINS
     ALLOCATE(k1y(0:nx,0:ny), k2y(0:nx,0:ny), k3y(0:nx,0:ny), k4y(0:nx,0:ny))
     ALLOCATE(k1z(0:nx,0:ny), k2z(0:nx,0:ny), k3z(0:nx,0:ny), k4z(0:nx,0:ny))
 
-    full_dt = dt
     half_dt = dt * 0.5_num
     dt6 = dt * sixth
-    dt = half_dt
 
     bx1 = bx(0:nx+1,0:ny+1)
     by1 = by(0:nx+1,0:ny+1)
     bz1 = bz(0:nx+1,0:ny+1)
 
     ! Step 1
-    CALL rkstep1
+    CALL rkstep1(half_dt)
 
     k1x = flux_x
     k1y = flux_y
     k1z = flux_z
 
     ! Step 2
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k1z(ix,iy ) - k1z(ix,iym)) * half_dt / dyb(iy)
-      END DO
-    END DO
+    CALL bstep(k1x, k1y, k1z, half_dt)
 
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k1z(ix ,iy) - k1z(ixm,iy)) * half_dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k1y(ix ,iy ) - k1y(ixm,iy ) &
-            +  k1y(ix ,iym) - k1y(ixm,iym) &
-            -  k1x(ix ,iy ) + k1x(ix ,iym) &
-            -  k1x(ixm,iy ) + k1x(ixm,iym)) * half_dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
-    CALL rkstep1
+    CALL rkstep1(half_dt)
 
     k2x = flux_x
     k2y = flux_y
     k2z = flux_z
 
     ! Step 3
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k2z(ix,iy ) - k2z(ix,iym)) * half_dt / dyb(iy)
-      END DO
-    END DO
+    CALL bstep(k2x, k2y, k2z, half_dt)
 
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k2z(ix ,iy) - k2z(ixm,iy)) * half_dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k2y(ix ,iy ) - k2y(ixm,iy ) &
-            +  k2y(ix ,iym) - k2y(ixm,iym) &
-            -  k2x(ix ,iy ) + k2x(ix ,iym) &
-            -  k2x(ixm,iy ) + k2x(ixm,iym)) * half_dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
-    CALL rkstep1
+    CALL rkstep1(half_dt)
 
     k3x = flux_x
     k3y = flux_y
     k3z = flux_z
-    dt = full_dt
 
     ! Step 4
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k3z(ix,iy ) - k3z(ix,iym)) * dt / dyb(iy)
-      END DO
-    END DO
+    CALL bstep(k3x, k3y, k3z, dt)
 
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k3z(ix ,iy) - k3z(ixm,iy)) * dt / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k3y(ix ,iy ) - k3y(ixm,iy ) &
-            +  k3y(ix ,iym) - k3y(ixm,iym) &
-            -  k3x(ix ,iy ) + k3x(ix ,iym) &
-            -  k3x(ixm,iy ) + k3x(ixm,iym)) * dt / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
-    CALL rkstep1
+    CALL rkstep1(dt)
 
     k4x = flux_x
     k4y = flux_y
@@ -1150,35 +929,7 @@ CONTAINS
     k1y = k1y + 2.0_num * k2y + 2.0_num * k3y + k4y
     k1z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
 
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 0, nx
-        bx(ix,iy) = bx1(ix,iy) &
-            + (k1z(ix,iy ) - k1z(ix,iym)) * dt6 / dyb(iy)
-      END DO
-    END DO
-
-    DO iy = 0, ny
-      DO ix = 1, nx
-        ixm = ix - 1
-        by(ix,iy) = by1(ix,iy) &
-            - (k1z(ix ,iy) - k1z(ixm,iy)) * dt6 / dxb(ix)
-      END DO
-    END DO
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-        bz(ix,iy) = bz1(ix,iy) &
-            + (k1y(ix ,iy ) - k1y(ixm,iy ) &
-            +  k1y(ix ,iym) - k1y(ixm,iym) &
-            -  k1x(ix ,iy ) + k1x(ix ,iym) &
-            -  k1x(ixm,iy ) + k1x(ixm,iym)) * dt6 / cv(ix,iy)
-      END DO
-    END DO
-
-    CALL bfield_bcs
+    CALL bstep(k1x, k1y, k1z, dt6)
 
     DEALLOCATE(k1x, k2x, k3x, k4x, k1y, k2y, k3y, k4y, k1z, k2z, k3z, k4z)
 
@@ -1186,8 +937,9 @@ CONTAINS
 
 
 
-  SUBROUTINE rkstep1
+  SUBROUTINE rkstep1(dt)
 
+    REAL(num), INTENT(IN) :: dt
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx, jy, jz
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: hxflux, hyflux, hzflux
     REAL(num) :: jx1, jy1, jz1, jx2, jy2
@@ -1401,5 +1153,44 @@ CONTAINS
     DEALLOCATE (jx, jy, jz, hxflux, hyflux, hzflux)
 
   END SUBROUTINE rkstep1
+
+
+
+  SUBROUTINE bstep(kx, ky, kz, dt)
+
+    REAL(num), DIMENSION(:,:), INTENT(IN) :: kx, ky, kz
+    REAL(num), INTENT(IN) :: dt
+
+    DO iy = 1, ny
+      iym = iy - 1
+      DO ix = 0, nx
+        bx(ix,iy) = bx1(ix,iy) &
+            + (kz(ix,iy ) - kz(ix,iym)) * dt / dyb(iy)
+      END DO
+    END DO
+
+    DO iy = 0, ny
+      DO ix = 1, nx
+        ixm = ix - 1
+        by(ix,iy) = by1(ix,iy) &
+            - (kz(ix ,iy) - kz(ixm,iy)) * dt / dxb(ix)
+      END DO
+    END DO
+
+    DO iy = 1, ny
+      iym = iy - 1
+      DO ix = 1, nx
+        ixm = ix - 1
+        bz(ix,iy) = bz1(ix,iy) &
+            + (ky(ix ,iy ) - ky(ixm,iy ) &
+            +  ky(ix ,iym) - ky(ixm,iym) &
+            -  kx(ix ,iy ) + kx(ix ,iym) &
+            -  kx(ixm,iy ) + kx(ixm,iym)) * dt / cv(ix,iy)
+      END DO
+    END DO
+
+    CALL bfield_bcs
+
+  END SUBROUTINE bstep
 
 END MODULE lagran
