@@ -72,7 +72,9 @@ CONTAINS
 
     DO iy = -1, ny + 1
       DO ix = -1, nx + 1
-        dxc1(ix,iy) = 0.5_num * (dxb1(ix,iy) + dxb1(ix+1,iy))
+        ixp = ix + 1
+        ! dxc before remap
+        dxc1(ix,iy) = 0.5_num * (dxb1(ix,iy) + dxb1(ixp,iy))
       END DO
     END DO
 
@@ -180,11 +182,21 @@ CONTAINS
     ! Vertex boundary velocity used in remap
     vx1(-2:nx+1,0:ny) = flux(-2:nx+1,0:ny)
 
-    DO iy = 0, ny
-      DO ix = -1, nx + 1
+    ! Calculate vertex-centred lengths
+
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
         ixm = ix - 1
-        ! dxb1 = width of vertex CV before remap
-        dxb1(ix,iy) = dxc(ix) + (vx1(ix,iy) - vx1(ixm,iy)) * dt
+        ! dxb before remap
+        dxb1(ix,iy) = dxb(ix) + (vx1(ix,iy) - vx1(ixm,iy)) * dt
+      END DO
+    END DO
+
+    DO iy = -1, ny + 1
+      DO ix = -1, nx + 1
+        ixp = ix + 1
+        ! dxc before remap
+        dxc1(ix,iy) = 0.5_num * (dxb1(ix,iy) + dxb1(ixp,iy))
       END DO
     END DO
 
@@ -288,7 +300,7 @@ CONTAINS
 
         fu = fi * vad_p + fp * vad_m
         dfu = dfm * vad_p + dfp * vad_m
-        dxci = dxc1(ix,iy)
+        dxci = dxc1(ix ,iy)
         dxcu = dxc1(ixm,iy) * vad_p + dxc1(ixp,iy) * vad_m
         dxbu = dxb1(ix ,iy) * vad_p + dxb1(ixp,iy) * vad_m
 
@@ -352,7 +364,7 @@ CONTAINS
 
         fu = fi * vad_p + fp * vad_m
         dfu = dfm * vad_p + dfp * vad_m
-        dxci = dxc1(ix,iy)
+        dxci = dxc1(ix ,iy)
         dxcu = dxc1(ixm,iy) * vad_p + dxc1(ixp,iy) * vad_m
         dxbu = dxb1(ix ,iy) * vad_p + dxb1(ixp,iy) * vad_m
 
@@ -412,7 +424,7 @@ CONTAINS
 
         fu = fi * vad_p + fp * vad_m
         dfu = dfm * vad_p + dfp * vad_m
-        dxci = dxc1(ix,iy)
+        dxci = dxc1(ix ,iy)
         dxcu = dxc1(ixm,iy) * vad_p + dxc1(ixp,iy) * vad_m
         dxbu = dxb1(ix ,iy) * vad_p + dxb1(ixp,iy) * vad_m
 
@@ -473,7 +485,7 @@ CONTAINS
 
         fu = fi * vad_p + fp * vad_m
         dfu = dfm * vad_p + dfp * vad_m
-        dxci = dxc1(ix,iy)
+        dxci = dxc1(ix ,iy)
         dxcu = dxc1(ixm,iy) * vad_p + dxc1(ixp,iy) * vad_m
         dxbu = dxb1(ix ,iy) * vad_p + dxb1(ixp,iy) * vad_m
 
@@ -534,9 +546,9 @@ CONTAINS
 
         fu = fi * vad_p + fp * vad_m
         dfu = dfm * vad_p + dfp * vad_m
-        dxci = dxb1(ix,iy)
-        dxcu = dxb1(ix,iy) * vad_p + dxb1(ixp2,iy) * vad_m
-        dxbu = dxc1(ix,iy) * vad_p + dxc1(ixp ,iy) * vad_m
+        dxci = dxb1(ixp,iy)
+        dxcu = dxb1(ix ,iy) * vad_p + dxb1(ixp2,iy) * vad_m
+        dxbu = dxc1(ix ,iy) * vad_p + dxc1(ixp ,iy) * vad_m
 
         phi = ABS(v_advect) * dt / dxbu
 
@@ -625,9 +637,9 @@ CONTAINS
 
         fu = fi * vad_p + fp * vad_m
         dfu = dfm * vad_p + dfp * vad_m
-        dxci = dxb1(ix,iy)
-        dxcu = dxb1(ix,iy) * vad_p + dxb1(ixp2,iy) * vad_m
-        dxbu = dxc1(ix,iy) * vad_p + dxc1(ixp ,iy) * vad_m
+        dxci = dxb1(ixp,iy)
+        dxcu = dxb1(ix ,iy) * vad_p + dxb1(ixp2,iy) * vad_m
+        dxbu = dxc1(ix ,iy) * vad_p + dxc1(ixp ,iy) * vad_m
 
         phi = ABS(v_advect) * dt / dxbu
 
@@ -716,9 +728,9 @@ CONTAINS
 
         fu = fi * vad_p + fp * vad_m
         dfu = dfm * vad_p + dfp * vad_m
-        dxci = dxb1(ix,iy)
-        dxcu = dxb1(ix,iy) * vad_p + dxb1(ixp2,iy) * vad_m
-        dxbu = dxc1(ix,iy) * vad_p + dxc1(ixp ,iy) * vad_m
+        dxci = dxb1(ixp,iy)
+        dxcu = dxb1(ix ,iy) * vad_p + dxb1(ixp2,iy) * vad_m
+        dxbu = dxc1(ix ,iy) * vad_p + dxc1(ixp ,iy) * vad_m
 
         phi = ABS(v_advect) * dt / dxbu
 
