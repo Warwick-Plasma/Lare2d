@@ -136,6 +136,9 @@ CONTAINS
         c_compile_date, run_date)
     CALL sdf_write_cpu_split(sdf_handle, 'cpu_rank', 'CPUs/Original rank', &
         cell_nx_maxs, cell_ny_maxs)
+    CALL sdf_write_srl(sdf_handle, 'dt', 'Time increment', dt)
+    CALL sdf_write_srl(sdf_handle, 'time_prev', 'Last dump time requested', &
+        time_prev)
 
     CALL sdf_write_srl_plain_mesh(sdf_handle, 'grid', 'Grid/Grid', &
         xb_global, yb_global, convert)
@@ -397,8 +400,7 @@ CONTAINS
     REAL(num), SAVE :: t1 = 0.0_num
 
     IF (restart) THEN
-      t1 = time
-      restart = .FALSE.
+      t1 = time_prev + dt_snapshots
     END IF
 
     print_arrays = .FALSE.
@@ -406,12 +408,19 @@ CONTAINS
 
     IF (time >= t1) THEN
       print_arrays = .TRUE.
+      time_prev = t1
       t1 = t1 + dt_snapshots
     END IF
 
     IF (time >= t_end .OR. i == nsteps) THEN
       last_call = .TRUE.
       print_arrays = .TRUE.
+    END IF
+
+    IF (restart) THEN
+      print_arrays = .FALSE.
+      file_number = file_number + 1
+      restart = .FALSE.
     END IF
 
   END SUBROUTINE io_test
@@ -428,6 +437,15 @@ CONTAINS
     REAL(num) :: cons, cs, area
     REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local, dt_rad
     REAL(num) :: dt_locals(3), dt_min(3)
+    LOGICAL, SAVE :: first = .TRUE.
+
+    IF (first) THEN
+      first = .FALSE.
+      IF (restart) THEN
+        dt = dt_from_restart
+        RETURN
+      END IF
+    END IF
 
     dt_local = largest_number
     dtr_local = largest_number

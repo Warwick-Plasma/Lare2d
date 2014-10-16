@@ -1,6 +1,7 @@
 MODULE remap
 
   USE shared_data
+  USE boundary
   USE xremap
   USE yremap
   USE zremap
@@ -85,6 +86,8 @@ CONTAINS
     DO ix = -1, nx + 2
       by(ix,-2) = by(ix,-2) / dxb(ix)
     END DO
+
+    CALL bfield_bcs
 
   END SUBROUTINE eulerian_remap
 
