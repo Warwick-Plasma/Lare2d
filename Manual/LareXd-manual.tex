@@ -25,7 +25,7 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{Version 2.10}
+\date{Version 2.11}
 \maketitle
 
 \thispagestyle{empty}
@@ -309,7 +309,7 @@ Once you have grasped the 2D grid then 3D is obvious. This is shown in figure \r
 
 \subsection{Stretched Grids}
 You can choose to stretch the grid. If you do this the grid can be stretched differently in each of the three directions. The routines for defining the stretched grids are in \texttt{setup.F90} and are imaginatively called \texttt{stretch\_x}, \texttt{stretch\_y}, and \texttt{stretch\_z}. Taking \texttt{stretch\_x} as an example, when this is called the boundaries of the cells
-$xb_i$ are defined as uniformly spaced from \texttt{x\_start} to \texttt{x\_end} as defined in \texttt{control.f90}. For reasons to do with the MPI parallelism these are called \texttt{xb\_global} at this point. The subroutine \texttt{stretch\_x} is free to redistribute these boundaries however you like but note that if the routine changes the overall size of the domain then you should reset the variable \texttt{length\_x}. Here's an example of a stretching function
+$xb_i$ are defined as uniformly spaced from \texttt{x\_min} to \texttt{x\_max} as defined in \texttt{control.f90}. For reasons to do with the MPI parallelism these are called \texttt{xb\_global} at this point. The subroutine \texttt{stretch\_x} is free to redistribute these boundaries however you like but note that if the routine changes the overall size of the domain then you should reset the variable \texttt{length\_x}. Here's an example of a stretching function
 \begin{verbatim}
    SUBROUTINE stretch_x
    ! replace with any stretching algorithm as needed
@@ -332,7 +332,7 @@ $xb_i$ are defined as uniformly spaced from \texttt{x\_start} to \texttt{x\_end}
 Don't ask me why this function is written this way, I can't remember. All that you need to know is what you want to do and then you're on your own. Good luck! One word of advice: if you stretch the grid so that the cells are far from square or the $dxb_i$'s change by more than 10\% from cell to cell then you cannot expect an accurate solution in that region of the computational domain. Do not use a stretched grid with the Hall term as the dispersion relation for Whistler waves means it is very likely that grid scale noise will develop and reflect back off the stretching. As a rule only stretch the grid if you absolutely must and don't overdo the stretching.
 
 \section{Code Structure}
-The code is all stored in the \texttt{src} sub-directory. This contains three sub-directories \texttt{core, io, Old}. The files have either a \texttt{.f90} or \texttt{.F90} extension. The ones with \texttt{.F90} are those which contain pre-compiler directives. These are explained below. A brief description of each of these files is set out below, in alphabetical order, for {\it Lare2d}.
+The code is all stored in the \texttt{src} sub-directory. This contains two sub-directories \texttt{core, Old}. The files have either a \texttt{.f90} or \texttt{.F90} extension. The ones with \texttt{.F90} are those which contain pre-compiler directives. These are explained below. A brief description of each of these files is set out below, in alphabetical order, for {\it Lare2d}.
 
 First the files in the highest source code directory \texttt{src}. These are the files you will have to setup for each new simulation.
 \begin{itemize}
@@ -361,48 +361,52 @@ All of the core routines for solving the equations are hidden away inside a \tex
   \item{\texttt{x,y,zremap.f90:}} The remap routines in each direction.
 \end{itemize}
 
-The \texttt{io} directory contains the routines needed for MPIIO and output to the VisIt reader. This is so far removed from anything either easy or MHD it is best to just leave these files alone. If you feel the need to delve into these routines, although I can't think why, then help yourself but don't expect any support.
-
 The \texttt{Old} directory contains examples of initial conditions that may be useful to understanding how to set things up. Any examples you have that you feel would be useful to others, or even as a reminder to yourself, can be emailed to Warwick for inclusion. Note that some of these old conditions do now work with the latest {\it LareXd} as parameters etc. may have changed. Always check before using.
 
 Modules are collections of routines that naturally belong together either because they share common data or actions, e.g. all the lagrangian step routines are grouped together in \texttt{lagran.F90}. The headers to all modules are similar. For example the header for \texttt{lagran.F90} is
 
 \begin{verbatim}
-  MODULE lagran
+MODULE lagran
 
-    USE shared_data
-    USE boundary
-    USE neutral
-    USE conduct
+  USE shared_data
+  USE boundary
+  USE neutral
+  USE conduct
 
-    IMPLICIT NONE
+  IMPLICIT NONE
 
-    PRIVATE
+  PRIVATE
 
-    PUBLIC :: lagrangian_step, eta_calc
+  PUBLIC :: lagrangian_step, eta_calc
 
-    ! only used inside lagran.f90
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: qxy, qxz, qyz
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: qxx, qyy, visc_heat, pressure
-    REAL(num), DIMENSION(:, :), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
+  ! Only used inside lagran.f90
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qxy, qxz, qyz
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qxx, qyy, visc_heat, pressure
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
 
-  CONTAINS
+CONTAINS
 \end{verbatim}
 The lines with \texttt{USE} list all the other modules that are required by this module. \texttt{IMPLICIT NONE} means that all variables must be declared, failure to do this will give an error message. Thinking this is a bad idea or a nuisance is a sign of madness - just do it! \texttt{PRIVATE} means all the routines below the \texttt{CONTAINS} line are private to this module and cannot be called from another module. The exceptions to this are routines listed in the \texttt{PUBLIC} line which can be called by other modules. The three lines of type declarations define variables that are global to all routines in this module but invisible to other modules. Below the \texttt{CONTAINS} is where all the subroutines go. Note that reals are not defined just as \texttt{REAL} but as \texttt{REAL(num)}. This means all reals are of type \texttt{num} which is defined in {\texttt{shared\_data.F90:}}, the top of which is
 \begin{verbatim}
 MODULE constants
 
-#ifdef Q_SINGLE
+  IMPLICIT NONE
+
+#ifdef SINGLE
   INTEGER, PARAMETER :: num = KIND(1.0)
+  INTEGER, PARAMETER :: num_sz = 4
 #else
   INTEGER, PARAMETER :: num = KIND(1.D0)
+  INTEGER, PARAMETER :: num_sz = 8
 #endif
   INTEGER, PARAMETER :: dbl = KIND(1.D0)
-  REAL(num), PARAMETER :: pi = 3.14159265358979323_num
-  REAL(num), PARAMETER :: none_zero = TINY(1.0_num) * 1000.0_num
-  REAL(num), PARAMETER :: largest_number = HUGE(1.0_num)
+
+  ! Code dimensions
+  INTEGER, PARAMETER :: c_ndims = 2
+
+  REAL(num), PARAMETER :: pi = 3.141592653589793238462643383279503_num
 \end{verbatim}
-Here we see that \texttt{num} is the same kind of number as 1.D0. This means that everything defined such as 1.234\_num will be double precision, just as the definition of $\pi$ (pi) is above. The exception to this is if \texttt{Q\_SINGLE} is set in the Makefile in which case the code uses single precision. The advantage of this is only one line needs changing in the Makefile to change from single to double precision. Many people think that compilers can take care of this. My experience is that this isn't true and the above procedure guarantees you will get double precision when you want it by only changing one line of the Makefile (where {\tt Q\_SINGLE} is set).
+Here we see that \texttt{num} is the same kind of number as 1.D0. This means that everything defined such as 1.234\_num will be double precision, just as the definition of $\pi$ (pi) is above. The exception to this is if \texttt{DEFINES += \$(D)SINGLE} is set in the Makefile in which case the code uses single precision. The advantage of this is only one line needs changing in the Makefile to change from single to double precision. Many people think that compilers can take care of this. My experience is that this isn't true and the above procedure guarantees you will get double precision when you want it by only changing one line of the Makefile (where {\tt DEFINES += \$(D)SINGLE} is set).
 
 All files with an \texttt{F90} extension will first be passed through a pre-compiler. This essentially checks flags set in the Makefile and based on this either includes or removes lines of source code before compiling. This is a bit messy but is worth the trouble. For example inside a big loop you do not want to keep checking conditionals which do not change. These pre-compiler options are always of the form \texttt{ifdef ...endif} or \texttt{ifndef...endif} to either include or exclude lines of code. Doing things this way just makes the code faster.
 
@@ -461,7 +465,7 @@ If Hall MHD is used then you must also specify \texttt{lambda\_i(0:nz)} in the i
 
 \section{Makefile}
 
-The code is a Fortran 90 code and I think conforms with the standard so should work on all compilers. A notable exception is the free gFortran compiler, which may not work depending on the version of {\it LareXd} or gFortran.. Since the code is also parallel you must have MPI installed to compile and run the code, even if you are only going to run on a single processor machine.
+The code is a Fortran 90 code and I think conforms with the standard so should work on all compilers. Since the code is also parallel you must have MPI installed to compile and run the code, even if you are only going to run on a single processor machine.
 To compile {\it LareXd}, simply type\\
 \texttt{make}\\
 this will compile the code using the default supplied compiler flags and generate a binary called\\
@@ -486,8 +490,7 @@ This will only work if \texttt{visit} is in your PATH. To uninstall the VisIt pl
 When a new version of VisIt has been installed, type\\
 \texttt{make visitclean}\\
 \texttt{make visit}\\
-to rebuild the VisIt plugin using the latest version of VisIt. A VisIt plugin built against an old version of the code will not work. If the VisIt builds don't work then you can try a hard reset by going to the \texttt{VisIT} directory and then typing\\
- \texttt{xml2makefile -clobber cfd.xml ; make}
+to rebuild the VisIt plugin using the latest version of VisIt. A VisIt plugin built against an old version of the code will not work.
 
 \subsection{The standard Makefile}
 The {\it LareXd} Makefile is relatively complex and the main working parts should not be changed without a specific reason. However, it is possible to change other parts of the makefile to allow additional features.\\
@@ -504,18 +507,21 @@ TARGET = lare3d
 \texttt{TARGET} controls the name of the output binary
 file in the \texttt{bin} subdirectory. Normally, there is no need to change this.
 \begin{verbatim}
-  #Uncomment the following line to use Qmono viscosity
-  #QMONO = -DQ_MONO
+# The following are a list of pre-processor defines which can be added to
+# the above line modifying the code behaviour at compile time.
 
-  #Uncomment the following line to run in single precision
-  #QSINGLE = -DQ_SINGLE
+# Uncomment the following line to use Qmono viscosity
+#DEFINES += $(D)QMONO
 
-  #Uncomment the following line to use first order scheme for resistive update
-  #QFOURTHORDER = -DQ_FOURTHORDER
+# Uncomment the following line to run in single precision
+#DEFINES += $(D)SINGLE
+
+# Uncomment the following line to use first order scheme for resistive update
+#DEFINES += $(D)FOURTHORDER
 \end{verbatim}
-The above section controls optional flags which can be passed to the code or compiler. \texttt{QSINGLE} forces the code to run in single precision. This is much faster and is recommended for preparatory work but the full double precision should always be checked for publications. \texttt{QFOURTHORDER} runs the resistive routines in fourth order instead of the default first order. Usually first order if fine for diffusive terms but you should
+The above section controls optional flags which can be passed to the code or compiler. \texttt{SINGLE} forces the code to run in single precision. This is much faster and is recommended for preparatory work but the full double precision should always be checked for publications. \texttt{FOURTHORDER} runs the resistive routines in fourth order instead of the default first order. Usually first order is fine for diffusive terms but you should
 check for your problem.
-In order to allow vector optimisation of the code all \texttt{IF} statements were removed from the main loop. This meant that allowing the change between using tensor shock viscosity and simple Wilkins Q\_MONO shock viscosity had to be moved out to the makefile. To run the code with tensor shock viscosity comment this flag out, to run with the Wilkins viscosity uncomment it.
+In order to allow vector optimisation of the code all \texttt{IF} statements were removed from the main loop. This meant that allowing the change between using tensor shock viscosity and simple Wilkins QMONO shock viscosity had to be moved out to the makefile. To run the code with tensor shock viscosity comment this flag out, to run with the Wilkins viscosity uncomment it.
 \subsection{Further Optimisation}
 The {\it LareXd} codes are fairly robust with regard to compiler flags, so you can normally use your favourite optimisations. An example would be
 \begin{itemize}
@@ -543,12 +549,12 @@ where \texttt{\{Data\_Dir\}} should be replaced by the name of the directory
 holding the data that you no longer want.
 \subsection*{How do I restart from an old snapshot?}
 You can specify to restart from any previous snapshot by setting \texttt{initial = IC\_RESTART} in
-\texttt{control.f90} and then specifying the restart file number with \texttt{restart\_snapshot}. Note this works fine except for en.dat, the energy diagnostics. You must keep the energy diagnostics from each run. For example if you run from $t=0$ to $t=100$ and want to restart from $t=100$ and run to $t=200$ then before the restart you must move en.dat which is stored in the Data directory, e.g. rename this en1.dat. After running from the restart you will then have an en1.dat and an en.dat file. Rename en.dat to en2.dat then to combine back into a single file first move en1.dat to en.dat then add en2.dat onto the end of this with '\texttt{cat en2.dat >> en.dat}'. Also note that gravity needs to be re-initialised and this is done by calling {\tt initial\_conditions} so this routine must reset gravity consistent with the snapshot.
+\texttt{control.f90} and then specifying the restart file number with \texttt{restart\_snapshot}. In previous versions of {\it LareXd}, additional work was required to maintain the energy diagnostics in the file en.dat. This has now been fixed so that the code correctly appends to en.dat after a restart.
 
 
 \section{Output}
 \subsection{IDL}
-The IDL routines used for loading the data are all contained within the IDL directory. They perform the following functions:
+The IDL routines used for loading the data are all contained within the SDF/IDL and IDL directories. They perform the following functions:
 \begin{description}
 \item[\texttt{getdata}:] This is a function which returns a structure containing the snapshot data.
 \item[\texttt{getenergy}:]  This is a function which returns a structure containing the energy diagnostic data.
@@ -571,12 +577,10 @@ There is only one script for loading in both the single and double precision dat
 \subsubsection{\texttt{getdata}}
 This function loads the snapshot data. The syntax is:
 \begin{verbatim}
-IDL>  ds = getdata(snapshot[,/var1,...,/empty,wkdir=directory])
+IDL>  ds = getdata(snapshot[,/var1,...,wkdir=directory])
 \end{verbatim}
 
 After running this \texttt{ds} will contain the snapshot data structure. \texttt{snapshot} is the snapshot number to load, just providing the snapshot number will load all the variable arrays in from the default data directory ``Data''.
-
-Including the \texttt{/empty} switch will set the data structure equal to a structure containing just the header information and the grid, see Table \ref{datastructure} for the header information, this empty structure is useful for passing to other functions/subroutines which only require the header information. For the included routines this is only the \texttt{addpip} routine. Setting \texttt{/empty} will over-ride any variable declarations.
 
 It is possible to just load a selection of the variables rather than all of them, this can be useful with large data files as it saves memory and is quicker. The available variables are listed in Table \ref{datastructure}, they are loaded using \texttt{/variablename}. There are also two flags which load the vector quantities: \texttt{/fields} loads the three magnetic field components (\texttt{bx,by,bz}), \texttt{/vel} loads the three velocity components (\texttt{vx,vy,vz}). As many variables as required can be listed after the snapshot number, see the examples below.
 
@@ -598,6 +602,12 @@ IDL>  ds = getdata(0,/rho,/temperature,/magnetic_field)
 \end{verbatim}
 This will load the density, the temperature and the three components of the magnetic field from snapshot 0 (the initial conditions) in the default directory ``Data''.
 
+To list the contents of a file without loading the data, you can use the \texttt{list\_variables} routine. The syntax is:
+
+\begin{verbatim}
+IDL>  list_variables,snapshot[,directory])
+\end{verbatim}
+
 \begin{table}[!htbp]
 \begin{center}
 \begin{tabular}{|c|p{0.8\columnwidth}|}
@@ -605,15 +615,8 @@ This will load the density, the temperature and the three components of the magn
 \multicolumn{2}{l}{{\em These are all included by default and cannot be individually selected.}}\\
 \hline
 filename& String containing the filename of the snapshot file the data was loaded from.\\
-prec& The precision in bytes of the floating point numbers.\\
+timestep& The simulation time-step that the snapshot was written.\\
 time& The simulation time that the snapshot was written.\\
-grid& A structure containing information about the grid.\\
-grid.nx&Number of points in $x$ used in the simulation. All the following arrays are of size nx+1 in the $x$ direction.\\
-grid.ny&Number of points in $y$ used in the simulation. All the following arrays are of size ny+1 in the $y$ direction.\\
-grid.nz& (3D only) Number of points in $z$ used in the simulation. All the following arrays are of size nz+1 in the $z$ direction.\\
-grid.x& Array containing the cell boundary $x$ coordinates.\\
-grid.y& Array containing the cell boundary $y$ coordinates.\\
-grid.z& (3D only) Array containing the cell boundary $z$ coordinates.\\
 \hline
 \end{tabular}
 \vspace{0.5cm}\\
@@ -622,14 +625,29 @@ grid.z& (3D only) Array containing the cell boundary $z$ coordinates.\\
 \multicolumn{2}{l}{{\em To load only one variable use \texttt{/variable}. Where \texttt{variable} is the name of the variable.}}\\
 \multicolumn{2}{l}{{\em The name of some common variables is given in the left column.}}\\
 \hline
+x& Array containing the cell-centre $x$ coordinates.\\
+y& Array containing the cell-centre $y$ coordinates.\\
+z& (3D only) Array containing the cell-centre $z$ coordinates.\\
+grid& A structure containing information about the grid.\\
+grid.x& Array containing the cell boundary $x$ coordinates.\\
+grid.y& Array containing the cell boundary $y$ coordinates.\\
+grid.z& (3D only) Array containing the cell boundary $z$ coordinates.\\
 rho& Array containing the density. Also loaded by \texttt{/fluid}\\
+energy& Array containing the internal energy. Also loaded by \texttt{/fluid}\\
 temperature& Array containing the temperature. Also loaded by \texttt{/fluid}\\
+pressure& Array containing the pressure. Also loaded by \texttt{/fluid}\\
+cs& Array containing the sound-speed. Also loaded by \texttt{/fluid}\\
 vx& Array containing the $x$ component of velocity. Also loaded by \texttt{/velocity}.\\
 vy&Array containing the $y$ component of velocity. Also loaded by \texttt{/velocity}.\\
 vz&Array containing the $z$ component of velocity. Also loaded by \texttt{/velocity}.\\
 bx&Array containing the $x$ component of the magnetic field. Also loaded by \texttt{/magnetic\_field}.\\
 by&Array containing the $y$ component of the magnetic field. Also loaded by \texttt{/magnetic\_field}.\\
 bz&Array containing the $z$ component of the magnetic field. Also loaded by \texttt{/magnetic\_field}.\\
+j\_par&Array containing the parallel current. Also loaded by \texttt{/pip}.\\
+j\_perp&Array containing the perpendicular current. Also loaded by \texttt{/pip}.\\
+neutral\_fraction&Array containing the neutral fraction. Also loaded by \texttt{/pip}.\\
+eta\_perp&Array containing the perpendicular resistivity. Also loaded by \texttt{/pip}.\\
+eta&Array containing the resistivity. Also loaded by \texttt{/pip}.\\
 \hline
 \end{tabular}
 \end{center}
@@ -649,13 +667,11 @@ This will set \texttt{en} equal to a structure containing all the energy diagnos
 \hline
 points& The number of data points in the diagnostic arrays. All the following arrays are of this size.\\
 time& Array containing the time of each data point.\\
-j\_max& (3D only) Array containing the maximum current.\\
 en\_b & Array containing the total magnetic energy.\\
 en\_ke & Array containing the total kinetic energy.\\
 en\_int&Array containing the total internal energy.\\
 heating\_visc& Array containing the total viscous heating as a running total.\\
 heating\_ohmic& Array containing the total ohmic heating as a running total.\\
-eta\_perp& (3D only) Array containing the maximum perpendicular resistivity.\\
 \hline
 \end{tabular}
 \caption{List of all the elements of the energy diagnostics structure.}
@@ -672,36 +688,33 @@ IDL>  ds = getdata(0)
 To view the elements contained in a structure the \texttt{help} command can be used with the \texttt{/struct} flag:
 \begin{verbatim}
 IDL> help, ds, /struct
-** Structure <771468>, 20 tags, length=10321800,
-**        data length=10321792, refs=1:
-   FILENAME        STRING    'Data/0000.cfd'
-   SNAPSHOT        LONG                 0
-   TIME            DOUBLE           0.0000000
+** Structure <2015808>, 19 tags, length=3219368, data length=3219364, refs=1:
+   FILENAME        STRING    'Data/0000.sdf'
+   TIMESTEP        LONG                 0
+   TIME            DOUBLE         0.021560115
+   DT              DOUBLE         0.021560115
+   TIME_PREV       DOUBLE           0.0000000
+   VISC_HEATING    DOUBLE           0.0000000
    GRID            STRUCT    -> <Anonymous> Array[1]
-   RHO             DOUBLE    Array[201, 401]
-   ENERGY          DOUBLE    Array[201, 401]
-   VX              DOUBLE    Array[201, 401]
-   VY              DOUBLE    Array[201, 401]
-   VZ              DOUBLE    Array[201, 401]
-   BX              DOUBLE    Array[201, 401]
-   BY              DOUBLE    Array[201, 401]
-   BZ              DOUBLE    Array[201, 401]
-   TEMPERATURE     DOUBLE    Array[201, 401]
-   PRESSURE        DOUBLE    Array[201, 401]
-   CS              DOUBLE    Array[201, 401]
-   J_PAR           DOUBLE    Array[201, 401]
-   J_PERP          DOUBLE    Array[201, 401]
-   NEUTRAL_FRACTION
-                   DOUBLE    Array[201, 401]
-   ETA_PERP        DOUBLE    Array[201, 401]
-   ETA             DOUBLE    Array[201, 401]
+   X               DOUBLE    Array[200]
+   Y               DOUBLE    Array[200]
+   RHO             DOUBLE    Array[200, 200]
+   ENERGY          DOUBLE    Array[200, 200]
+   VX              DOUBLE    Array[201, 201]
+   VY              DOUBLE    Array[201, 201]
+   VZ              DOUBLE    Array[201, 201]
+   BX              DOUBLE    Array[201, 200]
+   BY              DOUBLE    Array[200, 201]
+   BZ              DOUBLE    Array[200, 200]
+   TEMPERATURE     DOUBLE    Array[200, 200]
+   PRESSURE        DOUBLE    Array[200, 200]
 \end{verbatim}
 Ignore the first line. The rest of the lines are the elements, the variable type, if the variable is an array it gives the array dimensions otherwise it gives the value.
 
 To access the elements use \texttt{datastructure.element}, for example to print the filename:
 \begin{verbatim}
 IDL> print, ds.filename
-Data/0000.l3d
+Data/0000.sdf
 \end{verbatim}
 
 Or to contour the temperature:
@@ -833,7 +846,7 @@ Note that this $L_r$ is still in S.I. units and to convert to a normalised term 
 
 \bibitem{jcp} T. D. Arber, A. W. Longbottom, C. L. Gerrard, A. M. and Milne. \textit{J. Comput. Phys.} \textbf{171}, 151-181 (2001)
 
-\bibitem{visit} \texttt{http://www.llnl.gov/visit/}
+\bibitem{visit} \texttt{https://wci.llnl.gov/simulation/computer-codes/visit}
 
 \bibitem{benson} D. J. Benson, \textit{Comput. Methods Appl. Mech. Eng.} \textbf{99} 148 (1992)
 
