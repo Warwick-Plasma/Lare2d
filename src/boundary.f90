@@ -117,8 +117,36 @@ CONTAINS
 
 
 
+  SUBROUTINE bz_bcs
+
+    CALL bz_mpi
+
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
+      bz( 0,:) = bz(1,:)
+      bz(-1,:) = bz(2,:)
+    END IF
+
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
+      bz(nx+1,:) = bz(nx  ,:)
+      bz(nx+2,:) = bz(nx-1,:)
+    END IF
+
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
+      bz(:, 0) = bz(:,1)
+      bz(:,-1) = bz(:,2)
+    END IF
+
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
+      bz(:,ny+1) = bz(:,ny  )
+      bz(:,ny+2) = bz(:,ny-1)
+    END IF
+
+  END SUBROUTINE bz_bcs
+
+
+
   !****************************************************************************
-  ! Boundary condition for specific internal energy
+  ! Boundary conditions for specific internal energy
   !****************************************************************************
 
   SUBROUTINE energy_bcs
@@ -150,7 +178,7 @@ CONTAINS
 
 
   !****************************************************************************
-  ! Density boundary conditions
+  ! Boundary conditions for density
   !****************************************************************************
 
   SUBROUTINE density_bcs
@@ -323,33 +351,5 @@ CONTAINS
     END IF
 
   END SUBROUTINE damp_boundaries
-
-
-
-  SUBROUTINE bz_bcs
-
-    CALL bz_mpi
-
-    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
-      bz( 0,:) = bz(1,:)
-      bz(-1,:) = bz(2,:)
-    END IF
-
-    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
-      bz(nx+1,:) = bz(nx  ,:)
-      bz(nx+2,:) = bz(nx-1,:)
-    END IF
-
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
-      bz(:, 0) = bz(:,1)
-      bz(:,-1) = bz(:,2)
-    END IF
-
-    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
-      bz(:,ny+1) = bz(:,ny  )
-      bz(:,ny+2) = bz(:,ny-1)
-    END IF
-
-  END SUBROUTINE bz_bcs
 
 END MODULE boundary

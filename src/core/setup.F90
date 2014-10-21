@@ -48,9 +48,6 @@ CONTAINS
 
   SUBROUTINE after_control
 
-    ! Setup arrays and other variables which can only be set after
-    ! user input
-
     IF (IAND(initial, IC_RESTART) == 0) restart_snapshot = 0
 
     p_visc = 0.0_num
@@ -66,8 +63,6 @@ CONTAINS
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num
-
-    CALL get_job_id(jobid)
 
   END SUBROUTINE after_control
 
@@ -407,20 +402,22 @@ CONTAINS
     CHARACTER(*), INTENT(IN) :: str_in, str_test
     CHARACTER(30) :: str_trim
     LOGICAL :: str_cmp
+    INTEGER :: l
 
     str_trim = TRIM(ADJUSTL(str_in))
+    l = LEN(str_test)
 
-    IF (LEN(str_test) > LEN(str_in)) THEN
+    IF (l > LEN(str_in)) THEN
       str_cmp = .FALSE.
       RETURN
     END IF
 
-    IF (str_trim(LEN(str_test)+1:LEN(str_test)+1) /= ' ') THEN
+    IF (str_trim(l+1:l+1) /= ' ') THEN
       str_cmp = .FALSE.
       RETURN
     END IF
 
-    str_cmp = str_trim(1:LEN(str_test)) == str_test
+    str_cmp = str_trim(1:l) == str_test
 
   END FUNCTION str_cmp
 
