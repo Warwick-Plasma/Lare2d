@@ -78,7 +78,7 @@ CONTAINS
   ! Boundary exchange for Bz
   !****************************************************************************
 
-  END SUBROUTINE bz_mpi
+  SUBROUTINE bz_mpi
 
     CALL MPI_SENDRECV( &
         bz(   1,-1), 1, bz_xface,  proc_x_min, tag, &
