@@ -15,12 +15,12 @@ lagran.f90
 
 Most of lagran.f90 should not be altered by end users, but the single subroutine "eta_calc" is used to calculate the resistivity in the code. In the routine, simply set the array "eta" to the required value at every point in space and the code will then apply that value of resistivity in the simulation.
 
---------------------------------------------------------------   
+--------------------------------------------------------------
 conduct.f90
 
-Contains the radiative loss, currently RTV as an example, and heating functions. An example is given of a heating function which includes about the most complicated prescription possible so that users ought to be able to modify easily.  
+Contains the radiative loss, currently RTV as an example, and heating functions. An example is given of a heating function which includes about the most complicated prescription possible so that users ought to be able to modify easily.
 
---------------------------------------------------------------   
+--------------------------------------------------------------
 setup.f90
 
 Contains the routines for defining stretched grids in x and y. Don't just use the default examples, make do what you want.

@@ -23,9 +23,9 @@
     DO iy = -1, ny+2
        bx(:,iy) = b0* tanh(yc(iy) / lamda)
        rho(:,iy) = rho0 * (1.0_num / COSH(yc(iy) / lamda))**2 + rhoinf
-    ENDDO
+    END DO
 
-    energy = 0.75_num 
+    energy = 0.75_num
 
   END SUBROUTINE set_initial_conditions
 
@@ -116,24 +116,24 @@ SUBROUTINE set_initial_conditions
     vy = 0.0_num
     vz = 0.0_num
     bz = 0.0_num
-    b1 = 0.75_num 
-    b2 = 1.0_num 
+    b1 = 0.75_num
+    b2 = 1.0_num
 
     DO ix = -1, nx+2
        DO iy = -1, ny+2
           x = xc(ix) + 0.5_num / SQRT(2.0_num)
           y = yc(iy) + 0.5_num / SQRT(2.0_num)
-          s = (x + y) / SQRT(2.0_num) 
+          s = (x + y) / SQRT(2.0_num)
           IF (s > 0.5_num + 0.1_num*dxb(1)) THEN
              rho(ix,iy) = 0.125_num
              energy(ix,iy) = 0.1_num / (gamma - 1.0_num)
-             bx(ix,iy) = (b1 + b2) / SQRT(2.0_num) 
+             bx(ix,iy) = (b1 + b2) / SQRT(2.0_num)
              by(ix,iy) = (b1 - b2) / SQRT(2.0_num)
           ELSE
              rho(ix,iy) = 1.0_num
              energy(ix,iy) = 1.0_num / (gamma - 1.0_num)
              bx(ix,iy) = (b1 - b2) / SQRT(2.0_num)
-             by(ix,iy) = (b1 + b2) / SQRT(2.0_num) 
+             by(ix,iy) = (b1 + b2) / SQRT(2.0_num)
           END IF
        END DO
     END DO
@@ -214,7 +214,7 @@ SUBROUTINE set_initial_conditions
     DO ix = -1, nx+2
        DO iy = -1, ny+2
           r = xb(ix)*COS(angle) + yb(iy)*SIN(angle)
-          vpar = 0.0_num 
+          vpar = 0.0_num
           vperp = a * SIN(k*r)
           vx(ix,iy) = vpar * COS(angle) - vperp * SIN(angle)
           vy(ix,iy) = vpar * SIN(angle) + vperp * COS(angle)
@@ -267,11 +267,11 @@ SUBROUTINE set_initial_conditions
     gamma = 5.0_num / 3.0_num
 
     grav = 274.0_num
-    IF (coordinates(1) .EQ. 0) grav(0) = 0.0_num
-    IF (coordinates(1) .EQ. nprocy-1) grav(ny) = 0.0_num
+    IF (coordinates(1) == 0) grav(0) = 0.0_num
+    IF (coordinates(1) == nprocy-1) grav(ny) = 0.0_num
 
     max_cycles=100
-    IF (eos_number .EQ. EOS_IDEAL) max_cycles=1
+    IF (eos_number == EOS_IDEAL) max_cycles=1
 
     !First cycle always use ideal gas equation of state for first guess
     eos_this_cycle=EOS_IDEAL
@@ -280,8 +280,8 @@ SUBROUTINE set_initial_conditions
       DO ix = -1,nx+2
           DO iy = -1,ny+2
             IF (yc(iy) < 0.0_num) THEN
-                T = t_ph - (a * grav(iy) * yc(iy) * mbar/kb/ (m+1.0_num) )    
-            ELSE 
+                T = t_ph - (a * grav(iy) * yc(iy) * mbar/kb/ (m+1.0_num) )
+            ELSE
               T = t_ph + &
                    ((t_cor-t_ph)*0.5_num * (TANH((yc(iy)-y_cor)/wtr)+1.0_num))
             END IF
@@ -313,7 +313,7 @@ SUBROUTINE set_initial_conditions
      END IF
      !If there are any other cycles the use the real equation of state
      eos_this_cycle=eos_number
-  ENDDO
+  END DO
 
   by = 0.001_num
 

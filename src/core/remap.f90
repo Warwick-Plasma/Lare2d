@@ -1,6 +1,7 @@
 MODULE remap
 
   USE shared_data
+  USE boundary
   USE xremap
   USE yremap
   USE zremap
@@ -13,7 +14,9 @@ MODULE remap
 
 CONTAINS
 
-  SUBROUTINE eulerian_remap(i)  ! Strang splitting
+  ! Strang splitting
+
+  SUBROUTINE eulerian_remap(i)
 
     INTEGER, INTENT(IN) :: i
     INTEGER :: case_test
@@ -24,18 +27,24 @@ CONTAINS
 
     DO ix = -1, nx + 2
       DO iy = -1, ny + 2
-        bx(ix, iy) = bx(ix, iy) * dyb(iy)
-        by(ix, iy) = by(ix, iy) * dxb(ix)
-        bz(ix, iy) = bz(ix, iy) * cv(ix, iy)
+        bx(ix,iy) = bx(ix,iy) * dyb(iy)
+        by(ix,iy) = by(ix,iy) * dxb(ix)
+        bz(ix,iy) = bz(ix,iy) * cv(ix,iy)
       END DO
     END DO
 
-    bx(-2, :) = bx(-2, :) * dyb
-    by(:, -2) = by(:, -2) * dxb
+    DO iy = -1, ny + 2
+      bx(-2,iy) = bx(-2,iy) * dyb(iy)
+    END DO
+
+    DO ix = -1, nx + 2
+      by(ix,-2) = by(ix,-2) * dxb(ix)
+    END DO
 
     case_test = MODULO(i, 6)
 
-    SELECT CASE(case_test)  ! Strang ordering
+    ! Strang ordering
+    SELECT CASE(case_test)
     CASE (0)
       CALL remap_x
       CALL remap_y
@@ -62,16 +71,23 @@ CONTAINS
       CALL remap_z
     END SELECT
 
-    DO ix = -1, nx + 2
-      DO iy = -1, ny + 2
-        bx(ix, iy) = bx(ix, iy) / dyb(iy)
-        by(ix, iy) = by(ix, iy) / dxb(ix)
-        bz(ix, iy) = bz(ix, iy) / cv(ix, iy)
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
+        bx(ix,iy) = bx(ix,iy) / dyb(iy)
+        by(ix,iy) = by(ix,iy) / dxb(ix)
+        bz(ix,iy) = bz(ix,iy) / cv(ix,iy)
       END DO
     END DO
 
-    bx(-2, :) = bx(-2, :) / dyb
-    by(:, -2) = by(:, -2) / dxb
+    DO iy = -1, ny + 2
+      bx(-2,iy) = bx(-2,iy) / dyb(iy)
+    END DO
+
+    DO ix = -1, nx + 2
+      by(ix,-2) = by(ix,-2) / dxb(ix)
+    END DO
+
+    CALL bfield_bcs
 
   END SUBROUTINE eulerian_remap
 

@@ -157,8 +157,8 @@ DEFINES := $(DEF)
 # --------------------------------------------------
 
 all: main
-COMMIT: FORCE
 
+COMMIT: FORCE
 	@./$(SRCDIR)/gen_commit_string || $(MAKE) $(MAKECMDGOALS)
 -include COMMIT
 
@@ -166,6 +166,18 @@ SDFDIR = SDF/FORTRAN/src
 SRCDIR = src
 OBJDIR = obj
 BINDIR = bin
+<<<<<<< HEAD
+MODULEFLAG = -I$(OBJDIR) -J$(OBJDIR)
+OPFLAGS = $(QMONO) $(QSINGLE) $(QFIRSTORDER)
+FC = mpif90 $(OPFLAGS)
+PREPROFLAGS = $(NONMPIIO)
+
+OBJFILES = shared_data.o mpi_routines.o openboundary.o mpiboundary.o boundary.o normalise.o conduct.o diagnostics.o setup.o lagran.o  \
+ remap.o xremap.o yremap.o zremap.o initial_conditions.o\
+ output_cartesian.o iocontrol.o output.o iocommon.o input.o inputfunctions.o\
+ input_cartesian.o neutral.o control.o\
+ welcome.o lare2d.o
+=======
 FC = $(MPIF90)
 DATE := $(shell date +%s)
 MACHINE := $(shell uname -n)
@@ -194,6 +206,7 @@ SRCFILES = boundary.f90 conduct.f90 control.f90 diagnostics.F90 \
 OBJFILES := $(SRCFILES:.f90=.o)
 OBJFILES := $(OBJFILES:.F90=.o)
 
+>>>>>>> feature/tidyup
 FULLTARGET = $(BINDIR)/$(TARGET)
 
 #vpath %.f90 $(SRCDIR)
@@ -204,14 +217,26 @@ VPATH = $(SRCDIR):$(SRCDIR)/core:$(SRCDIR)/io:$(SDFDIR):$(OBJDIR)
 # Rule to build the fortran files
 
 %.o: %.f90
+<<<<<<< HEAD
+	@mkdir -p $(BINDIR) $(OBJDIR) 
+	$(FC) -c $(FFLAGS)  $(MODULEFLAG) -o $(OBJDIR)/$@ $<
+
+%.o: %.F90
+	@mkdir -p $(BINDIR) $(OBJDIR) 
+	$(FC) -c $(FFLAGS)  $(MODULEFLAG) -o $(OBJDIR)/$@ $(PREPROFLAGS) $<
+=======
 	$(FC) -c $(FFLAGS) $(MODULEFLAG) -o $(OBJDIR)/$@ $<
 
 %.o: %.F90
 	$(FC) -c $(FFLAGS) $(MODULEFLAG) -o $(OBJDIR)/$@ $(PREPROFLAGS) $<
+>>>>>>> feature/tidyup
 
 main: $(FULLTARGET)
 $(FULLTARGET): $(OBJFILES)
+<<<<<<< HEAD
+=======
 	@mkdir -p $(BINDIR)
+>>>>>>> feature/tidyup
 	$(FC) $(FFLAGS) $(MODULEFLAG) -o $@ $(addprefix $(OBJDIR)/,$(OBJFILES))
 
 clean:
