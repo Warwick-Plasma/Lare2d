@@ -38,19 +38,19 @@ CONTAINS
 
       !Set up a driver with 1000 elements
       drive_nel=1000
+      ALLOCATE(drive_axis(1:drive_nel), drive_phase (1:nx, 1:drive_nel), drive_amp(1:nx,1:drive_nel))
       min_omega=0.01_num
       max_omega=10.0_num
       !Initialize the random number generator. Change the seed to get different results
-      CALL random_init(6282663)
-    DO iel=1,drive_nel
-      !Uniformly spaced frequency bins
-      drive_axis(iel)=REAL(iel-1,num)/REAL(drive_nel-1,num) * (max_omega-min_omega) + min_omega
-      !Random phase
-      drive_phase(:,iel)=random()*2.0_num*pi
-      !Kolmogorov amplitude
-      drive_amp(:,iel)=(drive_axis(iel))**(-2.5_num/3.0_num)
-    END DO
-
+      CALL random_init(76783467)
+      DO iel=1,drive_nel
+        !Uniformly spaced frequency bins
+        drive_axis(iel)=REAL(iel-1,num)/REAL(drive_nel-1,num) * (max_omega-min_omega) + min_omega
+        !Random phase
+        drive_phase(:,iel)=random()*2.0_num*pi
+        !Kolmogorov amplitude
+        drive_amp(:,iel)=1.0e-4_num * (drive_axis(iel))**(-2.5_num/3.0_num)
+      END DO
     ELSE
       IF (xbc_min == BC_OPEN) THEN
         bx(-2,:) = bx(-1,:)
