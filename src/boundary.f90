@@ -7,8 +7,15 @@ MODULE boundary
 
   USE shared_data
   USE mpiboundary
+  USE random_generator
 
   IMPLICIT NONE
+
+SAVE
+
+  REAL(num), DIMENSION(:),ALLOCATABLE :: drive_axis
+  REAL(num), DIMENSION(:,:),ALLOCATABLE :: drive_phase, drive_amp
+  INTEGER :: drive_nel
 
 CONTAINS
 
@@ -20,12 +27,30 @@ CONTAINS
 
     ! Must be called twice
     LOGICAL, SAVE :: first_call = .TRUE.
+    REAL(num) :: min_omega,max_omega, rand_num
+    INTEGER :: iel
 
     IF (first_call) THEN
       any_open = .FALSE.
       IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
           .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
       first_call = .FALSE.
+
+      !Set up a driver with 1000 elements
+      drive_nel=1000
+      ALLOCATE(drive_axis(1:drive_nel), drive_phase (1:nx, 1:drive_nel), drive_amp(1:nx,1:drive_nel))
+      min_omega=0.01_num
+      max_omega=10.0_num
+      !Initialize the random number generator. Change the seed to get different results
+      CALL random_init(76783467)
+      DO iel=1,drive_nel
+        !Uniformly spaced frequency bins
+        drive_axis(iel)=REAL(iel-1,num)/REAL(drive_nel-1,num) * (max_omega-min_omega) + min_omega
+        !Random phase
+        drive_phase(:,iel)=random()*2.0_num*pi
+        !Kolmogorov amplitude
+        drive_amp(:,iel)=1.0e-4_num * (drive_axis(iel))**(-2.5_num/3.0_num)
+      END DO
     ELSE
       IF (xbc_min == BC_OPEN) THEN
         bx(-2,:) = bx(-1,:)
@@ -233,6 +258,7 @@ CONTAINS
       vx(:,-2:0) = 0.0_num
       vy(:,-2:0) = 0.0_num
       vz(:,-2:0) = 0.0_num
+      CALL produce_spectrum(vz(:,-2:0),time,1.0_num)
     END IF
 
     IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
@@ -269,6 +295,7 @@ CONTAINS
       vx1(:,-2:0) = 0.0_num
       vy1(:,-2:0) = 0.0_num
       vz1(:,-2:0) = 0.0_num
+      CALL produce_spectrum(vz1(:,-2:0),time+dt/2.0_num,1.0_num)
     END IF
 
     IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
@@ -278,6 +305,32 @@ CONTAINS
     END IF
 
   END SUBROUTINE remap_v_bcs
+
+
+
+  !****************************************************************************
+  ! Routine to produce a spectral driver from a set of sine waves
+  !****************************************************************************
+
+  SUBROUTINE produce_spectrum(dat, time, rise_time)
+
+    REAL(num), DIMENSION(-2:,:), INTENT(INOUT) :: dat
+    REAL(num), INTENT(IN) :: time, rise_time
+    REAL(num) :: val
+    INTEGER :: iel, ix
+
+    DO ix=0,nx+1
+      val=0.0_num
+      DO iel=1,drive_nel
+        val=val+drive_amp(ix,iel)*SIN(drive_axis(iel)*time+drive_phase(ix,iel))
+      END DO
+      dat(ix,:)=val
+    END DO
+       
+    IF (time .LT. rise_time) &
+        dat = dat * 0.5_num * (1.0_num-COS(time*pi/rise_time))
+
+  END SUBROUTINE produce_spectrum
 
 
 
