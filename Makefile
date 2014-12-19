@@ -247,7 +247,7 @@ conduct.o: conduct.f90 boundary.o shared_data.o
 control.o: control.f90 normalise.o shared_data.o
 diagnostics.o: diagnostics.F90 boundary.o conduct.o sdf.o shared_data.o \
   version_data.o
-initial_conditions.o: initial_conditions.f90 neutral.o shared_data.o
+initial_conditions.o: initial_conditions.f90 neutral.o shared_data.o diagnostics.o
 lagran.o: lagran.F90 boundary.o conduct.o neutral.o shared_data.o
 lare2d.o: lare2d.f90 boundary.o control.o diagnostics.o initial_conditions.o \
   lagran.o mpi_routines.o neutral.o normalise.o openboundary.o remap.o setup.o \

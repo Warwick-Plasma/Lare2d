@@ -1,6 +1,7 @@
 !******************************************************************************
 ! Controls all I/O and diagnostics. Output files are 'lare2d.dat',
 ! 'control.dat', 'en.dat' and a series of snapshots in 'nnnn.sdf'
+! Probes are in files called probennnn.dat
 !******************************************************************************
 
 MODULE diagnostics
@@ -15,7 +16,8 @@ MODULE diagnostics
 
   PRIVATE
 
-  PUBLIC :: set_dt, output_routines, energy_correction, write_file, setup_files
+  PUBLIC :: set_dt, output_routines, energy_correction, write_file, &
+      setup_files, add_probe
 
   REAL(dbl) :: visc_heating
   LOGICAL, SAVE :: visc_heating_updated = .FALSE.
@@ -47,6 +49,7 @@ CONTAINS
 
     ! Check if snapshot is needed
     CALL io_test(step, print_arrays, last_call)
+    CALL write_probes(last_call)
 
     ! Do every (history_frequency) steps
     IF (MOD(step, history_frequency) == 0 .OR. last_call) THEN
@@ -99,6 +102,121 @@ CONTAINS
     END IF
 
   END SUBROUTINE output_routines
+
+
+
+  !****************************************************************************
+  ! Add a probe to the list of probes
+  !****************************************************************************
+
+  SUBROUTINE add_probe(location_x,location_y)
+
+    REAL(num), INTENT(IN) :: location_x, location_y
+    INTEGER :: ix, iy, loc_x, loc_y
+    TYPE(probe), POINTER :: newprobe
+
+    probe_count_global=probe_count_global+1
+
+    loc_x=-1
+    DO ix=1,nx
+      IF (xb(ix) .LT. location_x .AND. xb(ix+1) .GE. location_x &
+          .OR. nx_global .EQ. 1) THEN
+        loc_x = ix
+        EXIT
+      ENDIF
+    ENDDO
+    IF (loc_x .EQ. -1) RETURN
+
+    loc_y=-1
+    DO iy=1,ny
+      IF (yb(iy) .LT. location_y .AND. yb(iy+1) .GE. location_y &
+          .OR. ny_global .EQ. 1) THEN
+        loc_y = iy
+        EXIT
+      ENDIF
+    ENDDO
+    IF (loc_y .EQ. -1) RETURN
+
+    ALLOCATE(newprobe)
+    NULLIFY(newprobe%next)
+    ALLOCATE(newprobe%data(7,1:probe_elements))
+    newprobe%probe_id=probe_count_global
+    newprobe%cell_x=loc_x
+    newprobe%cell_y=loc_y
+
+    IF(ASSOCIATED(probe_head)) THEN
+      probe_tail%next=>newprobe
+      probe_tail=>newprobe
+    ELSE
+      probe_head=>newprobe
+      probe_tail=>newprobe
+    ENDIF
+
+  END SUBROUTINE add_probe
+
+
+
+  !****************************************************************************
+  ! Write probe output
+  !****************************************************************************
+
+  SUBROUTINE write_probes(last_call)
+
+    TYPE(probe), POINTER :: current
+    LOGICAL, INTENT(IN) :: last_call
+    CHARACTER(LEN = 9+data_dir_max_length+n_zeros) :: filename
+    INTEGER :: index, ierr
+    LOGICAL, SAVE :: first_write=.TRUE.
+
+    current=>probe_head
+    IF (time .GT. probe_dump_next .AND. probe_dump_dt .GE. 0.0_num) THEN
+      DO WHILE (ASSOCIATED(current))
+        current%data(1,probe_data_point) = time
+        current%data(2,probe_data_point) = vx(current%celL_x,current%cell_y)
+        current%data(3,probe_data_point) = vy(current%celL_x,current%cell_y)
+        current%data(4,probe_data_point) = vz(current%celL_x,current%cell_y)
+        current%data(5,probe_data_point) = &
+            0.5_num*(bx(current%cell_x,current%cell_y) + &
+            bx(current%cell_x,current%cell_y+1))
+        current%data(6,probe_data_point) = &
+            0.5_num*(by(current%cell_x,current%cell_y) + &
+            by(current%cell_x+1,current%cell_y))
+        current%data(7,probe_data_point) = &
+            0.25_num*(bz(current%cell_x,current%cell_y) + &
+            bz(current%cell_x,current%cell_y+1) + &
+            bz(current%cell_x+1,current%cell_y) + &
+            bz(current%cell_x+1,current%cell_y+1))
+
+        current=>current%next
+      ENDDO
+      probe_dump_next=probe_dump_next+probe_dump_dt
+      probe_data_point = probe_data_point+1
+    ENDIF
+    IF (probe_data_point .GT. probe_elements .OR. last_call) THEN
+      probe_dumps=probe_dumps+probe_data_point-1
+      current=>probe_head
+      DO WHILE (ASSOCIATED(current))
+        WRITE(filename,'(a,"/probe",i3.3,".dat")'),TRIM(data_dir),current%probe_id
+        IF (first_write) THEN
+          OPEN(UNIT=55,FILE=filename,access='STREAM',status='replace',action='write')
+          WRITE(55) probe_dumps
+          WRITE(55) xb(current%cell_x)
+          WRITE(55) yb(current%cell_y)
+        ELSE
+          OPEN(UNIT=55,FILE=filename,access='STREAM',status='old',position='append',action='write')
+        ENDIF
+        WRITE(55) current%data(:,1:probe_data_point-1)
+        !Seek back to start of output file
+        CALL FSEEK(55, 0, 0, ierr)
+        WRITE(55) probe_dumps
+        CLOSE(UNIT=55)
+        current=>current%next
+      ENDDO
+      probe_data_point=1
+      first_write=.FALSE.
+    ENDIF
+  END SUBROUTINE write_probes
+
 
 
 

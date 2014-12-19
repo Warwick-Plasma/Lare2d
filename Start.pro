@@ -5,3 +5,4 @@ LARE_PATH='./IDL'
 
 @./SDF/IDL/Start.pro
 .r getenergy
+.r getprobe
