@@ -196,7 +196,7 @@ MODULE shared_data
   !Probes
   INTEGER :: probe_elements=1000
   REAL(num) :: probe_dump_dt=-0.0_num, probe_dump_next=0.0_num
-  
+
   INTEGER(KIND=8) :: probe_dumps = 0
   TYPE probe
     INTEGER :: probe_id

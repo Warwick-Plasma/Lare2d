@@ -326,7 +326,7 @@ CONTAINS
       END DO
       dat(ix,:)=val
     END DO
-       
+
     IF (time .LT. rise_time) &
         dat = dat * 0.5_num * (1.0_num-COS(time*pi/rise_time))
 
