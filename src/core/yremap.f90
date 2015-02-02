@@ -464,7 +464,7 @@ CONTAINS
         ixm = ix - 1
         area = dxb(ix)
 
-        v_advect = (vy1(ix,iy) + vy1(ix,iym)) * 0.5_num
+        v_advect = (vy1(ix,iy) + vy1(ixm,iy)) * 0.5_num
 
         fm  = energy(ix,iym )
         fi  = energy(ix,iy  )
