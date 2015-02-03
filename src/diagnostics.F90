@@ -123,8 +123,8 @@ CONTAINS
           .OR. nx_global == 1) THEN
         loc_x = ix
         EXIT
-      ENDIF
-    ENDDO
+      END IF
+    END DO
     IF (loc_x == -1) RETURN
 
     loc_y = -1
@@ -133,8 +133,8 @@ CONTAINS
           .OR. ny_global == 1) THEN
         loc_y = iy
         EXIT
-      ENDIF
-    ENDDO
+      END IF
+    END DO
     IF (loc_y == -1) RETURN
 
     ALLOCATE(newprobe)
@@ -150,7 +150,7 @@ CONTAINS
     ELSE
       probe_head => newprobe
       probe_tail => newprobe
-    ENDIF
+    END IF
 
   END SUBROUTINE add_probe
 
@@ -183,10 +183,10 @@ CONTAINS
             0.25_num * (bz(cx,cy) + bz(cx+1,cy) + bz(cx,cy+1) + bz(cx+1,cy+1))
 
         current => current%next
-      ENDDO
+      END DO
       probe_dump_next = probe_dump_next + probe_dump_dt
       probe_data_point = probe_data_point + 1
-    ENDIF
+    END IF
 
     IF (probe_data_point > probe_elements .OR. last_call) THEN
       probe_dumps = probe_dumps + probe_data_point - 1
@@ -203,17 +203,17 @@ CONTAINS
         ELSE
           OPEN(UNIT=55, FILE=TRIM(filename), ACCESS='STREAM', ACTION='WRITE', &
               STATUS='OLD', POSITION='APPEND')
-        ENDIF
+        END IF
         WRITE(55) current%array(:,1:probe_data_point-1)
         ! Seek back to start of output file
         CALL FSEEK(55, 0, 0, ierr)
         WRITE(55) probe_dumps
         CLOSE(UNIT=55)
         current => current%next
-      ENDDO
+      END DO
       probe_data_point = 1
       first_write = .FALSE.
-    ENDIF
+    END IF
 
   END SUBROUTINE write_probes
 
