@@ -193,23 +193,22 @@ MODULE shared_data
   INTEGER, PARAMETER :: c_stagger_by = c_stagger_edge_y
   INTEGER, PARAMETER :: c_stagger_bz = c_stagger_edge_z
 
-  !Probes
-  INTEGER :: probe_elements=1000
-  REAL(num) :: probe_dump_dt=-0.0_num, probe_dump_next=0.0_num
+  ! Probes
+  INTEGER :: probe_elements = 1000
+  REAL(num) :: probe_dump_dt = -0.0_num, probe_dump_next = 0.0_num
 
   INTEGER(KIND=8) :: probe_dumps = 0
   TYPE probe
     INTEGER :: probe_id
 
-    INTEGER :: cell_x,cell_y
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: data
+    INTEGER :: cell_x, cell_y
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: array
 
     TYPE(probe), POINTER :: next
   END TYPE probe
 
-  INTEGER :: probe_count_global=0, probe_data_point=1
-  TYPE(probe), POINTER :: probe_head,probe_tail
-
+  INTEGER :: probe_count_global = 0, probe_data_point = 1
+  TYPE(probe), POINTER :: probe_head, probe_tail
 
   ! Number of variables to dump
   LOGICAL, DIMENSION(20) :: dump_mask
