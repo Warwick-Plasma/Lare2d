@@ -588,7 +588,7 @@ CONTAINS
               - 0.5_num * ai  * (vx(ix ,iy) - flux(ix,iy)) &
               + 0.5_num * aip * (vx(ixp,iy) - flux(ix,iy))
 
-          dk = dk * dm(ix,iy) * 0.25_num
+          dk = dk * dm(ix,iy) * 0.5_num
           delta_ke(ixp,iy ) = delta_ke(ixp,iy ) + dk
           delta_ke(ixp,iyp) = delta_ke(ixp,iyp) + dk
         END DO
@@ -679,7 +679,7 @@ CONTAINS
               - 0.5_num * ai  * (vy(ix ,iy) - flux(ix,iy)) &
               + 0.5_num * aip * (vy(ixp,iy) - flux(ix,iy))
 
-          dk = dk * dm(ix,iy) * 0.25_num
+          dk = dk * dm(ix,iy) * 0.5_num
           delta_ke(ixp,iy ) = delta_ke(ixp,iy ) + dk
           delta_ke(ixp,iyp) = delta_ke(ixp,iyp) + dk
         END DO
@@ -770,7 +770,7 @@ CONTAINS
               - 0.5_num * ai  * (vz(ix ,iy) - flux(ix,iy)) &
               + 0.5_num * aip * (vz(ixp,iy) - flux(ix,iy))
 
-          dk = dk * dm(ix,iy) * 0.25_num
+          dk = dk * dm(ix,iy) * 0.5_num
           delta_ke(ixp,iy ) = delta_ke(ixp,iy ) + dk
           delta_ke(ixp,iyp) = delta_ke(ixp,iyp) + dk
         END DO
