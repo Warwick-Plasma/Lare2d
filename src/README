@@ -1,10 +1,10 @@
 Lare2D main code directory
 --------------------------
 Contains
-	boundary.f90
-	control.f90
-	diagnostics.f90
-	initial_conditions.f90
+  boundary.f90
+  control.f90
+  diagnostics.f90
+  initial_conditions.f90
 
 -----------------------------------------------------------------
 control.f90
@@ -23,7 +23,7 @@ initial_conditions.f90 controls the initial conditions for the simulation. It co
 rho - density
 energy - specific internal energy
 v{x,y,z} - Velocity in all three directions
-b{x,y,z} - Magnetic field in all three directions      
+b{x,y,z} - Magnetic field in all three directions
 grav -Acceleration due to gravity - downwards is positive.
 lambda_i - Only needed if running with Hall MHD
 -----------------------------------------------------------------
@@ -35,5 +35,5 @@ diagnostics.f90
 
 diagnostics.f90 performs the output of data to the output dump files, and must be changed by the user if additional output data is required. Changing the output dumps is described in the LARE manual
 -----------------------------------------------------------------
-  
+
 

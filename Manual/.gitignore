@@ -1,0 +1,7 @@
+*.aux
+*.log
+*.gz
+*.dvi
+*.tmproj
+LareXd-manual.pdf
+LareXd-manual.fdb_latexmk
