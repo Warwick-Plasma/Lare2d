@@ -1,6 +1,6 @@
 *.[od]
 bin
 obj
-Data/
+Data*/
 COMMIT
 .LareXd-manual.lb
