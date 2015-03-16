@@ -20,7 +20,6 @@ FUNCTION getprobe,probe,wkdir=wkdir,single=single
   ENDELSE
   readu,10,posx,posy
   readu,10,data
-  PRINT ,data(*,0)
   close,10
   IF (KEYWORD_SET(oldstyle)) THEN BEGIN
     probe = {filename:file,time:reform(data(0,*)),x_pos:posx, y_pos:posy, vz:reform(data(1,*)), bz:reform(data(2,*))}
