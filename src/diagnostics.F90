@@ -118,8 +118,8 @@ CONTAINS
     probe_count_global = probe_count_global + 1
 
     loc_x = -1
-    DO ix = 1, nx
-      IF ((xb(ix) < location_x .AND. xb(ix+1) >= location_x) &
+    DO ix = 0, nx
+      IF ((xb(ix) <= location_x .AND. xb(ix+1) >= location_x) &
           .OR. nx_global == 1) THEN
         loc_x = ix
         EXIT
@@ -128,8 +128,8 @@ CONTAINS
     IF (loc_x == -1) RETURN
 
     loc_y = -1
-    DO iy = 1, ny
-      IF ((yb(iy) < location_y .AND. yb(iy+1) >= location_y) &
+    DO iy = 0, ny
+      IF ((yb(iy) <= location_y .AND. yb(iy+1) >= location_y) &
           .OR. ny_global == 1) THEN
         loc_y = iy
         EXIT
