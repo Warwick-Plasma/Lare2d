@@ -2,6 +2,7 @@ MODULE initial_conditions
 
   USE shared_data
   USE neutral
+  USE diagnostics
 
   IMPLICIT NONE
 
@@ -206,6 +207,8 @@ CONTAINS
 
     DEALLOCATE(yc_global, dyb_global, dyc_global, mu_m)
     DEALLOCATE(grav_ref, temp_ref, rho_ref, beta_ref, mag_ref)
+
+    CALL add_probe(0.0_num, 0.0_num)
 
   END SUBROUTINE set_initial_conditions
 
