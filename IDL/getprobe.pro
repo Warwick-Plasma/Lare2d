@@ -22,9 +22,12 @@ FUNCTION getprobe,probe,wkdir=wkdir,single=single
   readu,10,data
   close,10
   IF (KEYWORD_SET(oldstyle)) THEN BEGIN
-    probe = {filename:file,time:reform(data(0,*)),x_pos:posx, y_pos:posy, vz:reform(data(1,*)), bz:reform(data(2,*))}
+    probe = {filename:file,time:reform(data(0,*)),x_pos:posx, y_pos:posy, $
+             vz:reform(data(1,*)), bz:reform(data(2,*))}
   ENDIF ELSE BEGIN
-    probe = {filename:file,time:reform(data(0,*)),x_pos:posx, y_pos:posy, vx:reform(data(1,*)), vy:reform(data(2,*)), vz:reform(data(3,*)),bx:reform(data(4,*)), by:reform(data(5,*)), bz:reform(data(6,*))}
+    probe = {filename:file,time:reform(data(0,*)),x_pos:posx, y_pos:posy, $
+             vx:reform(data(1,*)), vy:reform(data(2,*)), vz:reform(data(3,*)), $
+             bx:reform(data(4,*)), by:reform(data(5,*)), bz:reform(data(6,*))}
   ENDELSE
   return,probe
 END
