@@ -165,7 +165,7 @@ CONTAINS
     TYPE(probe), POINTER :: current
     LOGICAL, INTENT(IN) :: last_call
     CHARACTER(LEN=9+data_dir_max_length+n_zeros) :: filename
-    INTEGER :: index, ierr, cx, cy
+    INTEGER :: ierr, cx, cy
     LOGICAL, SAVE :: first_write = .TRUE.
 
     current => probe_head
@@ -192,7 +192,7 @@ CONTAINS
       probe_dumps = probe_dumps + probe_data_point - 1
       current => probe_head
       DO WHILE (ASSOCIATED(current))
-        WRITE(filename, '(a, ''/probe'', i3.3, ''.dat'')'), &
+        WRITE(filename, '(a, ''/probe'', i3.3, ''.dat'')') &
             TRIM(data_dir), current%probe_id
         IF (first_write) THEN
           OPEN(UNIT=55, FILE=TRIM(filename), ACCESS='STREAM', ACTION='WRITE', &
