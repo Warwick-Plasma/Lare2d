@@ -27,8 +27,6 @@ CONTAINS
 
     ! Must be called twice
     LOGICAL, SAVE :: first_call = .TRUE.
-    REAL(num) :: min_omega, max_omega, rand_num
-    INTEGER :: iel
 
     IF (first_call) THEN
       any_open = .FALSE.
