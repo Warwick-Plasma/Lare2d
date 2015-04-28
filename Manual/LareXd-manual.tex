@@ -463,6 +463,15 @@ Note that the gravity array has not changed as this is not updated and therefore
 
 If Hall MHD is used then you must also specify \texttt{lambda\_i(0:nz)} in the initial conditions.
 
+\section{Probe points}
+Probe points can also be added to the run by adding any number of lines of the form\\
+\texttt{CALL add\_probe(xprobe, yprobe)}\\
+where \texttt{(xprobe,yprobe)} are the (x,y) coordinates of a point in the simulation domain. 
+Once this is include the code will output the (x,y) coordinates of the probe point, the velocity 
+and magnetic field components ate that point on each timestep. More variables can be added by
+editing the \texttt{write\_probes} routine in \texttt{diagnostics.F90}. This data can be read in IDL
+using \texttt{getprobe} which has the same syntax as \texttt{getenergy}, see later.
+
 \section{Obtaining the Code}
 The {\it LareXd} codes are currently hosted on the CCPForge site at
 the following two URLs:\linebreak
@@ -524,9 +533,13 @@ copy of your work branch with \texttt{git branch -D workold}.
 \section{Makefile}
 
 The code is a Fortran 90 code and I think conforms with the standard so should work on all compilers. Since the code is also parallel you must have MPI installed to compile and run the code, even if you are only going to run on a single processor machine.
-To compile {\it LareXd}, simply type\\
-\texttt{make}\\
-this will compile the code using the default supplied compiler flags and generate a binary called\\
+To compile {\it LareXd}, simply use the suplied Makefile. Specify a particular compiler with, for example \\
+\texttt{make COMPILER=pgi}\\
+Specify debugging flags with\\ 
+\texttt{make MODE=debug}\\
+Alternatively, these options can be specified as environment variables
+eg. \texttt{export COMPILER=gfortran} can be added to \texttt{\$HOME/.bash\_profile}.
+This will compile the code using the default supplied compiler flags and generate a binary called\\
 \texttt{bin/lare{\it x}d}\\
 where {\it x} is replaced by either 2 or 3. The code can then be run on a workstation using either\\
 \texttt{./bin/lare{\it x}d}\\
