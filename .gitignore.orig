@@ -1,0 +1,10 @@
+*.[od]
+bin
+obj
+Data*/
+COMMIT
+<<<<<<< HEAD
+*.lb
+=======
+.LareXd-manual.lb
+>>>>>>> hotfix/probes
