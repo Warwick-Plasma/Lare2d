@@ -1,6 +1,7 @@
 #! /bin/sh
 
-repo=lare2d
+repo=$(git rev-parse --show-toplevel)
+repo=$(basename $repo)
 cur=`pwd`
 dir=$(mktemp -d -t $repo.XXXXX)
 
