@@ -46,7 +46,6 @@ CONTAINS
     n_s_stages_local=n_s_stages
     CALL MPI_ALLREDUCE(n_s_stages_local, n_s_stages, 1, &
         MPI_INTEGER, MPI_MAX, comm, errcode)
-    IF (rank .EQ.0)  PRINT *,"N_stages ",n_s_stages
   END SUBROUTINE s_stages
 
 
