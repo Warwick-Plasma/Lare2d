@@ -8,10 +8,165 @@ MODULE conduct
   PRIVATE
 
   PUBLIC :: conduct_heat
-
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: temperature
+  
+  INTEGER :: n_s_stages
+  REAL(num),PARAMETER :: pow=5.0_num/2.0_num
+  REAL(num),PARAMETER :: min_b=1.0e-6_num
 
 CONTAINS
+
+
+  !****************************************************************************
+  ! Subroutine calculating the number of stages needed for the RKL2
+  !****************************************************************************
+  SUBROUTINE s_stages
+    REAL (num)  ::  stages, dt_parab, dt1, dt2
+    REAL (num)  ::  pow = 5.0_num/2.0_num
+    INTEGER :: n_s_stages_local
+    dt_parab = 1.e10_num
+
+    DO iy = 1, ny
+      DO ix = 1, nx
+        ! explicit TC time-step
+        dt1 = rho(ix,iy)*dxb(ix)**2 / (2.0_num * kappa_0 * &
+            ((gamma - 1.0_num) * energy(ix,iy) / 2.0_num)**pow)
+        dt2 = rho(ix,iy)*dyb(iy)**2 / (2.0_num * kappa_0 * &
+            ((gamma - 1.0_num) * energy(ix,iy) / 2.0_num)**pow)
+        dt_parab = MIN(dt_parab, dt1,dt2)
+      END DO
+    END DO
+
+    dt_parab = dt_multiplier * dt_parab
+
+    stages = 0.5_num*(SQRT(9.0_num + 16.0_num * (dt/dt_parab))-1.0_num)
+    n_s_stages = CEILING(stages)
+    IF (MODULO(n_s_stages,2) .EQ. 0) THEN 
+      n_s_stages = n_s_stages + 1
+    ENDIF
+    n_s_stages_local=n_s_stages
+    CALL MPI_ALLREDUCE(n_s_stages_local, n_s_stages, 1, &
+        MPI_INTEGER, MPI_MAX, comm, errcode)
+  END SUBROUTINE s_stages
+
+
+
+    !****************************************************************************
+    ! Subroutine to calculate the heat flux
+    !****************************************************************************
+    SUBROUTINE heat_flux(temperature, flux)
+      REAL(num),INTENT(IN),DIMENSION(-1:,-1:) :: temperature
+      REAL(num),INTENT(OUT),DIMENSION(-1:,-1:) :: flux
+      INTEGER :: ix, ixp, ixm
+      REAL(num) :: tb1, tb2, tg1, tg2, fc_sp1, fc_sp2, rho_b1, rho_b2
+      REAL(num) :: tg_a1, tg_a2, tb_p2, tb_p1, tb_m1, tb_m2
+      REAL(num) :: fc_sa1, fc_sa2, fc1, fc2, modb1, modb2
+      REAL(num) :: byf1, byf2, bxf1, bxf2, bzf1, bzf2
+
+      DO iy = 1,ny
+        DO ix = 1,nx
+          ixp = ix + 1
+          ixm = ix - 1
+          iyp = iy + 1
+          iym = iy - 1
+  
+          !X flux
+          byf1=0.25_num*(by(ixm,iy)+by(ix,iy)+by(ixm,iym)+by(ix,iym))
+          byf2=0.25_num*(by(ix,iy)+by(ixp,iy)+by(ix,iym)+by(ixp,iym))
+          bzf1=0.5_num*(bz(ix,iy)+bz(ixm,iy))
+          bzf2=0.5_num*(bz(ix,iy)+bz(ixp,iy))
+
+
+          modb2=SQRT(bx(ix,iy)**2+byf2**2+bzf2**2)
+          modb1=SQRT(bx(ixm,iy)**2+byf1**2+bzf1**2)
+          
+          !Braginskii Conductive Flux
+          !Temperature at the x boundaries in the current cell
+          tb2 = (temperature(ixp,iy) + temperature(ix,iy))/2.0_num
+          tb1 = (temperature(ix,iy) + temperature(ixm,iy))/2.0_num
+  
+          !Temperature at the x boundaries in the cell above		  
+          tb_p2 = (temperature(ixp,iyp)+temperature(ix,iyp))/2.0_num
+          tb_p1 = (temperature(ix,iyp)+temperature(ixm,iyp))/2.0_num
+          !Temperature at the x boundaries in the cell below		  
+          tb_m2 = (temperature(ixp,iym)+temperature(ix,iym))/2.0_num
+          tb_m1 = (temperature(ix,iym)+temperature(ixm,iym))/2.0_num
+          !X temperature gradient at the x boundaries of the current cell		  
+          tg2 = (temperature(ixp,iy) - temperature(ix,iy))/dxc(ix)
+          tg1 = (temperature(ix,iy) - temperature(ixm,iy))/dxc(ixm)
+          !Y temperature gradient at the x boundaries of the current cell
+          !Uses centred difference on averaged values, so likely very smoothed
+          tg_a2 = (tb_p2*dyc(iy)**2 - tb2*(dyc(iy)**2-dyc(iym)**2) - &
+              tb_m2*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
+          tg_a1 = (tb_p1*dyc(iy)**2 - tb1*(dyc(iy)**2-dyc(iym)**2) - &
+              tb_m1*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
+
+          fc_sp2 = kappa_0 * tb2**pow * (bx(ix,iy) * (tg2 * bx(ix,iy) + &
+              tg_a2 * byf2)+tg2*min_b)/(modb2**2+min_b) 
+          fc_sp1 = kappa_0 * tb1**pow * (bx(ixm,iy) * (tg1 * bx(ixm,iy) + &
+              tg_a1 * byf1)+tg1*min_b)/(modb1**2+min_b)
+
+          ! Saturated Conductive Flux
+          rho_b2 = (rho(ixp,iy)+rho(ix,iy))/2.0_num
+          rho_b1 = (rho(ix,iy)+rho(ixm,iy))/2.0_num
+          fc_sa2 = (3.0_num/2.0_num) * 42.85_num * rho_b2 * tb2**(3.0_num/2.0_num)  !42.85 = SRQT(m_p/m_e)
+          fc_sa1 = (3.0_num/2.0_num) * 42.85_num * rho_b1 * tb1**(3.0_num/2.0_num)
+
+          ! Conductive Flux Limiter
+          fc2 = (fc_sp2 * fc_sa2) / SQRT( fc_sp2**2.0_num + fc_sa2**2.0_num)
+          fc1 = (fc_sp1 * fc_sa1) / SQRT( fc_sp1**2.0_num + fc_sa1**2.0_num)
+
+          flux(ix,iy) = (fc2-fc1)/dxb(ix)
+
+          !Y flux
+          bxf1=0.25_num*(bx(ix,iy)+bx(ix,iyp)+bx(ixm,iyp)+bx(ixm,iy))
+          bxf2=0.25_num*(bx(ix,iym)+bx(ix,iy)+bx(ixm,iy)+bx(ixm,iym))
+          bzf1=0.5_num*(bz(ix,iy)+bz(ix,iym))
+          bzf2=0.5_num*(bz(ix,iy)+bz(ix,iyp))
+          modb1=SQRT(by(ix,iy)**2+bxf1**2+bzf1**2)
+          modb2=SQRT(by(ix,iym)**2+bxf2**2+bzf2**2)
+
+          ! Braginskii Conductive Flux
+          tb2 = (temperature(ix,iyp) + temperature(ix,iy))/2.0_num
+          tb1 = (temperature(ix,iy) + temperature(ix,iym))/2.0_num
+
+          !Temperature at the y boundaries in the cell right		  
+          tb_p2 = (temperature(ixp,iyp)+temperature(ixp,iy))/2.0_num
+          tb_p1 = (temperature(ixp,iy)+temperature(ixp,iym))/2.0_num
+          !Temperature at the y boundaries in the cell left		  
+          tb_m2 = (temperature(ixm,iyp)+temperature(ixm,iy))/2.0_num
+          tb_m1 = (temperature(ixm,iy)+temperature(ixm,iym))/2.0_num
+          !Y temperature gradient at the y boundaries of the current cell		  
+          tg2 = (temperature(ix,iyp) - temperature(ix,iy))/dyc(iy)
+          tg1 = (temperature(ix,iy) - temperature(ix,iym))/dyc(iym)
+          !X temperature gradient at the y boundaries of the current cell
+          !Uses centred difference on averaged values, so likely very smoothed
+          tg_a2 = (tb_p2*dxc(ix)**2 - tb2*(dxc(ix)**2-dxc(ixm)**2) - tb_m2*dxc(ixm)**2)/&
+              (dxc(ix)**2*dxc(ixm)+dxc(ixm)**2*dxc(ix))
+          tg_a1 = (tb_p1*dxc(ix)**2 - tb1*(dxc(ix)**2-dxc(ixm)**2) - tb_m1*dxc(ixm)**2)/&
+              (dxc(ix)**2*dxc(ixm)+dxc(ixm)**2*dxc(ix))
+ 
+          fc_sp2 = kappa_0 * tb2**pow * (by(ix,iy) * (tg2 * by(ix,iy)&
+              + tg_a2 * bxf2)+min_b*tg2)/(modb2**2+min_b)
+          fc_sp1 = kappa_0 * tb1**pow * (by(ix,iym) * (tg1 * by(ix,iym)&
+              + tg_a1 * bxf1)+min_b*tg1)/(modb1**2+min_b)
+
+          ! Saturated Conductive Flux     
+          rho_b2 = (rho(ix,iyp)+rho(ix,iy))/2.0_num
+          rho_b1 = (rho(ix,iy)+rho(ix,iym))/2.0_num
+          fc_sa2 = (3.0_num/2.0_num) * 42.85_num * rho_b2 * tb2**(3.0_num/2.0_num)  !42.85 = SRQT(m_p/m_e)
+          fc_sa1 = (3.0_num/2.0_num) * 42.85_num * rho_b1 * tb1**(3.0_num/2.0_num)
+
+          ! Conductive Flux Limiter
+          fc2 = (fc_sp2 * fc_sa2) / SQRT( fc_sp2**2.0_num + fc_sa2**2.0_num)
+          fc1 = (fc_sp1 * fc_sa1) / SQRT( fc_sp1**2.0_num + fc_sa1**2.0_num)
+
+          flux(ix,iy) = flux(ix,iy) + (fc2-fc1)/dyb(iy)
+        END DO
+      END DO
+
+  END SUBROUTINE heat_flux
+
+
 
   !****************************************************************************
   ! Subroutine implementing Braginskii parallel thermal conduction.
@@ -19,263 +174,109 @@ CONTAINS
   !****************************************************************************
 
   SUBROUTINE conduct_heat
-
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: uxkx, uxky
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: uykx, uyky
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: energy0, limiter, temperature0
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: radiation, heat_in, alpha
-    REAL(num) :: txb, tyb
-    REAL(num) :: bxc, byc, bzc, bpx, bpy
-    REAL(num) :: ux, uy
-    REAL(num) :: pow = 5.0_num / 2.0_num
-    REAL(num) :: a1, a2, a3, a4, error, errmax, rad, alf, limit
-    REAL(num) :: w, residual, q_f, q_nl, q_sh, q_shx, q_shy
-    REAL(num) :: duxdxi2, duxdxm2, duydyi2, duydym2
-    INTEGER :: loop, redblack, x1, y1
-    LOGICAL :: converged
-    REAL(num), PARAMETER :: fractional_error = 1.0e-4_num
-    REAL(num), PARAMETER :: b_min = 1.0e-3_num
-
-    ALLOCATE(uxkx(-1:nx+1,-1:ny+1))
-    ALLOCATE(uxky(-1:nx+1,-1:ny+1))
-    ALLOCATE(uykx(-1:nx+1,-1:ny+1))
-    ALLOCATE(uyky(-1:nx+1,-1:ny+1))
-    ALLOCATE(energy0     (-1:nx+2,-1:ny+2))
-    ALLOCATE(limiter     (-1:nx+2,-1:ny+2))
-    ALLOCATE(temperature0(-1:nx+2,-1:ny+2))
-    ALLOCATE(temperature (-1:nx+2,-1:ny+2))
-    ALLOCATE(radiation   (-1:nx+2,-1:ny+2))
-    ALLOCATE(heat_in     (-1:nx+2,-1:ny+2))
-    ALLOCATE(alpha       (-1:nx+2,-1:ny+2))
-
-    temperature = (gamma - 1.0_num) &
-        * (energy - (1.0_num - xi_n) * ionise_pot) / (2.0_num - xi_n)
-
-    ! A wasteful but simple way to turn off conduction.
-    ! Mostly not needed so only needs to be improved if heating/radiation
-    ! needed without conduction
-    IF (.NOT. conduction) kappa_0 = 0.0_num
-
-    DO iy = -1, ny + 1
-      iym = iy - 1
-      iyp = iy + 1
-      DO ix = -1, nx + 1
-        ixm = ix - 1
-        ixp = ix + 1
-
-        ! x face centred B field
-        bxc = bx(ix,iy)
-        byc = by(ix,iy) + by(ixp,iy) + by(ix,iym) + by(ixp,iym)
-        bzc = bz(ix,iy) + bz(ixp,iy)
-        byc = 0.25_num * byc
-        bzc = 0.5_num  * bzc
-        bpx = SQRT(bxc**2 + byc**2 + bzc**2 + b_min**2)
-        bpx = MAX(bpx, none_zero)
-
-        txb = 0.5_num * (temperature(ix,iy) + temperature(ixp,iy))
-
-        ! Direction of magnetic field on x face
-        ux = bxc / bpx
-        uy = byc / bpx
-
-        ! Kappa along magnetic field, now a vector
-        uxkx(ix,iy) = ux * ux * kappa_0 * txb**pow
-        uxky(ix,iy) = ux * uy * kappa_0 * txb**pow
-
-        ! Add symmetic conduction near b=0 points
-        uxkx(ix,iy) = uxkx(ix,iy) &
-            + b_min**2 * kappa_0 * txb**pow / (bpx**2 + b_min**2)
-
-        ! y face centred B field
-        bxc = bx(ix,iy) + bx(ix,iyp) + bx(ixm,iy) + bx(ixm,iyp)
-        byc = by(ix,iy)
-        bzc = bz(ix,iy) + bz(ix,iyp)
-        bxc = 0.25_num * bxc
-        bzc = 0.5_num  * bzc
-        bpy = SQRT(bxc**2 + byc**2 + bzc**2 + b_min**2)
-        bpy = MAX(bpy, none_zero)
-
-        tyb = 0.5_num * (temperature(ix,iy) + temperature(ix,iyp))
-
-        ! Direction of magnetic field on y face
-        ux = bxc / bpy
-        uy = byc / bpy
-
-        ! Kappa along magnetic field, now a vector
-        uykx(ix,iy) = uy * ux * kappa_0 * tyb**pow
-        uyky(ix,iy) = uy * uy * kappa_0 * tyb**pow
-
-        ! Add symmetic conduction near b=0 points
-        uyky(ix,iy) = uyky(ix,iy) &
-            + b_min**2 * kappa_0 * tyb**pow / (bpy**2 + b_min**2)
-      END DO
-    END DO
-
-    IF (heat_flux_limiter) THEN
-      DO iy = 0, ny + 1
-        iym = iy - 1
-        iyp = iy + 1
-        DO ix = 0, nx + 1
-          ixm = ix - 1
-          ixp = ix + 1
-
-          ! Estimate the parallel heat flux and the centre of a cell
-          q_shx = (uxkx(ix,iy) + uxkx(ixm,iy)) / dxc(ix) &
-              *   (temperature(ixp,iy) - temperature(ixm,iy)) &
-              +   (uxky(ix,iy) + uxky(ix,iym)) / dyc(iy) &
-              *   (temperature(ix,iyp) - temperature(ix,iym))
-
-          q_shy = (uykx(ix,iy) + uykx(ixm,iy)) / dxc(ix) &
-              *   (temperature(ixp,iy) - temperature(ixm,iy)) &
-              +   (uyky(ix,iy) + uyky(ix,iym)) / dyc(iy) &
-              *   (temperature(ix,iyp) - temperature(ix,iym))
-
-          q_sh = SQRT(q_shx**2 + q_shy**2) / 16.0_num
-
-          ! Estimate the free streaming limit
-          ! 42.85 = SRQT(m_p/m_e)
-          q_f = 42.85_num * flux_limiter * rho(ix,iy) &
-              * MIN(temperature(ix,iy), temperature_100mk)**1.5_num
-          q_nl = 1.0_num / (1.0_num / MAX(q_sh, none_zero) &
-              +  1.0_num / MAX(q_f, none_zero))
-          limiter(ix,iy) = q_nl / MAX(q_sh, none_zero) / 2.0_num
-        END DO
-      END DO
-
-      DO iy = 0, ny + 1
-        DO ix = 0, nx + 1
-          limit = limiter(ix,iy) + limiter(ix+1,iy)
-          uxkx(ix,iy) = uxkx(ix,iy) * limit
-          uxky(ix,iy) = uxky(ix,iy) * limit
-
-          limit = limiter(ix,iy) + limiter(ix,iy+1)
-          uykx(ix,iy) = uykx(ix,iy) * limit
-          uyky(ix,iy) = uyky(ix,iy) * limit
-        END DO
-      END DO
-    END IF
-
-    converged = .FALSE.
-    w = 1.6_num       ! Initial over-relaxation parameter
-    ! Store energy^{n}
-    energy0 = energy
-    temperature0 = temperature
-
-    radiation = 0.0_num
-    heat_in = 0.0_num
-    alpha = 0.0_num
-    DO iy = 1, ny
-      DO ix = 1, nx
-        heat_in(ix,iy) = heating(rho(ix,iy), temperature0(ix,iy))
-        CALL rad_losses(rho(ix,iy), temperature0(ix,iy), &
-                        xi_n(ix,iy), yc(iy), rad, alf)
-        alpha(ix,iy) = alf
-        radiation(ix,iy) = rad
-      END DO
-    END DO
-
-    ! Iterate to get energy^{n+1} by SOR Guass-Seidel
-    iterate: DO loop = 1, 100
-      errmax = 0.0_num
-      error = 0.0_num
-      y1 = 1
-      DO redblack = 1, 2
-        x1 = y1
-        DO iy = 1, ny
-          iym = iy - 1
-          iyp = iy + 1
-          DO ix = x1, nx, 2
-            ixm = ix - 1
-            ixp = ix + 1
-
-            duxdxi2 = uxkx(ix ,iy ) / dxc(ix ) / dxb(ix)
-            duxdxm2 = uxkx(ixm,iy ) / dxc(ixm) / dxb(ix)
-            duydyi2 = uyky(ix ,iy ) / dyc(iy ) / dyb(iy)
-            duydym2 = uyky(ix ,iym) / dyc(iym) / dyb(iy)
-
-            ! Terms containing energy(ix,iy) resulting from
-            ! d^2/dx^2 and d^2/dy^2 derivatives
-            a1 = duxdxi2 + duxdxm2 + duydyi2 + duydym2
-
-            ! Terms not containing temperature(ix,iy) resulting from
-            ! d^2/dx^2 and d^2/dy^2 derivatives
-            a2 =  duxdxi2 * temperature(ixp,iy ) &
-                + duxdxm2 * temperature(ixm,iy ) &
-                + duydyi2 * temperature(ix ,iyp) &
-                + duydym2 * temperature(ix ,iym)
-
-            ! Terms not containing temperature(ix,iy) resulting from
-            ! d^2/dxdy cross derivatives
-            a2 = a2 + uxky(ix ,iy ) &
-                * (temperature(ixp,iyp) + temperature(ix ,iyp) &
-                -  temperature(ixp,iym) - temperature(ix ,iym)) &
-                / (2.0_num * dxb(ix) * (dyc(iy) + dyc(iym)))
-            a2 = a2 - uxky(ixm,iy ) &
-                * (temperature(ix ,iyp) + temperature(ixm,iyp) &
-                -  temperature(ix ,iym) - temperature(ixm,iym)) &
-                / (2.0_num * dxb(ix) * (dyc(iy) + dyc(iym)))
-
-            ! Terms not containing temperature(ix,iy) resulting from
-            ! d^2/dydx cross derivatives
-            a2 = a2 + uykx(ix ,iy ) &
-                * (temperature(ixp,iyp) + temperature(ixp,iy ) &
-                -  temperature(ixm,iyp) - temperature(ixm,iy )) &
-                / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ixm)))
-            a2 = a2 - uykx(ix ,iym) &
-                * (temperature(ixp,iy ) + temperature(ixp,iym) &
-                -  temperature(ixm,iy ) - temperature(ixm,iym)) &
-                / (2.0_num * dyb(iy) * (dxc(ix) + dxc(ixm)))
-
-            a3 = (a1 + radiation(ix,iy) * alpha(ix,iy) &
-                / temperature0(ix,iy)) * temperature(ix,iy) &
-                / energy(ix,iy)
-
-            a4 = a2 + heat_in(ix,iy) &
-                - (1.0_num - alpha(ix,iy)) * radiation(ix,iy)
-
-            a3 = a3 * dt / rho(ix,iy)
-            a4 = a4 * dt / rho(ix,iy)
-
-            residual = energy(ix,iy) &
-                - (energy0(ix,iy) + a4) / (1.0_num + a3)
-            energy(ix,iy) = MAX(energy(ix,iy) - w * residual, &
-                (1.0_num - xi_n(ix,iy)) * ionise_pot)
-            error = ABS(residual) / energy0(ix,iy)
-            errmax = MAX(errmax, error)
-          END DO
-          x1 = 3 - x1
-        END DO
-        y1 = 3 - y1
-
-        CALL energy_bcs
-
-        temperature = (gamma - 1.0_num) &
-            * (energy - (1.0_num - xi_n) * ionise_pot) / (2.0_num - xi_n)
-      END DO
-
-      CALL MPI_ALLREDUCE(errmax, error, 1, mpireal, MPI_MAX, comm, errcode)
-      errmax = error
-
-      IF (errmax < fractional_error) THEN
-        converged = .TRUE.
-        EXIT iterate
-      END IF
-    END DO iterate
-
-    IF (rank == 0 .AND. .NOT. converged) &
-        PRINT*, 'Conduction failed at t = ', time
-
-    DEALLOCATE(uxkx, uxky)
-    DEALLOCATE(uykx, uyky)
-    DEALLOCATE(energy0)
-    DEALLOCATE(limiter)
-    DEALLOCATE(radiation)
-    DEALLOCATE(heat_in)
-    DEALLOCATE(alpha)
-    DEALLOCATE(temperature)
-    DEALLOCATE(temperature0)
+  
+    kappa_0=100.0_num
+    CALL s_stages
+    CALL heat_conduct_sts2
 
   END SUBROUTINE conduct_heat
+
+
+  !****************************************************************************
+  ! Implementation of the RKL2 scheme
+  !****************************************************************************
+  SUBROUTINE heat_conduct_sts2
+
+    !Superstepping based conduction code
+    !2nd order Runge-Kutta-Lagrange (RKL2) scheme
+    !Based on Meyer at al. 2012 variables named as in that paper
+    REAL(num) :: pow=5.0_num/2.0_num
+    REAL(num), DIMENSION(:,:), ALLOCATABLE  :: flux
+    REAL(num)  ::  omega_1
+    REAL(num), DIMENSION(0:n_s_stages)  :: a, b
+    REAL(num), DIMENSION(1:n_s_stages)  :: mu_tilde
+    REAL(num), DIMENSION(2:n_s_stages)  :: mu, nu, gamma_tilde
+    REAL(num), DIMENSION(:,:,:), ALLOCATABLE  :: Y             ! intermediate solutions Y=[Y_0, Y_j-2, Y_j-1 , Y_j]
+    REAL(num)  ::  tb1, tb2, tg1, tg2                  ! temperature gradient and temperature on the boundary
+    REAL(num)  ::  rho_b1, rho_b2                      ! density on the boundary
+    REAL(num)  ::  c0, c1
+    REAL(num)  ::  Lc_Yj_1                  ! L^c(Y_j-1)
+    REAL(num), DIMENSION(1:nx,1:ny)  :: Lc_Y0    ! L^c(Y_0)
+    REAL(num)  ::  Fc_sp1, Fc_sp2, Fc_sa1, Fc_sa2, Fc1, Fc2 ! spitzer and saturated conductive flux terms
+    INTEGER :: j
+
+    ALLOCATE(flux(-1:nx+2,-1:ny+2))
+    ALLOCATE(Y(0:3,-1:nx+2,-1:ny+2))
+    flux=0.0_num
+    Y=0.0_num
+    
+    omega_1 = 4.0_num/(DBLE(n_s_stages)**2.0_num + DBLE(n_s_stages) - 2.0_num)
+    b(0:2) = 1.0_num/3.0_num
+    DO j = 3, n_s_stages
+       b(j) = (DBLE(j)**2.0_num + DBLE(j)- 2.0_num) / &
+           (2.0_num * DBLE(j) *(DBLE(j) + 1.0_num))
+    ENDDO 
+    a = 1.0_num - b
+    mu_tilde(1) = omega_1/3.0_num
+
+    DO j=2,n_s_stages
+      mu_tilde(j) = ((2.0_num *DBLE(j) - 1.0_num) /DBLE(j))* &
+          omega_1 *(b(j)/b(j-1))
+      mu(j) = ((2.0_num *DBLE(j) - 1.0_num) /DBLE(j)) *(b(j)/b(j-1))
+      nu(j) = -1.0_num * ((DBLE(j) - 1.0_num) /DBLE(j))*(b(j)/b(j-2))
+      gamma_tilde(j) = -1.0_num*a(j-1)*mu_tilde(j)
+    ENDDO
+
+    !!!!! RKL2 s stage scheme !!!!!
+    ! initial condition
+    Y(0,:,:) = energy
+    !! boundary conditions 
+    DO j=1,3
+      Y(j,:,:) = energy
+    END DO
+
+
+    !! First STS stage
+    CALL heat_flux(Y(0,:,:) * ((gamma - 1.0_num)/2.0_num),flux)
+    DO iy=1,ny
+      DO ix=1,nx 
+        ! Store L^c(Y_0) to use in stages 2-s
+        Lc_Y0(ix,iy) = (1.0_num / rho(ix,iy)) * flux(ix,iy)
+        c0 =  mu_tilde(1) * dt * Lc_Y0(ix,iy)
+        Y(1,ix,iy) = Y(0,ix,iy) + c0
+      ENDDO
+    ENDDO
+
+    Y(2,1:nx,1:ny) = Y(1,1:nx,1:ny)
+    Y(1,1:nx,1:ny) = Y(0,1:nx,1:ny)
+
+    DO j=2,n_s_stages
+      CALL heat_flux(Y(2,:,:) * ((gamma - 1.0_num)/2.0_num),flux)
+      DO iy=1,ny
+        DO ix=1,nx
+          c0 = gamma_tilde(j) * dt * Lc_Y0(ix,iy)
+          Lc_Yj_1 = (1.0_num / rho(ix,iy)) * flux(ix,iy)
+          c1 = mu_tilde(j) * dt * Lc_Yj_1
+        !Y_j
+          Y(3,ix,iy) = mu(j)*Y(2,ix,iy) + nu(j)*Y(1,ix,iy) + (1.0_num -mu(j)-nu(j))* Y(0,ix,iy)
+          Y(3,ix,iy) = Y(3,ix,iy) + c1 + c0
+        END DO
+      END DO
+
+      IF ( j .LT. n_s_stages ) THEN
+        !for jth stage  Y=[Y_0, Y_j-2, Y_j-1 , Y_j]
+        Y(1,:,:) = Y(2,:,:)
+        !This is not ideal, but it allows you to not have special boundary conditions
+        energy = Y(3,:,:)
+        CALL energy_bcs
+        Y(2,:,:) = energy
+        Y(3,1:nx,1:ny) = 0.0_num
+      END IF
+    ENDDO
+    energy(1:nx,1:ny) = Y(3,1:nx,1:ny)
+    CALL energy_bcs
+  END SUBROUTINE heat_conduct_sts2
+
 
 
 
@@ -339,8 +340,8 @@ CONTAINS
       IF (proc_y_max == MPI_PROC_NULL) THEN
         store_state = radiation
         radiation = .TRUE.
-        CALL rad_losses(rho(1,ny), temperature(1,ny), &
-                        xi_n(1,ny), yc(ny), rad, alf)
+!        CALL rad_losses(rho(1,ny), temperature(1,ny), &
+!                        xi_n(1,ny), yc(ny), rad, alf)
         radiation = store_state
         a1 = rad / rho(1,ny)**2
       END IF
