@@ -10,8 +10,8 @@ MODULE conduct
   PUBLIC :: conduct_heat
   
   INTEGER :: n_s_stages
-  REAL(num),PARAMETER :: pow=5.0_num/2.0_num
-  REAL(num),PARAMETER :: min_b=1.0e-6_num
+  REAL(num),PARAMETER :: pow = 5.0_num/2.0_num
+  REAL(num),PARAMETER :: min_b = 1.0e-6_num
 
 CONTAINS
 
@@ -19,20 +19,22 @@ CONTAINS
   !****************************************************************************
   ! Subroutine calculating the number of stages needed for the RKL2
   !****************************************************************************
+
   SUBROUTINE s_stages
+
     REAL (num)  ::  stages, dt_parab, dt1, dt2
-    REAL (num)  ::  pow = 5.0_num/2.0_num
+    REAL(num) :: gm1
     INTEGER :: n_s_stages_local
+
     dt_parab = 1.e10_num
+    gm1 = 0.5_num * (gamma - 1.0_num)
 
     DO iy = 1, ny
       DO ix = 1, nx
-        ! explicit TC time-step
-        dt1 = rho(ix,iy)*dxb(ix)**2 / (2.0_num * kappa_0 * &
-            ((gamma - 1.0_num) * energy(ix,iy) / 2.0_num)**pow)
-        dt2 = rho(ix,iy)*dyb(iy)**2 / (2.0_num * kappa_0 * &
-            ((gamma - 1.0_num) * energy(ix,iy) / 2.0_num)**pow)
-        dt_parab = MIN(dt_parab, dt1,dt2)
+        ! estimate explicit thermal conduction time-step
+        dt1 = gm1 * rho(ix,iy)*dxb(ix)**2 / (kappa_0 * (gm1 * energy(ix,iy))**pow)
+        dt2 = gm1 * rho(ix,iy)*dyb(iy)**2 / (kappa_0 * (gm1 * energy(ix,iy))**pow)
+        dt_parab = MIN(dt_parab, dt1, dt2)
       END DO
     END DO
 
@@ -43,9 +45,10 @@ CONTAINS
     IF (MODULO(n_s_stages,2) .EQ. 0) THEN 
       n_s_stages = n_s_stages + 1
     ENDIF
-    n_s_stages_local=n_s_stages
+    n_s_stages_local = n_s_stages
     CALL MPI_ALLREDUCE(n_s_stages_local, n_s_stages, 1, &
         MPI_INTEGER, MPI_MAX, comm, errcode)
+
   END SUBROUTINE s_stages
 
 
@@ -53,6 +56,7 @@ CONTAINS
     !****************************************************************************
     ! Subroutine to calculate the heat flux
     !****************************************************************************
+
     SUBROUTINE heat_flux(temperature, flux)
       REAL(num),INTENT(IN),DIMENSION(-1:,-1:) :: temperature
       REAL(num),INTENT(OUT),DIMENSION(-1:,-1:) :: flux
@@ -74,7 +78,6 @@ CONTAINS
           byf2=0.25_num*(by(ix,iy)+by(ixp,iy)+by(ix,iym)+by(ixp,iym))
           bzf1=0.5_num*(bz(ix,iy)+bz(ixm,iy))
           bzf2=0.5_num*(bz(ix,iy)+bz(ixp,iy))
-
 
           modb2=SQRT(bx(ix,iy)**2+byf2**2+bzf2**2)
           modb1=SQRT(bx(ixm,iy)**2+byf1**2+bzf1**2)
@@ -175,7 +178,7 @@ CONTAINS
 
   SUBROUTINE conduct_heat
   
-    kappa_0=100.0_num
+    kappa_0 = 100.0_num
     CALL s_stages
     CALL heat_conduct_sts2
 
@@ -185,6 +188,7 @@ CONTAINS
   !****************************************************************************
   ! Implementation of the RKL2 scheme
   !****************************************************************************
+
   SUBROUTINE heat_conduct_sts2
 
     !Superstepping based conduction code
@@ -196,7 +200,7 @@ CONTAINS
     REAL(num), DIMENSION(0:n_s_stages)  :: a, b
     REAL(num), DIMENSION(1:n_s_stages)  :: mu_tilde
     REAL(num), DIMENSION(2:n_s_stages)  :: mu, nu, gamma_tilde
-    REAL(num), DIMENSION(:,:,:), ALLOCATABLE  :: Y             ! intermediate solutions Y=[Y_0, Y_j-2, Y_j-1 , Y_j]
+    REAL(num), DIMENSION(:,:,:), ALLOCATABLE  :: Y     ! intermediate solutions Y=[Y_0, Y_j-2, Y_j-1 , Y_j]
     REAL(num)  ::  tb1, tb2, tg1, tg2                  ! temperature gradient and temperature on the boundary
     REAL(num)  ::  rho_b1, rho_b2                      ! density on the boundary
     REAL(num)  ::  c0, c1
@@ -207,8 +211,8 @@ CONTAINS
 
     ALLOCATE(flux(-1:nx+2,-1:ny+2))
     ALLOCATE(Y(0:3,-1:nx+2,-1:ny+2))
-    flux=0.0_num
-    Y=0.0_num
+    flux = 0.0_num
+    Y = 0.0_num
     
     omega_1 = 4.0_num/(DBLE(n_s_stages)**2.0_num + DBLE(n_s_stages) - 2.0_num)
     b(0:2) = 1.0_num/3.0_num
@@ -219,7 +223,7 @@ CONTAINS
     a = 1.0_num - b
     mu_tilde(1) = omega_1/3.0_num
 
-    DO j=2,n_s_stages
+    DO j = 2,n_s_stages
       mu_tilde(j) = ((2.0_num *DBLE(j) - 1.0_num) /DBLE(j))* &
           omega_1 *(b(j)/b(j-1))
       mu(j) = ((2.0_num *DBLE(j) - 1.0_num) /DBLE(j)) *(b(j)/b(j-1))
@@ -231,15 +235,15 @@ CONTAINS
     ! initial condition
     Y(0,:,:) = energy
     !! boundary conditions 
-    DO j=1,3
+    DO j = 1,3
       Y(j,:,:) = energy
     END DO
 
 
     !! First STS stage
     CALL heat_flux(Y(0,:,:) * ((gamma - 1.0_num)/2.0_num),flux)
-    DO iy=1,ny
-      DO ix=1,nx 
+    DO iy = 1,ny
+      DO ix = 1,nx 
         ! Store L^c(Y_0) to use in stages 2-s
         Lc_Y0(ix,iy) = (1.0_num / rho(ix,iy)) * flux(ix,iy)
         c0 =  mu_tilde(1) * dt * Lc_Y0(ix,iy)
@@ -250,10 +254,10 @@ CONTAINS
     Y(2,1:nx,1:ny) = Y(1,1:nx,1:ny)
     Y(1,1:nx,1:ny) = Y(0,1:nx,1:ny)
 
-    DO j=2,n_s_stages
+    DO j = 2,n_s_stages
       CALL heat_flux(Y(2,:,:) * ((gamma - 1.0_num)/2.0_num),flux)
-      DO iy=1,ny
-        DO ix=1,nx
+      DO iy = 1,ny
+        DO ix = 1,nx
           c0 = gamma_tilde(j) * dt * Lc_Y0(ix,iy)
           Lc_Yj_1 = (1.0_num / rho(ix,iy)) * flux(ix,iy)
           c1 = mu_tilde(j) * dt * Lc_Yj_1
@@ -273,8 +277,10 @@ CONTAINS
         Y(3,1:nx,1:ny) = 0.0_num
       END IF
     ENDDO
+
     energy(1:nx,1:ny) = Y(3,1:nx,1:ny)
     CALL energy_bcs
+
   END SUBROUTINE heat_conduct_sts2
 
 
