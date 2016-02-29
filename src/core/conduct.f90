@@ -67,20 +67,20 @@ CONTAINS
       REAL(num) :: byf1, byf2, bxf1, bxf2, bzf1, bzf2
 
       DO iy = 1,ny
+        iyp = iy + 1
+        iym = iy - 1
         DO ix = 1,nx
           ixp = ix + 1
           ixm = ix - 1
-          iyp = iy + 1
-          iym = iy - 1
   
           !X flux
-          byf1=0.25_num*(by(ixm,iy)+by(ix,iy)+by(ixm,iym)+by(ix,iym))
-          byf2=0.25_num*(by(ix,iy)+by(ixp,iy)+by(ix,iym)+by(ixp,iym))
-          bzf1=0.5_num*(bz(ix,iy)+bz(ixm,iy))
-          bzf2=0.5_num*(bz(ix,iy)+bz(ixp,iy))
+          byf1 = 0.25_num*(by(ixm,iy)+by(ix,iy)+by(ixm,iym)+by(ix,iym))
+          byf2 = 0.25_num*(by(ix,iy)+by(ixp,iy)+by(ix,iym)+by(ixp,iym))
+          bzf1 = 0.5_num*(bz(ix,iy)+bz(ixm,iy))
+          bzf2 = 0.5_num*(bz(ix,iy)+bz(ixp,iy))
 
-          modb2=SQRT(bx(ix,iy)**2+byf2**2+bzf2**2)
-          modb1=SQRT(bx(ixm,iy)**2+byf1**2+bzf1**2)
+          modb2 = SQRT(bx(ix,iy)**2+byf2**2+bzf2**2)
+          modb1 = SQRT(bx(ixm,iy)**2+byf1**2+bzf1**2)
           
           !Braginskii Conductive Flux
           !Temperature at the x boundaries in the current cell
@@ -98,10 +98,14 @@ CONTAINS
           tg1 = (temperature(ix,iy) - temperature(ixm,iy))/dxc(ixm)
           !Y temperature gradient at the x boundaries of the current cell
           !Uses centred difference on averaged values, so likely very smoothed
-          tg_a2 = (tb_p2*dyc(iy)**2 - tb2*(dyc(iy)**2-dyc(iym)**2) - &
-              tb_m2*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
-          tg_a1 = (tb_p1*dyc(iy)**2 - tb1*(dyc(iy)**2-dyc(iym)**2) - &
-              tb_m1*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
+!          tg_a2 = (tb_p2*dyc(iy)**2 - tb2*(dyc(iy)**2-dyc(iym)**2) - &
+!              tb_m2*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
+!          tg_a1 = (tb_p1*dyc(iy)**2 - tb1*(dyc(iy)**2-dyc(iym)**2) - &
+!              tb_m1*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
+          tg_a2 = (tb_p2 - tb2) * dyc(iym) / dyc(iy) + (tb2 - tb_m2) * dyc(iy) / dyc(iym) &
+                / (dyc(iy) + dyc(iym))
+          tg_a1 = (tb_p1 - tb1) * dyc(iym) / dyc(iy) + (tb1 - tb_m1) * dyc(iy) / dyc(iym) &
+                / (dyc(iy) + dyc(iym))
 
           fc_sp2 = kappa_0 * tb2**pow * (bx(ix,iy) * (tg2 * bx(ix,iy) + &
               tg_a2 * byf2)+tg2*min_b)/(modb2**2+min_b) 
@@ -111,22 +115,22 @@ CONTAINS
           ! Saturated Conductive Flux
           rho_b2 = (rho(ixp,iy)+rho(ix,iy))/2.0_num
           rho_b1 = (rho(ix,iy)+rho(ixm,iy))/2.0_num
-          fc_sa2 = (3.0_num/2.0_num) * 42.85_num * rho_b2 * tb2**(3.0_num/2.0_num)  !42.85 = SRQT(m_p/m_e)
-          fc_sa1 = (3.0_num/2.0_num) * 42.85_num * rho_b1 * tb1**(3.0_num/2.0_num)
+          fc_sa2 = flux_limiter * 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
+          fc_sa1 = flux_limiter * 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
 
           ! Conductive Flux Limiter
-          fc2 = (fc_sp2 * fc_sa2) / SQRT( fc_sp2**2.0_num + fc_sa2**2.0_num)
-          fc1 = (fc_sp1 * fc_sa1) / SQRT( fc_sp1**2.0_num + fc_sa1**2.0_num)
+          fc2 = (fc_sp2 * fc_sa2) / (ABS(fc_sp2) + fc_sa2)
+          fc1 = (fc_sp1 * fc_sa1) / (ABS(fc_sp1) + fc_sa1)
 
           flux(ix,iy) = (fc2-fc1)/dxb(ix)
 
           !Y flux
-          bxf1=0.25_num*(bx(ix,iy)+bx(ix,iyp)+bx(ixm,iyp)+bx(ixm,iy))
-          bxf2=0.25_num*(bx(ix,iym)+bx(ix,iy)+bx(ixm,iy)+bx(ixm,iym))
-          bzf1=0.5_num*(bz(ix,iy)+bz(ix,iym))
-          bzf2=0.5_num*(bz(ix,iy)+bz(ix,iyp))
-          modb1=SQRT(by(ix,iy)**2+bxf1**2+bzf1**2)
-          modb2=SQRT(by(ix,iym)**2+bxf2**2+bzf2**2)
+          bxf1 = 0.25_num*(bx(ix,iy)+bx(ix,iyp)+bx(ixm,iyp)+bx(ixm,iy))
+          bxf2 = 0.25_num*(bx(ix,iym)+bx(ix,iy)+bx(ixm,iy)+bx(ixm,iym))
+          bzf1 = 0.5_num*(bz(ix,iy)+bz(ix,iym))
+          bzf2 = 0.5_num*(bz(ix,iy)+bz(ix,iyp))
+          modb1 = SQRT(by(ix,iy)**2+bxf1**2+bzf1**2)
+          modb2 = SQRT(by(ix,iym)**2+bxf2**2+bzf2**2)
 
           ! Braginskii Conductive Flux
           tb2 = (temperature(ix,iyp) + temperature(ix,iy))/2.0_num
@@ -143,10 +147,10 @@ CONTAINS
           tg1 = (temperature(ix,iy) - temperature(ix,iym))/dyc(iym)
           !X temperature gradient at the y boundaries of the current cell
           !Uses centred difference on averaged values, so likely very smoothed
-          tg_a2 = (tb_p2*dxc(ix)**2 - tb2*(dxc(ix)**2-dxc(ixm)**2) - tb_m2*dxc(ixm)**2)/&
-              (dxc(ix)**2*dxc(ixm)+dxc(ixm)**2*dxc(ix))
-          tg_a1 = (tb_p1*dxc(ix)**2 - tb1*(dxc(ix)**2-dxc(ixm)**2) - tb_m1*dxc(ixm)**2)/&
-              (dxc(ix)**2*dxc(ixm)+dxc(ixm)**2*dxc(ix))
+          tg_a2 = (tb_p2 - tb2) * dxc(ixm) / dxc(ix) + (tb2 - tb_m2) * dxc(ix) / dxc(ixm) &
+                / (dxc(ix) + dyc(ixm))
+          tg_a1 = (tb_p1 - tb1) * dxc(ixm) / dxc(ix) + (tb1 - tb_m1) * dxc(ix) / dxc(ixm) &
+                / (dxc(ix) + dxc(ixm))              
  
           fc_sp2 = kappa_0 * tb2**pow * (by(ix,iy) * (tg2 * by(ix,iy)&
               + tg_a2 * bxf2)+min_b*tg2)/(modb2**2+min_b)
@@ -156,12 +160,12 @@ CONTAINS
           ! Saturated Conductive Flux     
           rho_b2 = (rho(ix,iyp)+rho(ix,iy))/2.0_num
           rho_b1 = (rho(ix,iy)+rho(ix,iym))/2.0_num
-          fc_sa2 = (3.0_num/2.0_num) * 42.85_num * rho_b2 * tb2**(3.0_num/2.0_num)  !42.85 = SRQT(m_p/m_e)
-          fc_sa1 = (3.0_num/2.0_num) * 42.85_num * rho_b1 * tb1**(3.0_num/2.0_num)
+          fc_sa2 = flux_limiter * 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
+          fc_sa1 = flux_limiter * 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
 
           ! Conductive Flux Limiter
-          fc2 = (fc_sp2 * fc_sa2) / SQRT( fc_sp2**2.0_num + fc_sa2**2.0_num)
-          fc1 = (fc_sp1 * fc_sa1) / SQRT( fc_sp1**2.0_num + fc_sa1**2.0_num)
+          fc2 = (fc_sp2 * fc_sa2) / (ABS(fc_sp2) + fc_sa2)
+          fc1 = (fc_sp1 * fc_sa1) / (ABS(fc_sp1) + fc_sa1)
 
           flux(ix,iy) = flux(ix,iy) + (fc2-fc1)/dyb(iy)
         END DO

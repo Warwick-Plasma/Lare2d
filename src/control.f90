@@ -115,8 +115,8 @@ CONTAINS
     ! fine.
     conduction = .FALSE.
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit
-    heat_flux_limiter = .FALSE.
-    ! Fraction of free streaming heat flux used in limiter
+    ! Fraction of free streaming heat flux used in limiter. 
+    ! Set to zero to zero to turn off limiter
     flux_limiter = 0.05_num
 
     ! Use radiation as specified in SUBROUTINE rad_losses
