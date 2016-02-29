@@ -98,10 +98,6 @@ CONTAINS
           tg1 = (temperature(ix,iy) - temperature(ixm,iy))/dxc(ixm)
           !Y temperature gradient at the x boundaries of the current cell
           !Uses centred difference on averaged values, so likely very smoothed
-!          tg_a2 = (tb_p2*dyc(iy)**2 - tb2*(dyc(iy)**2-dyc(iym)**2) - &
-!              tb_m2*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
-!          tg_a1 = (tb_p1*dyc(iy)**2 - tb1*(dyc(iy)**2-dyc(iym)**2) - &
-!              tb_m1*dyc(iym)**2)/(dyc(iy)**2*dyc(iym)+dyc(iym)**2*dyc(iy))
           tg_a2 = (tb_p2 - tb2) * dyc(iym) / dyc(iy) + (tb2 - tb_m2) * dyc(iy) / dyc(iym) &
                 / (dyc(iy) + dyc(iym))
           tg_a1 = (tb_p1 - tb1) * dyc(iym) / dyc(iy) + (tb1 - tb_m1) * dyc(iy) / dyc(iym) &
@@ -115,12 +111,12 @@ CONTAINS
           ! Saturated Conductive Flux
           rho_b2 = (rho(ixp,iy)+rho(ix,iy))/2.0_num
           rho_b1 = (rho(ix,iy)+rho(ixm,iy))/2.0_num
-          fc_sa2 = flux_limiter * 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
-          fc_sa1 = flux_limiter * 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
+          fc_sa2 = 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
+          fc_sa1 = 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
 
-          ! Conductive Flux Limiter
-          fc2 = (fc_sp2 * fc_sa2) / (ABS(fc_sp2) + fc_sa2)
-          fc1 = (fc_sp1 * fc_sa1) / (ABS(fc_sp1) + fc_sa1)
+          ! Conductive Flux Limiter. Note flux_limiter is inverse of usual definition here
+          fc2 = 1.0_num / (1.0_num/fc_sp2 + flux_limiter/fc_sa2)
+          fc1 = 1.0_num / (1.0_num/fc_sp1 + flux_limiter/fc_sa1)
 
           flux(ix,iy) = (fc2-fc1)/dxb(ix)
 
@@ -160,12 +156,12 @@ CONTAINS
           ! Saturated Conductive Flux     
           rho_b2 = (rho(ix,iyp)+rho(ix,iy))/2.0_num
           rho_b1 = (rho(ix,iy)+rho(ix,iym))/2.0_num
-          fc_sa2 = flux_limiter * 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
-          fc_sa1 = flux_limiter * 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
+          fc_sa2 = 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
+          fc_sa1 = 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
 
           ! Conductive Flux Limiter
-          fc2 = (fc_sp2 * fc_sa2) / (ABS(fc_sp2) + fc_sa2)
-          fc1 = (fc_sp1 * fc_sa1) / (ABS(fc_sp1) + fc_sa1)
+          fc2 = 1.0_num / (1.0_num/fc_sp2 + flux_limiter/fc_sa2)
+          fc1 = 1.0_num / (1.0_num/fc_sp1 + flux_limiter/fc_sa1)
 
           flux(ix,iy) = flux(ix,iy) + (fc2-fc1)/dyb(iy)
         END DO
@@ -182,7 +178,6 @@ CONTAINS
 
   SUBROUTINE conduct_heat
   
-    kappa_0 = 100.0_num
     CALL s_stages
     CALL heat_conduct_sts2
 
