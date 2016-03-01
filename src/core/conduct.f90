@@ -98,10 +98,8 @@ CONTAINS
           tg1 = (temperature(ix,iy) - temperature(ixm,iy))/dxc(ixm)
           !Y temperature gradient at the x boundaries of the current cell
           !Uses centred difference on averaged values, so likely very smoothed
-          tg_a2 = (tb_p2 - tb2) * dyc(iym) / dyc(iy) + (tb2 - tb_m2) * dyc(iy) / dyc(iym) &
-                / (dyc(iy) + dyc(iym))
-          tg_a1 = (tb_p1 - tb1) * dyc(iym) / dyc(iy) + (tb1 - tb_m1) * dyc(iy) / dyc(iym) &
-                / (dyc(iy) + dyc(iym))
+          tg_a2 = (tb_p2 - tb_m2)/(dyc(iy)+dyc(iym))
+          tg_a1 = (tb_p1 - tb_m1)/(dyc(iy)+dyc(iym))
 
           fc_sp2 = kappa_0 * tb2**pow * (bx(ix,iy) * (tg2 * bx(ix,iy) + &
               tg_a2 * byf2)+tg2*min_b)/(modb2**2+min_b) 
@@ -143,10 +141,8 @@ CONTAINS
           tg1 = (temperature(ix,iy) - temperature(ix,iym))/dyc(iym)
           !X temperature gradient at the y boundaries of the current cell
           !Uses centred difference on averaged values, so likely very smoothed
-          tg_a2 = (tb_p2 - tb2) * dxc(ixm) / dxc(ix) + (tb2 - tb_m2) * dxc(ix) / dxc(ixm) &
-                / (dxc(ix) + dyc(ixm))
-          tg_a1 = (tb_p1 - tb1) * dxc(ixm) / dxc(ix) + (tb1 - tb_m1) * dxc(ix) / dxc(ixm) &
-                / (dxc(ix) + dxc(ixm))              
+          tg_a2 = (tb_p2 - tb_m2)/(dxc(ix)+dxc(ixm))
+          tg_a1 = (tb_p1 - tb_m1)/(dxc(ix)+dxc(ixm))
  
           fc_sp2 = kappa_0 * tb2**pow * (by(ix,iy) * (tg2 * by(ix,iy)&
               + tg_a2 * bxf2)+min_b*tg2)/(modb2**2+min_b)
