@@ -111,8 +111,8 @@ CONTAINS
           ! Saturated Conductive Flux
           rho_b2 = (rho(ixp,iy)+rho(ix,iy))/2.0_num
           rho_b1 = (rho(ix,iy)+rho(ixm,iy))/2.0_num
-          fc_sa2 = 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
-          fc_sa1 = 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
+          fc_sa2 = 42.85_num * rho_b2 * tb2**(1.5_num)  !42.85 = SRQT(m_p/m_e)
+          fc_sa1 = 42.85_num * rho_b1 * tb1**(1.5_num)
 
           ! Conductive Flux Limiter. Note flux_limiter is inverse of usual definition here
           fc2 = 1.0_num / (1.0_num/fc_sp2 + flux_limiter/fc_sa2)
@@ -156,8 +156,8 @@ CONTAINS
           ! Saturated Conductive Flux     
           rho_b2 = (rho(ix,iyp)+rho(ix,iy))/2.0_num
           rho_b1 = (rho(ix,iy)+rho(ix,iym))/2.0_num
-          fc_sa2 = 64.27_num * rho_b2 * tb2**(3.0_num/2.0_num)  !64.27 = (3/2)*SRQT(m_p/m_e)
-          fc_sa1 = 64.27_num * rho_b1 * tb1**(3.0_num/2.0_num)
+          fc_sa2 = 42.85_num * rho_b2 * tb2**(1.5_num)  !42.85 = SRQT(m_p/m_e)
+          fc_sa1 = 42.85_num * rho_b1 * tb1**(1.5_num)
 
           ! Conductive Flux Limiter
           fc2 = 1.0_num / (1.0_num/fc_sp2 + flux_limiter/fc_sa2)
