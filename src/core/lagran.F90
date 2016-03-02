@@ -123,20 +123,12 @@ CONTAINS
       DO ix = 0, nx + 1
         dv = cv1(ix,iy) / cv(ix,iy) - 1.0_num
         ! Predictor energy
-#ifdef QMONO
-        ! Add shock viscosity
-        pressure(ix,iy) = pressure(ix,iy) + p_visc(ix,iy)
-#endif
         e1 = energy(ix,iy) - pressure(ix,iy) * dv / rho(ix,iy)
         e1 = e1 + visc_heat(ix,iy) * dt2 / rho(ix,iy)
 
         ! Now define the predictor step pressures
         pressure(ix,iy) = (e1 - (1.0_num - xi_n(ix,iy)) * ionise_pot) &
             * (gamma - 1.0_num) * rho(ix,iy) * cv(ix,iy) / cv1(ix,iy)
-#ifdef QMONO
-        ! Add shock viscosity
-        pressure(ix,iy) = pressure(ix,iy) + p_visc(ix,iy)
-#endif
       END DO
     END DO
 
@@ -280,10 +272,6 @@ CONTAINS
         total_visc_heating = total_visc_heating &
             + dt * visc_heat(ix,iy) * cv(ix,iy)
 
-#ifdef QMONO
-        total_visc_heating = total_visc_heating &
-            - p_visc(ix,iy) * dv * cv(ix,iy)
-#endif
       END DO
     END DO
 
@@ -434,12 +422,6 @@ CONTAINS
         p_visc(ix,iy) = visc1 * ABS(s) * L * cf * rho(ix,iy) &
             + visc2 * (s * L)**2 * rho(ix,iy)
 
-        qxx(ix,iy) = 0.0_num
-        qyy(ix,iy) = 0.0_num
-        qxy(ix,iy) = 0.0_num
-        qxz(ix,iy) = 0.0_num
-        qyz(ix,iy) = 0.0_num
-#ifndef QMONO
         qxx(ix,iy) = sxx * (L2 * rho(ix,iy) &
             * (visc1 * cf + L2 * visc2 * ABS(sxx)))
         qyy(ix,iy) = syy * (L2 * rho(ix,iy) &
@@ -450,7 +432,7 @@ CONTAINS
             * (visc1 * cf + L2 * visc2 * ABS(sxz)))
         qyz(ix,iy) = syz * (L2 * rho(ix,iy) &
             * (visc1 * cf + L2 * visc2 * ABS(syz)))
-#endif
+
         qxx(ix,iy) = qxx(ix,iy) + 2.0_num * sxx * rho(ix,iy) * visc3
         qyy(ix,iy) = qyy(ix,iy) + 2.0_num * syy * rho(ix,iy) * visc3
         qxy(ix,iy) = qxy(ix,iy) + 2.0_num * sxy * rho(ix,iy) * visc3

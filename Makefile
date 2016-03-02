@@ -133,9 +133,6 @@ DEFINES := $(DEFINE)
 # The following are a list of pre-processor defines which can be added to
 # the above line modifying the code behaviour at compile time.
 
-# Uncomment the following line to use Qmono viscosity
-#DEFINES += $(D)QMONO
-
 # Uncomment the following line to run in single precision
 #DEFINES += $(D)SINGLE
 
