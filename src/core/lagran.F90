@@ -113,7 +113,8 @@ CONTAINS
     REAL(num) :: dv
 
     dt2 = dt * 0.5_num
-    CALL viscosity_and_b_update
+    CALL b_update
+    CALL viscosity
 
     bx1 = bx1 * cv1(0:nx+1,0:ny+1)
     by1 = by1 * cv1(0:nx+1,0:ny+1)
@@ -284,7 +285,7 @@ CONTAINS
   ! magnetic field
   !****************************************************************************
 
-  SUBROUTINE viscosity_and_b_update
+  SUBROUTINE b_update
 
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
     REAL(num) :: p, pxm, pxp, pym, pyp
@@ -340,110 +341,6 @@ CONTAINS
         dvydx = (vyb - vybm) / dxb(ix)
         dvxy = dvxdy + dvydx
 
-        sxy = dvxy * 0.5_num
-        sxx = (2.0_num * dvxdx - dvydy) * third
-        syy = (2.0_num * dvydy - dvxdx) * third
-
-        ! vz at Bx(i,j)
-        vzb  = (vz(ix ,iy ) + vz(ix ,iym)) * 0.5_num
-        ! vz at Bx(i-1,j)
-        vzbm = (vz(ixm,iy ) + vz(ixm,iym)) * 0.5_num
-
-        dvzdx = (vzb - vzbm) / dxb(ix)
-        dvxz = dvzdx
-
-        sxz = dvxz * 0.5_num
-
-        ! vz at By(i,j)
-        vzb  = (vz(ix ,iy ) + vz(ixm,iy )) * 0.5_num
-        ! vz at By(i,j-1)
-        vzbm = (vz(ix ,iym) + vz(ixm,iym)) * 0.5_num
-
-        dvzdy = (vzb - vzbm) / dyb(iy)
-        dvyz = dvzdy
-
-        syz = dvyz * 0.5_num
-
-        p   = pressure(ix ,iy )
-        pxm = pressure(ixm,iy )
-        pxp = pressure(ixp,iy )
-        pym = pressure(ix ,iym)
-        pyp = pressure(ix ,iyp)
-
-        ! Should be half this but this cancels later
-        fx = -(pxp - pxm) / dxb(ix)
-        fy = -(pyp - pym) / dyb(iy)
-
-        w1 = fx**2 + fy**2
-        s = (dvxdx * fx**2 + dvydy * fy**2 + dvxy * fx * fy) &
-            / MAX(w1, none_zero)
-
-!   These flags are used to replace the rather clearer code in
-!   **SECTION 1**. They are used instead to facilitate vector
-!   optimization
-
-        flag1 = dyb(iy) * ABS(fx) - dxb(ix) * ABS(fy)
-        flag2 = w1 - 1.0e-6_num
-        flag1 = (SIGN(1.0_num, flag1) + 1.0_num) * 0.5_num
-        flag2 = (SIGN(1.0_num, flag2) + 1.0_num) * 0.5_num
-
-        w2_1 = dxb(ix)**2 * w1 / (fx**2 + 1.0e-30_num)
-        w2_2 = dyb(iy)**2 * w1 / (fy**2 + 1.0e-30_num)
-
-        w2 = w2_1 * flag1 + w2_2 * (1.0_num - flag1)
-
-        w2 = w2 * flag2 + MIN(dxb(ix), dyb(iy))**2 * (1.0_num - flag2)
-
-!!$ !BEGIN **SECTION 1**
-!!$ !*******************
-!
-!       IF (dxb(ix) * ABS(fy) < dyb(iy) * ABS(fx)) THEN
-!         w2 = dxb(ix)**2 * w1 / MAX(fx**2, none_zero)
-!       ELSE
-!         w2 = dyb(iy)**2 * w1 / MAX(fy**2, none_zero)
-!       END IF
-!       IF (w1 < 1.0e-6_num) w2 = MIN(dxb(ix), dyb(iy))**2
-!
-!!$ !*******************
-
-        L = SQRT(w2)
-
-        L2 = L
-        ! This is equivalent to IF (s > 0.0_num .OR. dv > 0.0_num) L = 0.0_num
-        sg0  = (SIGN(1.0_num, s ) + 1.0_num) * 0.5_num
-        dvg0 = (SIGN(1.0_num, dv) + 1.0_num) * 0.5_num
-        L = L * (1.0_num - dvg0) * (1.0_num - sg0)
-
-        w1 = (bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2) / rho(ix,iy)
-
-        cs = SQRT(gamma * (gamma - 1.0_num) * energy(ix,iy))
-        cf = SQRT(cs**2 + w1)
-
-        p_visc(ix,iy) = visc1 * ABS(s) * L * cf * rho(ix,iy) &
-            + visc2 * (s * L)**2 * rho(ix,iy)
-
-        qxx(ix,iy) = sxx * (L2 * rho(ix,iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(sxx)))
-        qyy(ix,iy) = syy * (L2 * rho(ix,iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(syy)))
-        qxy(ix,iy) = sxy * (L2 * rho(ix,iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(sxy)))
-        qxz(ix,iy) = sxz * (L2 * rho(ix,iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(sxz)))
-        qyz(ix,iy) = syz * (L2 * rho(ix,iy) &
-            * (visc1 * cf + L2 * visc2 * ABS(syz)))
-
-        qxx(ix,iy) = qxx(ix,iy) + 2.0_num * sxx * rho(ix,iy) * visc3
-        qyy(ix,iy) = qyy(ix,iy) + 2.0_num * syy * rho(ix,iy) * visc3
-        qxy(ix,iy) = qxy(ix,iy) + 2.0_num * sxy * rho(ix,iy) * visc3
-        qxz(ix,iy) = qxz(ix,iy) + 2.0_num * sxz * rho(ix,iy) * visc3
-        qyz(ix,iy) = qyz(ix,iy) + 2.0_num * syz * rho(ix,iy) * visc3
-
-        visc_heat(ix,iy) = &
-              qxy(ix,iy) * dvxy  + qxz(ix,iy) * dvxz &
-            + qyz(ix,iy) * dvyz  + qxx(ix,iy) * dvxdx &
-            + qyy(ix,iy) * dvydy
-
         w3 =  bx1(ix,iy) * dvxdx + by1(ix,iy) * dvxdy
         w4 =  bx1(ix,iy) * dvydx + by1(ix,iy) * dvydy
         w5 =  bx1(ix,iy) * dvzdx + by1(ix,iy) * dvzdy
@@ -454,7 +351,7 @@ CONTAINS
       END DO
     END DO
 
-  END SUBROUTINE viscosity_and_b_update
+  END SUBROUTINE b_update
 
 
 
@@ -474,51 +371,9 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
 
-        ! vx1 at Bx(i,j)
-        vxb  = (vx1(ix ,iy ) + vx1(ix ,iym)) * 0.5_num
-        ! vx1 at Bx(i-1,j)
-        vxbm = (vx1(ixm,iy ) + vx1(ixm,iym)) * 0.5_num
-        ! vy1 at By(i,j)
-        vyb  = (vy1(ix ,iy ) + vy1(ixm,iy )) * 0.5_num
-        ! vy1 at By(i,j-1)
-        vybm = (vy1(ix ,iym) + vy1(ixm,iym)) * 0.5_num
-
-        dvxdx = (vxb - vxbm) / dxb(ix)
-        dvydy = (vyb - vybm) / dyb(iy)
-
-        ! vx1 at By(i,j)
-        vxb  = (vx1(ix ,iy ) + vx1(ixm,iy )) * 0.5_num
-        ! vx1 at By(i,j-1)
-        vxbm = (vx1(ix ,iym) + vx1(ixm,iym)) * 0.5_num
-        ! vy1 at Bx(i,j)
-        vyb  = (vy1(ix ,iy ) + vy1(ix ,iym)) * 0.5_num
-        ! vy1 at Bx(i-1,j)
-        vybm = (vy1(ixm,iy ) + vy1(ixm,iym)) * 0.5_num
-
-        dvxy = (vxb - vxbm) / dyb(iy) + (vyb - vybm) / dxb(ix)
-
-        ! vz1 at Bx(i,j)
-        vzb  = (vz1(ix ,iy ) + vz1(ix ,iym)) * 0.5_num
-        ! vz1 at Bx(i-1,j)
-        vzbm = (vz1(ixm,iy ) + vz1(ixm,iym)) * 0.5_num
-
-        dvxz = (vzb - vzbm) / dxb(ix)
-
-        ! vz1 at By(i,j)
-        vzb  = (vz1(ix ,iy ) + vz1(ixm,iy )) * 0.5_num
-        ! vz1 at By(i,j-1)
-        vzbm = (vz1(ix ,iym) + vz1(ixm,iym)) * 0.5_num
-
-        dvyz = (vzb - vzbm) / dyb(iy)
-
-        visc_heat(ix,iy) = &
-              qxy(ix,iy) * dvxy  + qxz(ix,iy) * dvxz  &
-            + qyz(ix,iy) * dvyz  + qxx(ix,iy) * dvxdx &
-            + qyy(ix,iy) * dvydy
+ 
       END DO
     END DO
-
-    visc_heat = MAX(visc_heat, 0.0_num)
 
   END SUBROUTINE visc_heating
 
