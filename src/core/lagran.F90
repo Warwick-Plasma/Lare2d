@@ -16,8 +16,8 @@ MODULE lagran
   PUBLIC :: lagrangian_step, eta_calc
 
   ! Only used inside lagran.f90
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qxy, qxz, qyz
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qxx, qyy, visc_heat, pressure
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha1, alpha2, alpha3, alpha4
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
 
 CONTAINS
@@ -34,11 +34,10 @@ CONTAINS
     ALLOCATE(bx1(0:nx+1,0:ny+1))
     ALLOCATE(by1(0:nx+1,0:ny+1))
     ALLOCATE(bz1(0:nx+1,0:ny+1))
-    ALLOCATE(qxy(0:nx+1,0:ny+1))
-    ALLOCATE(qxz(0:nx+1,0:ny+1))
-    ALLOCATE(qyz(0:nx+1,0:ny+1))
-    ALLOCATE(qxx(0:nx+1,0:ny+1))
-    ALLOCATE(qyy(0:nx+1,0:ny+1))
+    ALLOCATE(alpha1(0:nx+1,0:ny+1))
+    ALLOCATE(alpha2(0:nx+1,0:ny+1))
+    ALLOCATE(alpha3(0:nx+1,0:ny+1))
+    ALLOCATE(alpha4(0:nx+1,0:ny+1))
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(flux_x(0:nx,0:ny))
@@ -87,7 +86,7 @@ CONTAINS
 
     CALL predictor_corrector_step
 
-    DEALLOCATE(bx1, by1, bz1, qxy, qxz, qyz, qxx, qyy)
+    DEALLOCATE(bx1, by1, bz1, alpha1, alpha2, alpha3, alpha4)
     DEALLOCATE(visc_heat, pressure, flux_x, flux_y, flux_z, curlb)
 
     CALL energy_bcs
@@ -156,32 +155,6 @@ CONTAINS
         fy = -(w2 - w1) / dyc(iy)
 
         fz = 0.0_num
-
-        ! Add parallel component of viscosity
-        w1 = (qxx(ix ,iy ) + qxx(ix ,iyp)) * 0.5_num
-        w2 = (qxx(ixp,iy ) + qxx(ixp,iyp)) * 0.5_num
-        fx = fx + (w2 - w1) / dxc(ix)
-
-        w1 = (qyy(ix ,iy ) + qyy(ixp,iy )) * 0.5_num
-        w2 = (qyy(ix ,iyp) + qyy(ixp,iyp)) * 0.5_num
-        fy = fy + (w2 - w1) / dyc(iy)
-
-        ! Add shear viscosity forces
-        w1 = (qxy(ix ,iy ) + qxy(ixp,iy )) * 0.5_num
-        w2 = (qxy(ix ,iyp) + qxy(ixp,iyp)) * 0.5_num
-        fx = fx + (w2 - w1) / dyc(iy)
-
-        w1 = (qxy(ix ,iy ) + qxy(ix ,iyp)) * 0.5_num
-        w2 = (qxy(ixp,iy ) + qxy(ixp,iyp)) * 0.5_num
-        fy = fy + (w2 - w1) / dxc(ix)
-
-        w1 = (qxz(ix ,iy ) + qxz(ix ,iyp)) * 0.5_num
-        w2 = (qxz(ixp,iy ) + qxz(ixp,iyp)) * 0.5_num
-        fz = fz + (w2 - w1) / dxc(ix)
-
-        w1 = (qyz(ix ,iy ) + qyz(ixp,iy )) * 0.5_num
-        w2 = (qyz(ix ,iyp) + qyz(ixp,iyp)) * 0.5_num
-        fz = fz + (w2 - w1) / dyc(iy)
 
         cvx  = cv1(ix ,iy ) + cv1(ix ,iyp)
         cvxp = cv1(ixp,iy ) + cv1(ixp,iyp)
@@ -285,17 +258,17 @@ CONTAINS
   ! magnetic field
   !****************************************************************************
 
+  SUBROUTINE viscosity
+
+  END SUBROUTINE viscosity
+
+
   SUBROUTINE b_update
 
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
-    REAL(num) :: p, pxm, pxp, pym, pyp
     REAL(num) :: dvxdx, dvydx, dvzdx
     REAL(num) :: dvxdy, dvydy, dvzdy
-    REAL(num) :: dvxy, dvxz, dvyz
-    REAL(num) :: sxx, syy, sxy, sxz, syz
-    REAL(num) :: fx, fy, dv, s, L, cs, cf, L2
-    REAL(num) :: w2_1, w2_2
-    REAL(num) :: flag1, flag2, sg0, dvg0
+    REAL(num) :: dvxy, dvxz, dvyz, dv
 
     p_visc = 0.0_num
 
@@ -364,14 +337,17 @@ CONTAINS
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
     REAL(num) :: dvxdx, dvydy, dvxy, dvxz, dvyz
 
+    visc_heat = 0.0_num
+
     DO iy = 0, ny + 1
       iym = iy - 1
-      iyp = iy + 1
       DO ix = 0, nx + 1
         ixm = ix - 1
-        ixp = ix + 1
 
- 
+        visc_heat(ix,iy) = - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix,iym)**2 + (vy1(ixm,iym) - vy1(ix,iym)**2) &
+            - alpha2(ix,iy) * ((vx1(ix,iym) - vx1(ix,iy)**2 + (vy1(ix,iym) - vy1(ix,iy)**2) &
+            - alpha3(ix,iy) * ((vx1(ix,iy) - vx1(ixm,iy)**2 + (vy1(ix,iy) - vy1(ixm,iy)**2) &
+            - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym)**2 + (vy1(ixm,iy) - vy1(ixm,iym)**2)     
       END DO
     END DO
 
