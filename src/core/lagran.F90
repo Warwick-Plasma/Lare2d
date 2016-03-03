@@ -17,7 +17,7 @@ MODULE lagran
 
   ! Only used inside lagran.f90
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha1, alpha2, alpha3, alpha4
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
 
 CONTAINS
@@ -40,6 +40,7 @@ CONTAINS
     ALLOCATE(alpha4(0:nx+1,0:ny+1))
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
+    ALLOCATE(rho_v(-1:nx+2,-1:ny+2))
     ALLOCATE(flux_x(0:nx,0:ny))
     ALLOCATE(flux_y(0:nx,0:ny))
     ALLOCATE(flux_z(0:nx,0:ny))
@@ -87,7 +88,7 @@ CONTAINS
     CALL predictor_corrector_step
 
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2, alpha3, alpha4)
-    DEALLOCATE(visc_heat, pressure, flux_x, flux_y, flux_z, curlb)
+    DEALLOCATE(visc_heat, pressure, rho_v, flux_x, flux_y, flux_z, curlb)
 
     CALL energy_bcs
     CALL density_bcs
@@ -104,7 +105,7 @@ CONTAINS
   SUBROUTINE predictor_corrector_step
 
     REAL(num) :: pp, ppx, ppy, ppxy
-    REAL(num) :: e1, rho_v
+    REAL(num) :: e1
     REAL(num) :: fx, fy, fz
     REAL(num) :: vxb, vxbm, vyb, vybm
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
@@ -112,7 +113,7 @@ CONTAINS
     REAL(num) :: dv
 
     dt2 = dt * 0.5_num
-    CALL b_update
+    CALL b_pressure_cv1_update
     CALL viscosity
 
     bx1 = bx1 * cv1(0:nx+1,0:ny+1)
@@ -190,22 +191,17 @@ CONTAINS
         fy = fy + (jz * bxv - jx * bzv)
         fz = fz + (jx * byv - jy * bxv)
 
-        rho_v = rho(ix,iy ) * cv(ix,iy ) + rho(ixp,iy ) * cv(ixp,iy ) &
-            +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
-
-        rho_v = rho_v / (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
-
-        fy = fy - rho_v * grav(iy)
+        fy = fy - rho_v(ix,iy) * grav(iy)
 
         ! Find half step velocity needed for remap
-        vx1(ix,iy) = vx(ix,iy) + dt2 * fx / rho_v
-        vy1(ix,iy) = vy(ix,iy) + dt2 * fy / rho_v
-        vz1(ix,iy) = vz(ix,iy) + dt2 * fz / rho_v
+        vx1(ix,iy) = vx(ix,iy) + dt2 * fx / rho_v(ix,iy)
+        vy1(ix,iy) = vy(ix,iy) + dt2 * fy / rho_v(ix,iy)
+        vz1(ix,iy) = vz(ix,iy) + dt2 * fz / rho_v(ix,iy)
 
         ! Velocity at the end of the Lagrangian step
-        vx(ix,iy) = vx(ix,iy) + dt * fx / rho_v
-        vy(ix,iy) = vy(ix,iy) + dt * fy / rho_v
-        vz(ix,iy) = vz(ix,iy) + dt * fz / rho_v
+        vx(ix,iy) = vx(ix,iy) + dt * fx / rho_v(ix,iy)
+        vy(ix,iy) = vy(ix,iy) + dt * fy / rho_v(ix,iy)
+        vz(ix,iy) = vz(ix,iy) + dt * fz / rho_v(ix,iy)
       END DO
     END DO
 
@@ -260,10 +256,62 @@ CONTAINS
 
   SUBROUTINE viscosity
 
+    REAL(num) :: qkur, psi, dvx, dvy, unit_dv
+    REAL(num) :: rho_edge, cf_edge, cons
+
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
+
+    INTEGER :: ix1, iy1, ix2, iy2
+
+    ALLOCATE(cs(-1:nx+1,-1:ny+1), cs_v(-1:nx+1,-1:ny+1))
+
+    cons = gamma * (gamma - 1.0_num)
+
+    DO iy = 0, ny + 1
+      DO ix = 0, nx + 1
+        cs(ix,iy) = SQRT(cons * energy(ix,iy))
+      END DO
+    END DO
+
+    DO iy = 0, ny 
+      iym = iy - 1
+      iyp = iy + 1
+      DO ix = 0, nx 
+        ixm = ix - 1
+        ixp = ix + 1
+        rho_v(ix,iy) = rho(ix,iy) * cv(ix,iy) + rho(ixp,iy) * cv(ixp,iy) &
+            +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
+        rho_v(ix,iy) = rho_v(ix,iy) / (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
+
+        cs_v(ix,iy) = cs(ix,iy) * cv(ix,iy) + cs(ixp,iy) * cv(ixp,iy) &
+            +   cs(ix,iyp) * cv(ix,iyp) + cs(ixp,iyp) * cv(ixp,iyp)
+        cs_v(ix,iy) = cs_v(ix,iy) / (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
+      END DO
+    END DO
+
+    DO iy = 1, ny 
+      iym = iy - 1
+      iyp = iy + 1
+      DO ix = 1, nx 
+        ixm = ix - 1
+        ixp = ix + 1
+        
+        ix1 = ixm
+        iy1 = iym
+        ix2 = ix
+        iy2 = iym
+        rho_edge = 2.0_num * rho_v(ix1,iy1) * rho_v(ix2,iy2) / (rho_v(ix1,iy1) + rho_v(ix2,iy2))
+        cf_edge = MIN(cs_v(ix1,iy1), cs_v(ix2,iy2))
+
+      END DO
+    END DO
+
+    DEALLOCATE(cs, cs_v)
+
   END SUBROUTINE viscosity
 
 
-  SUBROUTINE b_update
+  SUBROUTINE b_pressure_cv1_update
 
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
     REAL(num) :: dvxdx, dvydx, dvzdx
@@ -324,7 +372,7 @@ CONTAINS
       END DO
     END DO
 
-  END SUBROUTINE b_update
+  END SUBROUTINE b_pressure_cv1_update
 
 
 
@@ -339,15 +387,16 @@ CONTAINS
 
     visc_heat = 0.0_num
 
-    DO iy = 0, ny + 1
+    DO iy = 1, ny 
       iym = iy - 1
-      DO ix = 0, nx + 1
+      DO ix = 1, nx 
         ixm = ix - 1
 
-        visc_heat(ix,iy) = - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix,iym)**2 + (vy1(ixm,iym) - vy1(ix,iym)**2) &
-            - alpha2(ix,iy) * ((vx1(ix,iym) - vx1(ix,iy)**2 + (vy1(ix,iym) - vy1(ix,iy)**2) &
-            - alpha3(ix,iy) * ((vx1(ix,iy) - vx1(ixm,iy)**2 + (vy1(ix,iy) - vy1(ixm,iy)**2) &
-            - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym)**2 + (vy1(ixm,iy) - vy1(ixm,iym)**2)     
+        visc_heat(ix,iy) = &
+            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix,iym))**2 + (vy1(ixm,iym) - vy1(ix,iym))**2) &
+            - alpha2(ix,iy) * ((vx1(ix,iym) - vx1(ix,iy))**2 + (vy1(ix,iym) - vy1(ix,iy))**2) &
+            - alpha3(ix,iy) * ((vx1(ix,iy) - vx1(ixm,iy))**2 + (vy1(ix,iy) - vy1(ixm,iy))**2) &
+            - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym))**2 + (vy1(ixm,iy) - vy1(ixm,iym))**2)     
       END DO
     END DO
 
