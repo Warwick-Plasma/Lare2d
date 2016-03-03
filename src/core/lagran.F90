@@ -17,7 +17,7 @@ MODULE lagran
 
   ! Only used inside lagran.f90
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha1, alpha2, alpha3, alpha4
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v, cv_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
 
 CONTAINS
@@ -41,6 +41,7 @@ CONTAINS
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(rho_v(-1:nx+2,-1:ny+2))
+    ALLOCATE(cv_v(-1:nx+2,-1:ny+2))
     ALLOCATE(flux_x(0:nx,0:ny))
     ALLOCATE(flux_y(0:nx,0:ny))
     ALLOCATE(flux_z(0:nx,0:ny))
@@ -88,7 +89,7 @@ CONTAINS
     CALL predictor_corrector_step
 
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2, alpha3, alpha4)
-    DEALLOCATE(visc_heat, pressure, rho_v, flux_x, flux_y, flux_z, curlb)
+    DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
 
     CALL energy_bcs
     CALL density_bcs
@@ -135,8 +136,10 @@ CONTAINS
 
     DO iy = 0, ny
       iyp = iy + 1
+      iym = iy - 1
       DO ix = 0, nx
         ixp = ix + 1
+        ixm = ix - 1
 
         pp    = pressure(ix ,iy )
         ppx   = pressure(ixp,iy )
@@ -192,6 +195,13 @@ CONTAINS
         fz = fz + (jx * byv - jy * bxv)
 
         fy = fy - rho_v(ix,iy) * grav(iy)
+
+        !Add viscous forces
+        fx = fx &
+          + (alpha3(ix,iy) * (vx(ix,iy) - vx(ixm,iy))   &
+          - alpha1(ix,iyp) * (vx(ixm,iyp) - vx(ix,iyp)) &
+          + alpha1(ixp,iyp) * (vx(ix,iy) - vx(ixp,iy))  &
+          - alpha3(ixp,iy) * (vx(ixp,iy) - vx(ix,iy))) / cv_v(ix,iy) 
 
         ! Find half step velocity needed for remap
         vx1(ix,iy) = vx(ix,iy) + dt2 * fx / rho_v(ix,iy)
@@ -256,12 +266,14 @@ CONTAINS
 
   SUBROUTINE viscosity
 
-    REAL(num) :: qkur, psi, dvx, dvy, unit_dv
-    REAL(num) :: rho_edge, cf_edge, cons
+    REAL(num) :: dvx, dvy, dv, dv2, dx, dxp, dxm
+    REAL(num) :: dvxm, dvxp, dvym, dvyp, dvdots
+    REAL(num) :: rl, rr, psi
+    REAL(num) :: rho_edge, cs_edge, cons
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
 
-    INTEGER :: ix1, iy1, ix2, iy2
+    INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
 
     ALLOCATE(cs(-1:nx+1,-1:ny+1), cs_v(-1:nx+1,-1:ny+1))
 
@@ -281,14 +293,18 @@ CONTAINS
         ixp = ix + 1
         rho_v(ix,iy) = rho(ix,iy) * cv(ix,iy) + rho(ixp,iy) * cv(ixp,iy) &
             +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
-        rho_v(ix,iy) = rho_v(ix,iy) / (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
+        cv_v(ix,iy) = cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp)
+        rho_v(ix,iy) = rho_v(ix,iy) / cv_v(ix,iy) 
 
         cs_v(ix,iy) = cs(ix,iy) * cv(ix,iy) + cs(ixp,iy) * cv(ixp,iy) &
             +   cs(ix,iyp) * cv(ix,iyp) + cs(ixp,iyp) * cv(ixp,iyp)
-        cs_v(ix,iy) = cs_v(ix,iy) / (cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp))
+        cs_v(ix,iy) = cs_v(ix,iy) / cv_v(ix,iy) 
+
+        cv_v(ix,iy) = 0.25_num * cv_v(ix,iy)
       END DO
     END DO
 
+    ! edge viscosity for triangle 1
     DO iy = 1, ny 
       iym = iy - 1
       iyp = iy + 1
@@ -296,12 +312,40 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
         
-        ix1 = ixm
-        iy1 = iym
-        ix2 = ix
-        iy2 = iym
-        rho_edge = 2.0_num * rho_v(ix1,iy1) * rho_v(ix2,iy2) / (rho_v(ix1,iy1) + rho_v(ix2,iy2))
-        cf_edge = MIN(cs_v(ix1,iy1), cs_v(ix2,iy2))
+        i1 = ixm
+        j1 = iym
+        i2 = ix
+        j2 = iym
+        i0 = i1 - 1
+        i3 = i2 + 1
+        j0 = j1
+        j3 = j1
+        dx = dxb(ix)
+        dxp = dxb(ixp)
+        dxm = dxb(ixm)
+        dvdots = - 0.5_num * dyb(iy) * SIGN(1.0_num, vx(i1,j1) - vx(i2,j2))
+        dvdots = MIN(0.0_num, dvdots)
+
+        rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) / (rho_v(i1,j1) + rho_v(i2,j2))
+        cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
+        dvx = vx(i1,j1) - vx(i2,j2)
+        dvxm = vx(i0,j0) - vx(i1,j1)
+        dvxp = vx(i3,j3) - vx(i2,j2)
+        dvy = vy(i1,j1) - vy(i2,j2)
+        dvym = vy(i0,j0) - vy(i1,j1)
+        dvyp = vy(i3,j3) - vy(i2,j2)
+        dv2 = dvx**2 + dvy**2
+        dv = SQRT(dv2)
+        dv2 = MAX(dv2, none_zero)
+        rl = (dvxp * dvx + dvyp * dvy) * dx / (dxp * dv2)
+        rr = (dvxm * dvx + dvym * dvy) * dx / (dxm * dv2)
+        IF (dv*dt/dx < 1.e-14_num) THEN
+          rl = 1.0_num
+          rr = 1.0_num
+        END IF
+        psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
+        alpha1(ix,iy) = rho_edge * (visc1 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
+            * (1.0_num - psi) * dvdots
 
       END DO
     END DO
@@ -397,6 +441,8 @@ CONTAINS
             - alpha2(ix,iy) * ((vx1(ix,iym) - vx1(ix,iy))**2 + (vy1(ix,iym) - vy1(ix,iy))**2) &
             - alpha3(ix,iy) * ((vx1(ix,iy) - vx1(ixm,iy))**2 + (vy1(ix,iy) - vy1(ixm,iy))**2) &
             - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym))**2 + (vy1(ixm,iy) - vy1(ixm,iym))**2)     
+
+        visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
     END DO
 
