@@ -55,6 +55,8 @@ CONTAINS
     grav = 0.0_num
     lambda_i = 0.0_num
 
+    visc2 = 0.25_num * (gamma + 1.0_num) * visc2
+
     rho = 0.0_num
     energy = 0.0_num
     bx = 0.0_num

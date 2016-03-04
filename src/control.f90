@@ -56,20 +56,19 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 4
-    ny_global = 128
+    nx_global = 100
+    ny_global = 4
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
-    nsteps = 1
+    nsteps = 20
 
     ! The maximum runtime of the code
-    t_end = 40.0_num
+    t_end = 0.15_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
-    visc1 = 0.1_num
-    visc2 = 0.5_num
-
+    visc1 = 0.0_num
+    visc2 = 0.0_num
     ! Real viscosity expressed as the inverse Reynolds number
     visc3 = 0.0_num
 
@@ -80,14 +79,14 @@ CONTAINS
     nprocy = 0
 
     ! The length of the domain in the x direction
-    x_min = -5.0_num
-    x_max = 5.0_num
+    x_min = -0.5_num
+    x_max = 0.5_num
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
     ! The length of the domain in the y direction
-    y_min = -20.0_num
-    y_max = 80.0_num
+    y_min = 0.0_num
+    y_max = 1.0_num
     ! Should the y grid be stretched or uniform
     y_stretch = .FALSE.
 
@@ -151,10 +150,10 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Reimann far-field characteristic boundary conditions
     ! BC_OTHER    - Other boundary conditions specified in "boundary.f90"
-    xbc_min = BC_PERIODIC
-    xbc_max = BC_PERIODIC
-    ybc_min = BC_OTHER
-    ybc_max = BC_OTHER
+    xbc_min = BC_OTHER
+    xbc_max = BC_OTHER
+    ybc_min = BC_PERIODIC
+    ybc_max = BC_PERIODIC
 
     ! Set to true to turn on routine for damped boundaries.
     ! These routines are in boundary.f90 and you should check that they
@@ -217,7 +216,7 @@ CONTAINS
     ! If the element is false then the field isn't dumped
     ! N.B. if dump_mask(1:8) not true then the restart will not work
     dump_mask = .FALSE.
-    dump_mask(1:10) = .TRUE.
+    dump_mask(1:11) = .TRUE.
     IF (eos_number /= EOS_IDEAL) dump_mask(14) = .TRUE.
     IF (cowling_resistivity) dump_mask(15) = .TRUE.
     IF (resistive_mhd) dump_mask(16) = .TRUE.

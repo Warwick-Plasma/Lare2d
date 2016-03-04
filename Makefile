@@ -77,7 +77,7 @@ ifeq ($(strip $(COMPILER)),gfortran)
       endif
     endif
   endif
-  MODULEFLAG = -I/usr/include -I$(OBJDIR) -J$(OBJDIR)
+  MODULEFLAG = -I/usr/local/include -I$(OBJDIR) -J$(OBJDIR)
 endif
 
 # g95
