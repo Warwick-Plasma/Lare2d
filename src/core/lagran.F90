@@ -201,6 +201,10 @@ CONTAINS
           + ((alpha1(ix,iyp) + alpha3(ix,iy)) * (vx(ix,iy) - vx(ixm,iy))   &
           + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vx(ix,iy) - vx(ixp,iy))) / cv_v(ix,iy) 
 
+        fy = fy &
+          + ((alpha2(ix,iy) + alpha4(ixp,iy)) * (vy(ix,iy) - vy(ix,iym))   &
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ixp,iy))) / cv_v(ix,iy) 
+
         ! Find half step velocity needed for remap
         vx1(ix,iy) = vx(ix,iy) + dt2 * fx / rho_v(ix,iy)
         vy1(ix,iy) = vy(ix,iy) + dt2 * fy / rho_v(ix,iy)
@@ -296,9 +300,10 @@ CONTAINS
       iym = iy - 1
       iyp = iy + 1
       DO ix = 0, nx + 1
-        ! edge viscosity for triangle 1
         ixm = ix - 1
         ixp = ix + 1
+
+        ! edge viscosity for triangle 1
         i1 = ixm
         j1 = iym
         i2 = ix
@@ -313,14 +318,58 @@ CONTAINS
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
         alpha1(ix,iy) = edge_viscosity()
 
-        alpha2(ix,iy) = 0.0_num
-        alpha3(ix,iy) = 0.0_num
-        alpha4(ix,iy) = 0.0_num
+        ! edge viscosity for triangle 2
+        i1 = ix
+        j1 = iym
+        i2 = ix
+        j2 = iy
+        i0 = i1 
+        j0 = j1 -1
+        i3 = i2 
+        j3 = j1 +1
+        dx = dyb(iy)
+        dxp = dyb(iyp)
+        dxm = dyb(iym)
+        dvdots = - 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
+        alpha2(ix,iy) = edge_viscosity()
+
+        ! edge viscosity for triangle 3
+        i1 = ix
+        j1 = iy
+        i2 = ixm
+        j2 = iy
+        i0 = i1 - 1
+        j0 = j1
+        i3 = i2 + 1
+        j3 = j1
+        dx = dxb(ix)
+        dxp = dxb(ixp)
+        dxm = dxb(ixm)
+        dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
+        alpha3(ix,iy) = edge_viscosity()
+
+        ! edge viscosity for triangle 4
+        i1 = ixm
+        j1 = iy
+        i2 = ixm
+        j2 = iym
+        i0 = i1 
+        j0 = j1 - 1
+        i3 = i2 
+        j3 = j1 + 1
+        dx = dyb(iy)
+        dxp = dyb(iyp)
+        dxm = dyb(iym)
+        dvdots = - 0.5_num * dxb(iy) * (vy(i1,j1) - vy(i2,j2))
+        alpha4(ix,iy) = edge_viscosity()
+
         ! estimate effective p_visc for CFL limit
         p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iy) * dv / dyb(iy) 
             
       END DO
     END DO
+
+lambda_i(1:nx,1:ny) = alpha1(1:nx,1:ny)
 
     visc_heat = 0.0_num
 

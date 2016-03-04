@@ -434,7 +434,7 @@ CONTAINS
 
       IF (.NOT.ALLOCATED(array)) ALLOCATE(array(nx,ny))
 
-      array = SQRT(gamma * (gamma - 1.0_num) * energy(1:nx,1:ny))
+      array = lambda_i(1:nx,1:ny) !SQRT(gamma * (gamma - 1.0_num) * energy(1:nx,1:ny))
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'Fluid/' // TRIM(varname), TRIM(units), dims, &
