@@ -292,31 +292,58 @@ CONTAINS
       END DO
     END DO
 
-    ! edge viscosity for triangle 1
     DO iy = 0, ny + 1
       iym = iy - 1
       iyp = iy + 1
       DO ix = 0, nx + 1
+        ! edge viscosity for triangle 1
         ixm = ix - 1
         ixp = ix + 1
-        
         i1 = ixm
         j1 = iym
-
         i2 = ix
         j2 = iym
-
         i0 = i1 - 1
         j0 = j1
-
         i3 = i2 + 1
         j3 = j1
-
         dx = dxb(ix)
         dxp = dxb(ixp)
         dxm = dxb(ixm)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
+        alpha1(ix,iy) = edge_viscosity()
 
+        alpha2(ix,iy) = 0.0_num
+        alpha3(ix,iy) = 0.0_num
+        alpha4(ix,iy) = 0.0_num
+        ! estimate effective p_visc for CFL limit
+        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iy) * dv / dyb(iy) 
+            
+      END DO
+    END DO
+jx(0:nx,0:ny) = alpha1(0:nx,0:ny) 
+
+    visc_heat = 0.0_num
+
+    DO iy = 1, ny 
+      iym = iy - 1
+      DO ix = 1, nx 
+        ixm = ix - 1
+
+        visc_heat(ix,iy) = &
+            - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix,iym))**2 + (vy(ixm,iym) - vy(ix,iym))**2) &
+            - alpha2(ix,iy) * ((vx(ix,iym) - vx(ix,iy))**2 + (vy(ix,iym) - vy(ix,iy))**2) &
+            - alpha3(ix,iy) * ((vx(ix,iy) - vx(ixm,iy))**2 + (vy(ix,iy) - vy(ixm,iy))**2) &
+            - alpha4(ix,iy) * ((vx(ixm,iy) - vx(ixm,iym))**2 + (vy(ixm,iy) - vy(ixm,iym))**2)     
+
+        visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
+      END DO
+    END DO
+
+    DEALLOCATE(cs, cs_v)
+
+    CONTAINS
+      REAL FUNCTION edge_viscosity()
         dvdots = MIN(0.0_num, dvdots)
         rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) / (rho_v(i1,j1) + rho_v(i2,j2))
         cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
@@ -334,37 +361,10 @@ CONTAINS
           rl = 1.0_num
           rr = 1.0_num
         END IF
-        psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
-        alpha1(ix,iy) = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
+        psi = 0.0_num !MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
+        edge_viscosity = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
             * (1.0_num - psi) * dvdots / MAX(dv, none_zero)
-
-        alpha2(ix,iy) = 0.0_num
-        alpha3(ix,iy) = 0.0_num
-        alpha4(ix,iy) = 0.0_num
-        ! estimate effective p_visc for CFL limit
-        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iy) * dv / dyb(iy) 
-            
-      END DO
-    END DO
-
-    visc_heat = 0.0_num
-
-    DO iy = 1, ny 
-      iym = iy - 1
-      DO ix = 1, nx 
-        ixm = ix - 1
-
-        visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix,iym))**2 + (vy1(ixm,iym) - vy1(ix,iym))**2) &
-            - alpha2(ix,iy) * ((vx1(ix,iym) - vx1(ix,iy))**2 + (vy1(ix,iym) - vy1(ix,iy))**2) &
-            - alpha3(ix,iy) * ((vx1(ix,iy) - vx1(ixm,iy))**2 + (vy1(ix,iy) - vy1(ixm,iy))**2) &
-            - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym))**2 + (vy1(ixm,iy) - vy1(ixm,iym))**2)     
-
-        visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
-      END DO
-    END DO
-
-    DEALLOCATE(cs, cs_v)
+      END FUNCTION edge_viscosity
 
   END SUBROUTINE viscosity
 
