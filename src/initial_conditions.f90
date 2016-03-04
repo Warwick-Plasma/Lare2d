@@ -29,7 +29,7 @@ CONTAINS
 
   SUBROUTINE set_initial_conditions
 
-    INTEGER:: ix, iy
+    INTEGER:: ix
 
     ! 1d MHD Brio-Wu
     ! typically run with 800 points until t=0.1

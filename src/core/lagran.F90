@@ -321,7 +321,6 @@ CONTAINS
             
       END DO
     END DO
-jx(0:nx,0:ny) = alpha1(0:nx,0:ny) 
 
     visc_heat = 0.0_num
 
@@ -343,7 +342,7 @@ jx(0:nx,0:ny) = alpha1(0:nx,0:ny)
     DEALLOCATE(cs, cs_v)
 
     CONTAINS
-      REAL FUNCTION edge_viscosity()
+      DOUBLE PRECISION FUNCTION edge_viscosity()
         dvdots = MIN(0.0_num, dvdots)
         rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) / (rho_v(i1,j1) + rho_v(i2,j2))
         cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
