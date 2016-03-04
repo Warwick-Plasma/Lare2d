@@ -269,7 +269,7 @@ CONTAINS
 
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
 
-    ALLOCATE(cs(-1:nx+1,-1:ny+1), cs_v(-1:nx+1,-1:ny+1))
+    ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
 
     cons = gamma * (gamma - 1.0_num)
     p_visc = 0.0_num
@@ -324,9 +324,9 @@ CONTAINS
 
     visc_heat = 0.0_num
 
-    DO iy = 1, ny 
+    DO iy = 0, ny + 1
       iym = iy - 1
-      DO ix = 1, nx 
+      DO ix = 0, nx + 1 
         ixm = ix - 1
 
         visc_heat(ix,iy) = &
@@ -360,7 +360,7 @@ CONTAINS
           rl = 1.0_num
           rr = 1.0_num
         END IF
-        psi = 0.0_num !MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
+        psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
         edge_viscosity = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
             * (1.0_num - psi) * dvdots / MAX(dv, none_zero)
       END FUNCTION edge_viscosity
