@@ -40,8 +40,8 @@ CONTAINS
     ALLOCATE(alpha4(0:nx+1,0:ny+1))
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
-    ALLOCATE(rho_v(-1:nx+2,-1:ny+2))
-    ALLOCATE(cv_v(-1:nx+2,-1:ny+2))
+    ALLOCATE(rho_v(-1:nx+1,-1:ny+1))
+    ALLOCATE(cv_v(-1:nx+1,-1:ny+1))
     ALLOCATE(flux_x(0:nx,0:ny))
     ALLOCATE(flux_y(0:nx,0:ny))
     ALLOCATE(flux_z(0:nx,0:ny))
@@ -116,12 +116,6 @@ CONTAINS
     dt2 = dt * 0.5_num
     CALL b_pressure_cv1_update
     CALL viscosity
-p_visc = 0.0_num
-visc_heat=0.0_num
-alpha1=0.0_num
-alpha2=0.0_num
-alpha3=0.0_num
-alpha4=0.0_num
 
     bx1 = bx1 * cv1(0:nx+1,0:ny+1)
     by1 = by1 * cv1(0:nx+1,0:ny+1)
@@ -275,15 +269,15 @@ alpha4=0.0_num
 
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
 
-    ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+2,-1:ny+2))
+    ALLOCATE(cs(-1:nx+1,-1:ny+1), cs_v(-1:nx+1,-1:ny+1))
 
     cons = gamma * (gamma - 1.0_num)
     p_visc = 0.0_num
     cs = SQRT(cons * energy)
 
-    DO iy = 0, ny + 1
+    DO iy = -1, ny + 1
       iyp = iy + 1
-      DO ix = 0, nx + 1
+      DO ix = -1, nx + 1
         ixp = ix + 1
         rho_v(ix,iy) = rho(ix,iy) * cv(ix,iy) + rho(ixp,iy) * cv(ixp,iy) &
             +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
@@ -297,18 +291,12 @@ alpha4=0.0_num
         cv_v(ix,iy) = 0.25_num * cv_v(ix,iy)
       END DO
     END DO
-    rho_v(nx+2,:) = rho_v(nx,:)
-    cs_v(nx+2,:) = cs_v(nx,:)
-    cv_v(nx+2,:) = cv_v(nx,:)
-    rho_v(:,ny+2) = rho_v(:,1)
-    cs_v(:,ny+2) = cs_v(:,1)
-    cv_v(:,ny+2) = cv_v(:,1)
 
     ! edge viscosity for triangle 1
-    DO iy = 1, ny
+    DO iy = 0, ny + 1
       iym = iy - 1
       iyp = iy + 1
-      DO ix = 1, nx
+      DO ix = 0, nx + 1
         ixm = ix - 1
         ixp = ix + 1
         
@@ -348,9 +336,8 @@ alpha4=0.0_num
         END IF
         psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
         alpha1(ix,iy) = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
-            * (1.0_num - psi) * dvdots / MIN(dv, none_zero)
+            * (1.0_num - psi) * dvdots / MAX(dv, none_zero)
 
-        alpha1(ix,iy) = 0.0_num
         alpha2(ix,iy) = 0.0_num
         alpha3(ix,iy) = 0.0_num
         alpha4(ix,iy) = 0.0_num
@@ -435,12 +422,11 @@ alpha4=0.0_num
         vzb  = (vz(ix ,iy ) + vz(ix ,iym)) * 0.5_num
         ! vz at Bx(i-1,j)
         vzbm = (vz(ixm,iy ) + vz(ixm,iym)) * 0.5_num
-        dvzdx = (vzb - vzbm) / dxb(ix)
-
         ! vz at By(i,j)
         vzb  = (vz(ix ,iy ) + vz(ixm,iy )) * 0.5_num
         ! vz at By(i,j-1)
         vzbm = (vz(ix ,iym) + vz(ixm,iym)) * 0.5_num
+        dvzdx = (vzb - vzbm) / dxb(ix)
         dvzdy = (vzb - vzbm) / dyb(iy)
   
         w3 =  bx1(ix,iy) * dvxdx + by1(ix,iy) * dvxdy
