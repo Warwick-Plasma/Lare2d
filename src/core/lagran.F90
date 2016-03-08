@@ -280,7 +280,10 @@ CONTAINS
     ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
 
     cons = gamma * (gamma - 1.0_num)
+    
     p_visc = 0.0_num
+    visc_heat = 0.0_num
+
     DO ix = 0, nx + 1
       DO iy = 0, ny + 1
         ca2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
@@ -328,6 +331,9 @@ CONTAINS
         dxm = dxb(ixm)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
         alpha1(ix,iy) = edge_viscosity()
+        ! estimate effective p_visc for CFL limit
+        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iy) * (vx(i1,j1) - vx(i2,j2)) / dyb(iy) &
+            - alpha1(ix,iy) * ABS(vy(i1,j1) - vy(i2,j2)) / dxb(iy) 
 
         ! edge viscosity for triangle 2
         i1 = ix
@@ -343,6 +349,8 @@ CONTAINS
         dxm = dyb(iym)
         dvdots = - 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
         alpha2(ix,iy) = 0.0_num !edge_viscosity()
+!         p_visc(ix,iy) = p_visc(ix,iy) - alpha2(ix,iy) * (vy(i1,j1) - vy(i2,j2)) / dxb(ix) 
+
 
         ! edge viscosity for triangle 3
         i1 = ix
@@ -357,7 +365,8 @@ CONTAINS
         dxp = dxb(ixm)
         dxm = dxb(ixp)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
-        alpha3(ix,iy) = 0.0_num !edge_viscosity()
+        alpha3(ix,iy) = edge_viscosity()
+!         p_visc(ix,iy) = p_visc(ix,iy) - alpha3(ix,iy) * (vx(i1,j1) - vx(i2,j2)) / dyb(iy) 
 
         ! edge viscosity for triangle 4
         i1 = ixm
@@ -373,15 +382,10 @@ CONTAINS
         dxm = dyb(iyp)
         dvdots = - 0.5_num * dxb(iy) * (vy(i1,j1) - vy(i2,j2))
         alpha4(ix,iy) = 0.0_num !edge_viscosity()
-
-        ! estimate effective p_visc for CFL limit
-        p_visc(ix,iy) = - alpha1(ix,iy) * dv / dyb(iy) - alpha2(ix,iy) * dv / dxb(ix) &
-           - alpha3(ix,iy) * dv / dyb(iy) - alpha4(ix,iy) * dv / dxb(ix) 
+!         p_visc(ix,iy) = p_visc(ix,iy) - alpha4(ix,iy) * (vy(i1,j1) - vy(i2,j2)) / dxb(ix) 
 
       END DO
     END DO
-
-    visc_heat = 0.0_num
 
     DO iy = 0, ny + 1
       iym = iy - 1
@@ -395,9 +399,10 @@ CONTAINS
             - alpha4(ix,iy) * ((vx(ixm,iy) - vx(ixm,iym))**2 + (vy(ixm,iy) - vy(ixm,iym))**2)     
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
+
       END DO
     END DO
-
+ lambda_i(0:nx, 0:ny) = visc_heat(0:nx, 0:ny)
     DEALLOCATE(cs, cs_v)
 
     CONTAINS
