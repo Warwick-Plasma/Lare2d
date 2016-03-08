@@ -67,8 +67,8 @@ CONTAINS
     t_end = 0.1_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
-    visc1 = 0.1_num
-    visc2 = 0.5_num
+    visc1 = 1.0_num
+    visc2 = 1.0_num
     ! Real viscosity expressed as the inverse Reynolds number
     visc3 = 0.0_num
 
@@ -216,7 +216,7 @@ CONTAINS
     ! If the element is false then the field isn't dumped
     ! N.B. if dump_mask(1:8) not true then the restart will not work
     dump_mask = .FALSE.
-    dump_mask(1:11) = .TRUE.
+    dump_mask(1:10) = .TRUE.
     IF (eos_number /= EOS_IDEAL) dump_mask(14) = .TRUE.
     IF (cowling_resistivity) dump_mask(15) = .TRUE.
     IF (resistive_mhd) dump_mask(16) = .TRUE.

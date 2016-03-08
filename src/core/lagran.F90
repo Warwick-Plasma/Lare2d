@@ -31,9 +31,9 @@ CONTAINS
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
 
-    ALLOCATE(bx1(0:nx+1,0:ny+1))
-    ALLOCATE(by1(0:nx+1,0:ny+1))
-    ALLOCATE(bz1(0:nx+1,0:ny+1))
+    ALLOCATE(bx1(0:nx+2,0:ny+2))
+    ALLOCATE(by1(0:nx+2,0:ny+2))
+    ALLOCATE(bz1(0:nx+2,0:ny+2))
     ALLOCATE(alpha1(0:nx+1,0:ny+1))
     ALLOCATE(alpha2(0:nx+1,0:ny+1))
     ALLOCATE(alpha3(0:nx+1,0:ny+1))
@@ -76,9 +76,9 @@ CONTAINS
 
     IF (conduction .OR. coronal_heating .OR. radiation) CALL conduct_heat
 
-    DO iy = 0, ny + 1
+    DO iy = 0, ny + 2
       iym = iy - 1
-      DO ix = 0, nx + 1
+      DO ix = 0, nx + 2
         ixm = ix - 1
         bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
         by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
@@ -117,9 +117,9 @@ CONTAINS
     CALL b_pressure_cv1_update
     CALL viscosity
 
-    bx1 = bx1 * cv1(0:nx+1,0:ny+1)
-    by1 = by1 * cv1(0:nx+1,0:ny+1)
-    bz1 = bz1 * cv1(0:nx+1,0:ny+1)
+    bx1 = bx1 * cv1(0:nx+2,0:ny+2)
+    by1 = by1 * cv1(0:nx+2,0:ny+2)
+    bz1 = bz1 * cv1(0:nx+2,0:ny+2)
 
     DO iy = 0, ny + 1
       DO ix = 0, nx + 1
@@ -199,10 +199,14 @@ CONTAINS
         !Add viscous forces
         fx = fx &
           + ((alpha1(ix,iyp) + alpha3(ix,iy)) * (vx(ix,iy) - vx(ixm,iy))   &
-          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vx(ix,iy) - vx(ixp,iy))) / cv_v(ix,iy) 
+          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vx(ix,iy) - vx(ixp,iy))  &
+          + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vx(ix,iy) - vx(ix,iym))   &
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ixp,iy))) / cv_v(ix,iy) 
 
         fy = fy &
-          + ((alpha2(ix,iy) + alpha4(ixp,iy)) * (vy(ix,iy) - vy(ix,iym))   &
+          + ((alpha1(ix,iyp) + alpha3(ix,iy)) * (vy(ix,iy) - vy(ixm,iy))   &
+          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vy(ix,iy) - vy(ixp,iy)) & 
+          + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vy(ix,iy) - vy(ix,iym))   &
           + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ixp,iy))) / cv_v(ix,iy) 
 
         ! Find half step velocity needed for remap
@@ -267,7 +271,7 @@ CONTAINS
     REAL(num) :: dvx, dvy, dv, dv2, dx, dxp, dxm
     REAL(num) :: dvxm, dvxp, dvym, dvyp, dvdots
     REAL(num) :: rl, rr, psi
-    REAL(num) :: rho_edge, cs_edge, cons
+    REAL(num) :: rho_edge, cs_edge, cons, ca2
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
 
@@ -277,7 +281,14 @@ CONTAINS
 
     cons = gamma * (gamma - 1.0_num)
     p_visc = 0.0_num
-    cs = SQRT(cons * energy)
+    DO ix = 0, nx + 1
+      DO iy = 0, ny + 1
+        ca2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
+        cs(ix,iy) = SQRT(cons * energy(ix,iy) + ca2)
+      END DO
+    END DO
+    cs(-1,:) = cs(0,:)
+    cs(:,-1) = cs(:,0)
 
     DO iy = -1, ny + 1
       iyp = iy + 1
@@ -331,22 +342,22 @@ CONTAINS
         dxp = dyb(iyp)
         dxm = dyb(iym)
         dvdots = - 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
-        alpha2(ix,iy) = edge_viscosity()
+        alpha2(ix,iy) = 0.0_num !edge_viscosity()
 
         ! edge viscosity for triangle 3
         i1 = ix
         j1 = iy
         i2 = ixm
         j2 = iy
-        i0 = i1 - 1
+        i0 = i1 + 1
         j0 = j1
-        i3 = i2 + 1
+        i3 = i2 - 1
         j3 = j1
         dx = dxb(ix)
-        dxp = dxb(ixp)
-        dxm = dxb(ixm)
+        dxp = dxb(ixm)
+        dxm = dxb(ixp)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
-        alpha3(ix,iy) = edge_viscosity()
+        alpha3(ix,iy) = 0.0_num !edge_viscosity()
 
         ! edge viscosity for triangle 4
         i1 = ixm
@@ -354,22 +365,21 @@ CONTAINS
         i2 = ixm
         j2 = iym
         i0 = i1 
-        j0 = j1 - 1
+        j0 = j1 + 1
         i3 = i2 
-        j3 = j1 + 1
+        j3 = j1 - 1
         dx = dyb(iy)
-        dxp = dyb(iyp)
-        dxm = dyb(iym)
+        dxp = dyb(iym)
+        dxm = dyb(iyp)
         dvdots = - 0.5_num * dxb(iy) * (vy(i1,j1) - vy(i2,j2))
-        alpha4(ix,iy) = edge_viscosity()
+        alpha4(ix,iy) = 0.0_num !edge_viscosity()
 
         ! estimate effective p_visc for CFL limit
-        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iy) * dv / dyb(iy) 
-            
+        p_visc(ix,iy) = - alpha1(ix,iy) * dv / dyb(iy) - alpha2(ix,iy) * dv / dxb(ix) &
+           - alpha3(ix,iy) * dv / dyb(iy) - alpha4(ix,iy) * dv / dxb(ix) 
+
       END DO
     END DO
-
-lambda_i(1:nx,1:ny) = alpha1(1:nx,1:ny)
 
     visc_heat = 0.0_num
 
