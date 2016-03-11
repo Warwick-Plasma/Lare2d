@@ -19,6 +19,7 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha1, alpha2, alpha3, alpha4
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v, cv_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc, fy_visc, fz_visc
 
 CONTAINS
 
@@ -42,6 +43,9 @@ CONTAINS
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(rho_v(-1:nx+1,-1:ny+1))
     ALLOCATE(cv_v(-1:nx+1,-1:ny+1))
+    ALLOCATE(fx_visc(0:nx,0:ny))
+    ALLOCATE(fy_visc(0:nx,0:ny))
+    ALLOCATE(fz_visc(0:nx,0:ny))
     ALLOCATE(flux_x(0:nx,0:ny))
     ALLOCATE(flux_y(0:nx,0:ny))
     ALLOCATE(flux_z(0:nx,0:ny))
@@ -90,6 +94,7 @@ CONTAINS
 
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2, alpha3, alpha4)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
+    DEALLOCATE(fx_visc, fy_visc, fz_visc)
 
     CALL energy_bcs
     CALL density_bcs
@@ -197,17 +202,9 @@ CONTAINS
         fy = fy - rho_v(ix,iy) * grav(iy)
 
         !Add viscous forces
-        fx = fx &
-          + ((alpha1(ix,iyp) + alpha3(ix,iy)) * (vx(ix,iy) - vx(ixm,iy))   &
-          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vx(ix,iy) - vx(ixp,iy))  &
-          + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vx(ix,iy) - vx(ix,iym))   &
-          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ixp,iy))) / cv_v(ix,iy) 
-
-        fy = fy &
-          + ((alpha1(ix,iyp) + alpha3(ix,iy)) * (vy(ix,iy) - vy(ixm,iy))   &
-          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vy(ix,iy) - vy(ixp,iy)) & 
-          + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vy(ix,iy) - vy(ix,iym))   &
-          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ixp,iy))) / cv_v(ix,iy) 
+        fx = fx + fx_visc(ix,iy)
+        fy = fy + fy_visc(ix,iy)
+        fz = fz + fz_visc(ix,iy)
 
         ! Find half step velocity needed for remap
         vx1(ix,iy) = vx(ix,iy) + dt2 * fx / rho_v(ix,iy)
@@ -268,10 +265,8 @@ CONTAINS
 
   SUBROUTINE viscosity
 
-    REAL(num) :: dvx, dvy, dv, dv2, dx, dxp, dxm
-    REAL(num) :: dvxm, dvxp, dvym, dvyp, dvdots
-    REAL(num) :: rl, rr, psi
-    REAL(num) :: rho_edge, cs_edge, cons, ca2
+    REAL(num) :: dvdots, dx, dxm, dxp
+    REAL(num) :: cons, ca2, dvol
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
 
@@ -331,9 +326,6 @@ CONTAINS
         dxm = dxb(ixm)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
         alpha1(ix,iy) = edge_viscosity()
-        ! estimate effective p_visc for CFL limit
-        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iy) * (vx(i1,j1) - vx(i2,j2)) / dyb(iy) &
-            - alpha1(ix,iy) * ABS(vy(i1,j1) - vy(i2,j2)) / dxb(iy) 
 
         ! edge viscosity for triangle 2
         i1 = ix
@@ -341,16 +333,14 @@ CONTAINS
         i2 = ix
         j2 = iy
         i0 = i1 
-        j0 = j1 -1
+        j0 = j1 - 1
         i3 = i2 
-        j3 = j1 +1
+        j3 = j1 + 1
         dx = dyb(iy)
         dxp = dyb(iyp)
         dxm = dyb(iym)
         dvdots = - 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
-        alpha2(ix,iy) = 0.0_num !edge_viscosity()
-!         p_visc(ix,iy) = p_visc(ix,iy) - alpha2(ix,iy) * (vy(i1,j1) - vy(i2,j2)) / dxb(ix) 
-
+        alpha2(ix,iy) = edge_viscosity()
 
         ! edge viscosity for triangle 3
         i1 = ix
@@ -364,9 +354,8 @@ CONTAINS
         dx = dxb(ix)
         dxp = dxb(ixm)
         dxm = dxb(ixp)
-        dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
+        dvdots = 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
         alpha3(ix,iy) = edge_viscosity()
-!         p_visc(ix,iy) = p_visc(ix,iy) - alpha3(ix,iy) * (vx(i1,j1) - vx(i2,j2)) / dyb(iy) 
 
         ! edge viscosity for triangle 4
         i1 = ixm
@@ -380,33 +369,66 @@ CONTAINS
         dx = dyb(iy)
         dxp = dyb(iym)
         dxm = dyb(iyp)
-        dvdots = - 0.5_num * dxb(iy) * (vy(i1,j1) - vy(i2,j2))
-        alpha4(ix,iy) = 0.0_num !edge_viscosity()
-!         p_visc(ix,iy) = p_visc(ix,iy) - alpha4(ix,iy) * (vy(i1,j1) - vy(i2,j2)) / dxb(ix) 
-
-      END DO
-    END DO
-
-    DO iy = 0, ny + 1
-      iym = iy - 1
-      DO ix = 0, nx + 1 
-        ixm = ix - 1
+        dvdots = 0.5_num * dxb(iy) * (vy(i1,j1) - vy(i2,j2))
+        alpha4(ix,iy) = edge_viscosity()
 
         visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix,iym))**2 + (vy(ixm,iym) - vy(ix,iym))**2) &
-            - alpha2(ix,iy) * ((vx(ix,iym) - vx(ix,iy))**2 + (vy(ix,iym) - vy(ix,iy))**2) &
-            - alpha3(ix,iy) * ((vx(ix,iy) - vx(ixm,iy))**2 + (vy(ix,iy) - vy(ixm,iy))**2) &
-            - alpha4(ix,iy) * ((vx(ixm,iy) - vx(ixm,iym))**2 + (vy(ixm,iy) - vy(ixm,iym))**2)     
+            - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix,iym))**2 + (vy(ixm,iym) - vy(ix,iym))**2 &
+                              + (vz(ixm,iym) - vz(ix,iym))**2) &
+            - alpha2(ix,iy) * ((vx(ix,iym) - vx(ix,iy))**2 + (vy(ix,iym) - vy(ix,iy))**2  &
+                              + (vz(ix,iym) - vz(ix,iy))**2) &
+            - alpha3(ix,iy) * ((vx(ix,iy) - vx(ixm,iy))**2 + (vy(ix,iy) - vy(ixm,iy))**2  &
+                              + (vz(ix,iy) - vz(ixm,iy))**2) &
+            - alpha4(ix,iy) * ((vx(ixm,iy) - vx(ixm,iym))**2 + (vy(ixm,iy) - vy(ixm,iym))**2 &
+                              + (vz(ixm,iy) - vz(ixm,iym))**2)     
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
 
+        dvol = 1.0_num - cv1(ix,iy) / cv(ix,iy) 
+        IF (dvol > 1.e-14_num) p_visc(ix,iy) = visc_heat(ix,iy) * dt / dvol
+
       END DO
     END DO
- lambda_i(0:nx, 0:ny) = visc_heat(0:nx, 0:ny)
+
+    fx_visc = 0.0_num
+    fy_visc = 0.0_num
+    fz_visc = 0.0_num
+    DO iy = 0, ny 
+      iym = iy - 1
+      iyp = iy + 1
+      DO ix = 0, nx 
+        ixm = ix - 1
+        ixp = ix + 1
+
+        fx_visc(ix,iy) = ( &
+          + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vx(ix,iy) - vx(ixm,iy))   &
+          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vx(ix,iy) - vx(ixp,iy))  &
+          + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vx(ix,iy) - vx(ix,iym)) &
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ix,iyp)) ) / cv_v(ix,iy) 
+
+        fy_visc(ix,iy) = ( &
+          + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vy(ix,iy) - vy(ixm,iy))   &
+          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vy(ix,iy) - vy(ixp,iy))  &
+          + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vy(ix,iy) - vy(ix,iym)) &
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ix,iyp)) ) / cv_v(ix,iy) 
+
+        fz_visc(ix,iy) = ( &
+          + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vz(ix,iy) - vz(ixm,iy))   &
+          + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vz(ix,iy) - vz(ixp,iy))  &
+          + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vz(ix,iy) - vz(ix,iym)) &
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vz(ix,iyp)) ) / cv_v(ix,iy) 
+
+      END DO
+    END DO
+
     DEALLOCATE(cs, cs_v)
 
     CONTAINS
       DOUBLE PRECISION FUNCTION edge_viscosity()
+        REAL(num) :: dvx, dvy, dv, dv2
+        REAL(num) :: dvxm, dvxp, dvym, dvyp
+        REAL(num) :: rl, rr, psi
+        REAL(num) :: rho_edge, cs_edge
         dvdots = MIN(0.0_num, dvdots)
         rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) / (rho_v(i1,j1) + rho_v(i2,j2))
         cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
@@ -418,15 +440,18 @@ CONTAINS
         dvyp = vy(i2,j2) - vy(i3,j3)
         dv2 = dvx**2 + dvy**2
         dv = SQRT(dv2)
-        rl = (dvxp * dvx + dvyp * dvy) * dx / MAX(dxp * dv2, none_zero)
-        rr = (dvxm * dvx + dvym * dvy) * dx / MAX(dxm * dv2, none_zero)
         IF (dv*dt/dx < 1.e-14_num) THEN
           rl = 1.0_num
           rr = 1.0_num
+          dvdots = 0.0_num
+        ELSE
+          rl = (dvxp * dvx + dvyp * dvy) * dx / dxp * dv2
+          rr = (dvxm * dvx + dvym * dvy) * dx / dxm * dv2
+          dvdots = dvdots / dv
         END IF
         psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
         edge_viscosity = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
-            * (1.0_num - psi) * dvdots / MAX(dv, none_zero)
+            * (1.0_num - psi) * dvdots 
       END FUNCTION edge_viscosity
 
   END SUBROUTINE viscosity

@@ -61,7 +61,7 @@ CONTAINS
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
-    nsteps = 10
+    nsteps = -1
 
     ! The maximum runtime of the code
     t_end = 5.0_num
@@ -150,8 +150,8 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Reimann far-field characteristic boundary conditions
     ! BC_OTHER    - Other boundary conditions specified in "boundary.f90"
-    xbc_min = BC_OTHER
-    xbc_max = BC_OTHER
+    xbc_min = BC_PERIODIC
+    xbc_max = BC_PERIODIC
     ybc_min = BC_PERIODIC
     ybc_max = BC_PERIODIC
 
@@ -188,7 +188,7 @@ CONTAINS
     data_dir = 'Data'
 
     ! The interval between output snapshots.
-    dt_snapshots = 0.5e-10_num
+    dt_snapshots = 0.5_num
 
     ! dump_mask is an array which specifies which quantities the code should
     ! output to disk in a data dump.
@@ -216,7 +216,7 @@ CONTAINS
     ! If the element is false then the field isn't dumped
     ! N.B. if dump_mask(1:8) not true then the restart will not work
     dump_mask = .FALSE.
-    dump_mask(1:11) = .TRUE.
+    dump_mask(1:10) = .TRUE.
     IF (eos_number /= EOS_IDEAL) dump_mask(14) = .TRUE.
     IF (cowling_resistivity) dump_mask(15) = .TRUE.
     IF (resistive_mhd) dump_mask(16) = .TRUE.
