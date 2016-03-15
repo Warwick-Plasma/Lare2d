@@ -281,7 +281,7 @@ CONTAINS
 
     DO ix = 0, nx + 1
       DO iy = 0, ny + 1
-        ca2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
+        ca2 = (bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2) / rho(ix,iy)
         cs(ix,iy) = SQRT(cons * energy(ix,iy) + ca2)
       END DO
     END DO
@@ -386,7 +386,7 @@ CONTAINS
 
         dvol = 1.0_num - cv1(ix,iy) / cv(ix,iy) 
         IF (dvol > 1.e-14_num) p_visc(ix,iy) = visc_heat(ix,iy) * dt / dvol
-
+        
       END DO
     END DO
 
@@ -445,11 +445,12 @@ CONTAINS
           rr = 1.0_num
           dvdots = 0.0_num
         ELSE
-          rl = (dvxp * dvx + dvyp * dvy) * dx / dxp * dv2
-          rr = (dvxm * dvx + dvym * dvy) * dx / dxm * dv2
+          rl = (dvxp * dvx + dvyp * dvy) * dx / (dxp * dv2)
+          rr = (dvxm * dvx + dvym * dvy) * dx / (dxm * dv2)
           dvdots = dvdots / dv
         END IF
         psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
+        IF ((1.0_num - psi) < 1e-12) psi = 1.0_num
         edge_viscosity = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
             * (1.0_num - psi) * dvdots 
       END FUNCTION edge_viscosity

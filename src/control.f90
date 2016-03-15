@@ -56,7 +56,7 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 800
+    nx_global = 100
     ny_global = 4
 
     ! Set the maximum number of iterations of the core solver before the code
@@ -64,7 +64,7 @@ CONTAINS
     nsteps = -1
 
     ! The maximum runtime of the code
-    t_end = 5.0_num
+    t_end = 0.15_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 1.0_num
@@ -79,8 +79,8 @@ CONTAINS
     nprocy = 0
 
     ! The length of the domain in the x direction
-    x_min = -5_num
-    x_max = 5_num
+    x_min = -0.5_num
+    x_max = 0.5_num
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
@@ -150,8 +150,8 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Reimann far-field characteristic boundary conditions
     ! BC_OTHER    - Other boundary conditions specified in "boundary.f90"
-    xbc_min = BC_PERIODIC
-    xbc_max = BC_PERIODIC
+    xbc_min = BC_OTHER
+    xbc_max = BC_OTHER
     ybc_min = BC_PERIODIC
     ybc_max = BC_PERIODIC
 
