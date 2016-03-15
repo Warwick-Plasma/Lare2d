@@ -266,7 +266,7 @@ CONTAINS
   SUBROUTINE viscosity
 
     REAL(num) :: dvdots, dx, dxm, dxp
-    REAL(num) :: cons, ca2, dvol
+    REAL(num) :: cons, ca2
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
 
@@ -326,6 +326,7 @@ CONTAINS
         dxm = dxb(ixm)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
         alpha1(ix,iy) = edge_viscosity()
+        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha1(ix,iy) / dyb(iy)
 
         ! edge viscosity for triangle 2
         i1 = ix
@@ -341,6 +342,7 @@ CONTAINS
         dxm = dyb(iym)
         dvdots = - 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
         alpha2(ix,iy) = edge_viscosity()
+        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha2(ix,iy) / dxb(ix)
 
         ! edge viscosity for triangle 3
         i1 = ix
@@ -356,6 +358,7 @@ CONTAINS
         dxm = dxb(ixp)
         dvdots = 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
         alpha3(ix,iy) = edge_viscosity()
+        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha3(ix,iy) / dyb(iy)
 
         ! edge viscosity for triangle 4
         i1 = ixm
@@ -371,6 +374,7 @@ CONTAINS
         dxm = dyb(iyp)
         dvdots = 0.5_num * dxb(iy) * (vy(i1,j1) - vy(i2,j2))
         alpha4(ix,iy) = edge_viscosity()
+        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha4(ix,iy) / dxb(ix)
 
         visc_heat(ix,iy) = &
             - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix,iym))**2 + (vy(ixm,iym) - vy(ix,iym))**2 &
@@ -384,9 +388,6 @@ CONTAINS
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
 
-        dvol = 1.0_num - cv1(ix,iy) / cv(ix,iy) 
-        IF (dvol > 1.e-14_num) p_visc(ix,iy) = visc_heat(ix,iy) * dt / dvol
-        
       END DO
     END DO
 
