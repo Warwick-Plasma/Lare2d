@@ -312,7 +312,8 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
 
-        ! edge viscosity for triangle 1
+        ! edge viscosity for triangle 1 from Caramana
+        ! triangles numbered as in Goffrey thesis
         i1 = ixm
         j1 = iym
         i2 = ix
@@ -325,7 +326,9 @@ CONTAINS
         dxp = dxb(ixp)
         dxm = dxb(ixm)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
+        ! force on node is alpha*dv but store only alpha and convert to force when needed
         alpha1(ix,iy) = edge_viscosity()
+        ! estimate p_visc based on q_kur*(1-psi), i.e. alpha/ds, for timestep control
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha1(ix,iy) / dyb(iy)
 
         ! edge viscosity for triangle 2
@@ -426,6 +429,9 @@ CONTAINS
 
     CONTAINS
       DOUBLE PRECISION FUNCTION edge_viscosity()
+      !  actually returns q_kur*(1-psi)*(dvu.ds) 
+      !  where dvu is unit vector in direction of dv
+      !  other symbols follow notation in Caramana
         REAL(num) :: dvx, dvy, dv, dv2
         REAL(num) :: dvxm, dvxp, dvym, dvyp
         REAL(num) :: rl, rr, psi
@@ -451,7 +457,6 @@ CONTAINS
           dvdots = dvdots / dv
         END IF
         psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
-        IF ((1.0_num - psi) < 1e-12) psi = 1.0_num
         edge_viscosity = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
             * (1.0_num - psi) * dvdots 
       END FUNCTION edge_viscosity
