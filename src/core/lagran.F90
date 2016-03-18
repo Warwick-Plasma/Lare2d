@@ -51,6 +51,19 @@ CONTAINS
     ALLOCATE(flux_z(0:nx,0:ny))
     ALLOCATE(curlb (0:nx,0:ny))
 
+    DO iy = 0, ny + 2
+      iym = iy - 1
+      DO ix = 0, nx + 2
+        ixm = ix - 1
+        bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
+        by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
+        bz1(ix,iy) = bz(ix,iy)
+        
+        pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
+            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
+      END DO
+    END DO
+
     CALL viscosity
     CALL set_dt
     dt2 = dt * 0.5_num
@@ -83,16 +96,6 @@ CONTAINS
     END IF
 
     IF (conduction .OR. coronal_heating .OR. radiation) CALL conduct_heat
-
-    DO iy = 0, ny + 2
-      iym = iy - 1
-      DO ix = 0, nx + 2
-        ixm = ix - 1
-        bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
-        by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
-        bz1(ix,iy) = bz(ix,iy)
-      END DO
-    END DO
 
     CALL predictor_corrector_step
 
@@ -268,7 +271,7 @@ CONTAINS
   SUBROUTINE viscosity
 
     REAL(num) :: dvdots, dx, dxm, dxp
-    REAL(num) :: ca2
+    REAL(num) :: b2, rmin
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
 
@@ -281,8 +284,9 @@ CONTAINS
 
     DO ix = 0, nx + 1
       DO iy = 0, ny + 1
-        ca2 = (bx(ix,iy)**2 + by(ix,iy)**2 + bz(ix,iy)**2) / rho(ix,iy)
-        cs(ix,iy) = SQRT(gamma * pressure(ix,iy) + ca2)
+        rmin = MAX(rho(ix,iy), none_zero)
+        b2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2 
+        cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + b2) / rmin)
       END DO
     END DO
     cs(-1,:) = cs(0,:)
@@ -587,13 +591,6 @@ CONTAINS
     dtr_local = largest_number
     dth_local = largest_number
     dt_rad = largest_number
-
-    DO iy = -1, ny + 2
-      DO ix = -1, nx + 2
-        pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
-            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
-      END DO
-    END DO
 
     DO iy = 0, ny
       iym = iy - 1
