@@ -51,6 +51,10 @@ CONTAINS
     ALLOCATE(flux_z(0:nx,0:ny))
     ALLOCATE(curlb (0:nx,0:ny))
 
+    CALL viscosity
+    CALL set_dt
+    dt2 = dt * 0.5_num
+
     IF (resistive_mhd .OR. hall_mhd) THEN
       ! If subcycling isn't wanted set dt = dtr in set_dt, don't just
       ! set substeps to 1.
@@ -118,9 +122,7 @@ CONTAINS
     REAL(num) :: cvx, cvxp, cvy, cvyp
     REAL(num) :: dv
 
-    dt2 = dt * 0.5_num
     CALL b_pressure_cv1_update
-    CALL viscosity
 
     bx1 = bx1 * cv1(0:nx+2,0:ny+2)
     by1 = by1 * cv1(0:nx+2,0:ny+2)
@@ -266,23 +268,21 @@ CONTAINS
   SUBROUTINE viscosity
 
     REAL(num) :: dvdots, dx, dxm, dxp
-    REAL(num) :: cons, ca2
+    REAL(num) :: ca2
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
 
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
 
     ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
-
-    cons = gamma * (gamma - 1.0_num)
     
     p_visc = 0.0_num
     visc_heat = 0.0_num
 
     DO ix = 0, nx + 1
       DO iy = 0, ny + 1
-        ca2 = (bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2) / rho(ix,iy)
-        cs(ix,iy) = SQRT(cons * energy(ix,iy) + ca2)
+        ca2 = (bx(ix,iy)**2 + by(ix,iy)**2 + bz(ix,iy)**2) / rho(ix,iy)
+        cs(ix,iy) = SQRT(gamma * pressure(ix,iy) + ca2)
       END DO
     END DO
     cs(-1,:) = cs(0,:)
@@ -474,13 +474,6 @@ CONTAINS
 
     p_visc = 0.0_num
 
-    DO iy = -1, ny + 2
-      DO ix = -1, nx + 2
-        pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
-            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
-      END DO
-    END DO
-
     DO iy = 0, ny + 1
       iym = iy - 1
       DO ix = 0, nx + 1
@@ -562,6 +555,121 @@ CONTAINS
     END DO
 
   END SUBROUTINE visc_heating
+
+
+
+
+  !****************************************************************************
+  ! Sets CFL limited step
+  !****************************************************************************
+
+  SUBROUTINE set_dt
+
+    ! Assumes all variables are defined at the same point. Be careful with
+    ! setting 'dt_multiplier' if you expect massive changes across cells.
+
+    REAL(num) :: vxbm, vxbp, avxm, avxp, dvx, ax
+    REAL(num) :: vybm, vybp, avym, avyp, dvy, ay
+    REAL(num) :: cs, area
+    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local, dt_rad
+    REAL(num) :: dt_locals(3), dt_min(3)
+    LOGICAL, SAVE :: first = .TRUE.
+
+    IF (first) THEN
+      first = .FALSE.
+      IF (restart) THEN
+        dt = dt_from_restart
+        RETURN
+      END IF
+    END IF
+
+    dt_local = largest_number
+    dtr_local = largest_number
+    dth_local = largest_number
+    dt_rad = largest_number
+
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
+        pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
+            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
+      END DO
+    END DO
+
+    DO iy = 0, ny
+      iym = iy - 1
+      DO ix = 0, nx
+        ixm = ix - 1
+
+        ! Fix dt for Lagrangian step
+        w1 = bx(ix,iy)**2 + by(ix,iy)**2 + bz(ix,iy)**2
+        ! Sound speed squared
+        cs = gamma * pressure(ix,iy)
+
+        w2 = SQRT(cs + w1 / MAX(rho(ix,iy), none_zero) &
+            + p_visc(ix,iy) / MAX(rho(ix,iy), none_zero))
+
+        ! Find ideal MHD CFL limit for Lagrangian step
+        dt1 = MIN(dxb(ix), dyb(iy)) / w2
+        dt_local = MIN(dt_local, dt1)
+
+        ! Now find dt for remap step
+        ax = 0.5_num * dyb(iy)
+        ay = 0.5_num * dxb(ix)
+        vxbm = (vx(ixm,iy ) + vx(ixm,iym)) * ax
+        vxbp = (vx(ix ,iy ) + vx(ix ,iym)) * ax
+        vybm = (vy(ix ,iym) + vy(ixm,iym)) * ay
+        vybp = (vy(ix ,iy ) + vy(ixm,iy )) * ay
+
+        dvx = ABS(vxbp - vxbm)
+        dvy = ABS(vybp - vybm)
+        avxm = ABS(vxbm)
+        avxp = ABS(vxbp)
+        avym = ABS(vybm)
+        avyp = ABS(vybp)
+
+        area = dxb(ix) * dyb(iy)
+        dt1 = area / MAX(avxm, avxp, dvx, 1.e-10_num * area)
+        dt2 = area / MAX(avym, avyp, dvy, 1.e-10_num * area)
+
+        ! Fix dt for remap step
+        dt_local = MIN(dt_local, dt1, dt2, dt_rad)
+
+        ! Note resistive limits assumes uniform resistivity hence cautious
+        ! factor 0.2
+        dxlocal = 1.0_num / (1.0_num / dxb(ix)**2 + 1.0_num / dyb(iy)**2)
+
+        IF (cowling_resistivity) THEN
+          dt1 = 0.2_num * dxlocal &
+              / MAX(MAX(eta(ix,iy), eta_perp(ix,iy)), none_zero)
+        ELSE
+          dt1 = 0.2_num * dxlocal / MAX(eta(ix,iy), none_zero)
+        END IF
+
+        ! Adjust to accomodate resistive effects
+        dtr_local = MIN(dtr_local, dt1)
+
+        ! Hall MHD CFL limit
+        dt1 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
+            / MAX(lambda_i(ix,iy) * SQRT(w1), none_zero)
+
+        dth_local = MIN(dth_local, dt1)
+      END DO
+    END DO
+
+    dt_locals(1) = dt_local
+    dt_locals(2) = dtr_local
+    dt_locals(3) = dth_local
+
+    CALL MPI_ALLREDUCE(dt_locals, dt_min, 3, mpireal, MPI_MIN, comm, errcode)
+
+    dt  = dt_multiplier * dt_min(1)
+    dtr = dt_multiplier * dt_min(2)
+    dth = dt_multiplier * dt_min(3)
+
+    time = time + dt
+
+  END SUBROUTINE set_dt
+
 
 
 
