@@ -272,6 +272,7 @@ CONTAINS
 
     REAL(num) :: dvdots, dx, dxm, dxp
     REAL(num) :: b2, rmin
+    REAL(num) :: a1, a2, a3, a4
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
 
@@ -388,17 +389,13 @@ CONTAINS
 
         visc_heat(ix,iy) = &
             - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix ,iym))**2  &
-                             + (vy(ixm,iym) - vy(ix ,iym))**2  &
-                             + (vz(ixm,iym) - vz(ix ,iym))**2) &
+                             + (vy(ixm,iym) - vy(ix ,iym))**2) &
             - alpha2(ix,iy) * ((vx(ix ,iym) - vx(ix ,iy ))**2  &
-                             + (vy(ix ,iym) - vy(ix ,iy ))**2  &
-                             + (vz(ix ,iym) - vz(ix ,iy ))**2) &
+                             + (vy(ix ,iym) - vy(ix ,iy ))**2) &
             - alpha3(ix,iy) * ((vx(ix ,iy ) - vx(ixm,iy ))**2  &
-                             + (vy(ix ,iy ) - vy(ixm,iy ))**2  &
-                             + (vz(ix ,iy ) - vz(ixm,iy ))**2) &
+                             + (vy(ix ,iy ) - vy(ixm,iy ))**2) &
             - alpha4(ix,iy) * ((vx(ixm,iy ) - vx(ixm,iym))**2  &
-                             + (vy(ixm,iy ) - vy(ixm,iym))**2  &
-                             + (vz(ixm,iy ) - vz(ixm,iym))**2)
+                             + (vy(ixm,iy ) - vy(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
@@ -414,26 +411,25 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
 
-        fx_visc(ix,iy) = ( &
-            + (alpha1(ix ,iyp) + alpha3(ix ,iy )) * (vx(ix,iy) - vx(ixm,iy )) &
-            + (alpha1(ixp,iyp) + alpha3(ixp,iy )) * (vx(ix,iy) - vx(ixp,iy )) &
-            + (alpha2(ix ,iy ) + alpha4(ixp,iy )) * (vx(ix,iy) - vx(ix ,iym)) &
-            + (alpha2(ix ,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ix ,iyp))) &
-            / cv_v(ix,iy)
+        a1 = alpha1(ix ,iyp) + alpha3(ix ,iy )
+        a2 = alpha1(ixp,iyp) + alpha3(ixp,iy )
+        a3 = alpha2(ix ,iy ) + alpha4(ixp,iy )
+        a4 = alpha2(ix ,iyp) + alpha4(ixp,iyp)
 
-        fy_visc(ix,iy) = ( &
-            + (alpha1(ix ,iyp) + alpha3(ix ,iy )) * (vy(ix,iy) - vy(ixm,iy )) &
-            + (alpha1(ixp,iyp) + alpha3(ixp,iy )) * (vy(ix,iy) - vy(ixp,iy )) &
-            + (alpha2(ix ,iy ) + alpha4(ixp,iy )) * (vy(ix,iy) - vy(ix ,iym)) &
-            + (alpha2(ix ,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ix ,iyp))) &
-            / cv_v(ix,iy)
+        fx_visc(ix,iy) = (a1 * (vx(ix,iy) - vx(ixm,iy )) &
+                        + a2 * (vx(ix,iy) - vx(ixp,iy )) &
+                        + a3 * (vx(ix,iy) - vx(ix ,iym)) &
+                        + a4 * (vx(ix,iy) - vx(ix ,iyp)) ) / cv_v(ix,iy)
 
-        fz_visc(ix,iy) = ( &
-            + (alpha1(ix ,iyp) + alpha3(ix ,iy )) * (vz(ix,iy) - vz(ixm,iy )) &
-            + (alpha1(ixp,iyp) + alpha3(ixp,iy )) * (vz(ix,iy) - vz(ixp,iy )) &
-            + (alpha2(ix ,iy ) + alpha4(ixp,iy )) * (vz(ix,iy) - vz(ix ,iym)) &
-            + (alpha2(ix ,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vz(ix ,iyp))) &
-            / cv_v(ix,iy)
+        fy_visc(ix,iy) = (a1 * (vy(ix,iy) - vy(ixm,iy )) &
+                        + a2 * (vy(ix,iy) - vy(ixp,iy )) &
+                        + a3 * (vy(ix,iy) - vy(ix ,iym)) &
+                        + a4 * (vy(ix,iy) - vy(ix ,iyp)) ) / cv_v(ix,iy)
+
+        fz_visc(ix,iy) = (a1 * (vz(ix,iy) - vz(ixm,iy )) &
+                        + a2 * (vz(ix,iy) - vz(ixp,iy )) &
+                        + a3 * (vz(ix,iy) - vz(ix ,iym)) &
+                        + a4 * (vy(ix,iy) - vz(ix ,iyp)) ) / cv_v(ix,iy)
 
       END DO
     END DO
@@ -476,9 +472,10 @@ CONTAINS
         dvdots = dvdots / dv
       END IF
 
-      psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
+      psi = MIN(0.5_num * (rr + rl), 2.0_num * rl, 2.0_num * rr, 1.0_num)
+      psi = MAX(0.0_num, psi)
       edge_viscosity = rho_edge * (1.0_num - psi) * dvdots &
-          * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))
+          * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1 * cs_edge)**2))
 
     END FUNCTION edge_viscosity
 
