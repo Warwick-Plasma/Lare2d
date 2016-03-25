@@ -272,9 +272,7 @@ CONTAINS
 
     REAL(num) :: dvdots, dx, dxm, dxp
     REAL(num) :: b2, rmin
-
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
-
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
 
     ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
@@ -289,6 +287,7 @@ CONTAINS
         cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + b2) / rmin)
       END DO
     END DO
+
     cs(-1,:) = cs(0,:)
     cs(:,-1) = cs(:,0)
 
@@ -316,8 +315,10 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
 
-        ! edge viscosity for triangle 1 from Caramana
-        ! triangles numbered as in Goffrey thesis
+        ! Edge viscosities from Caramana
+        ! Triangles numbered as in Goffrey thesis
+
+        ! Edge viscosity for triangle 1
         i1 = ixm
         j1 = iym
         i2 = ix
@@ -330,14 +331,14 @@ CONTAINS
         dxp = dxb(ixp)
         dxm = dxb(ixm)
         dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
-        ! force on node is alpha*dv but store only alpha and convert to force
+        ! Force on node is alpha*dv but store only alpha and convert to force
         ! when needed
         alpha1(ix,iy) = edge_viscosity()
-        ! estimate p_visc based on q_kur*(1-psi), i.e. alpha/ds, for timestep
+        ! Estimate p_visc based on q_kur*(1-psi), i.e. alpha/ds, for timestep
         ! control
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha1(ix,iy) / dyb(iy)
 
-        ! edge viscosity for triangle 2
+        ! Edge viscosity for triangle 2
         i1 = ix
         j1 = iym
         i2 = ix
@@ -353,7 +354,7 @@ CONTAINS
         alpha2(ix,iy) = edge_viscosity()
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha2(ix,iy) / dxb(ix)
 
-        ! edge viscosity for triangle 3
+        ! Edge viscosity for triangle 3
         i1 = ix
         j1 = iy
         i2 = ixm
@@ -369,7 +370,7 @@ CONTAINS
         alpha3(ix,iy) = edge_viscosity()
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha3(ix,iy) / dyb(iy)
 
-        ! edge viscosity for triangle 4
+        ! Edge viscosity for triangle 4
         i1 = ixm
         j1 = iy
         i2 = ixm
@@ -386,21 +387,20 @@ CONTAINS
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha4(ix,iy) / dxb(ix)
 
         visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix,iym))**2 &
-                             + (vy(ixm,iym) - vy(ix,iym))**2 &
-                             + (vz(ixm,iym) - vz(ix,iym))**2) &
-            - alpha2(ix,iy) * ((vx(ix,iym) - vx(ix,iy))**2  &
-                             + (vy(ix,iym) - vy(ix,iy))**2  &
-                             + (vz(ix,iym) - vz(ix,iy))**2) &
-            - alpha3(ix,iy) * ((vx(ix,iy) - vx(ixm,iy))**2  &
-                             + (vy(ix,iy) - vy(ixm,iy))**2  &
-                             + (vz(ix,iy) - vz(ixm,iy))**2) &
-            - alpha4(ix,iy) * ((vx(ixm,iy) - vx(ixm,iym))**2 &
-                             + (vy(ixm,iy) - vy(ixm,iym))**2 &
-                             + (vz(ixm,iy) - vz(ixm,iym))**2)
+            - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix ,iym))**2  &
+                             + (vy(ixm,iym) - vy(ix ,iym))**2  &
+                             + (vz(ixm,iym) - vz(ix ,iym))**2) &
+            - alpha2(ix,iy) * ((vx(ix ,iym) - vx(ix ,iy ))**2  &
+                             + (vy(ix ,iym) - vy(ix ,iy ))**2  &
+                             + (vz(ix ,iym) - vz(ix ,iy ))**2) &
+            - alpha3(ix,iy) * ((vx(ix ,iy ) - vx(ixm,iy ))**2  &
+                             + (vy(ix ,iy ) - vy(ixm,iy ))**2  &
+                             + (vz(ix ,iy ) - vz(ixm,iy ))**2) &
+            - alpha4(ix,iy) * ((vx(ixm,iy ) - vx(ixm,iym))**2  &
+                             + (vy(ixm,iy ) - vy(ixm,iym))**2  &
+                             + (vz(ixm,iy ) - vz(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
-
       END DO
     END DO
 
@@ -415,24 +415,24 @@ CONTAINS
         ixp = ix + 1
 
         fx_visc(ix,iy) = ( &
-            + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vx(ix,iy) - vx(ixm,iy))   &
-            + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vx(ix,iy) - vx(ixp,iy))  &
-            + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vx(ix,iy) - vx(ix,iym)) &
-            + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ix,iyp)) ) &
+            + (alpha1(ix ,iyp) + alpha3(ix ,iy )) * (vx(ix,iy) - vx(ixm,iy )) &
+            + (alpha1(ixp,iyp) + alpha3(ixp,iy )) * (vx(ix,iy) - vx(ixp,iy )) &
+            + (alpha2(ix ,iy ) + alpha4(ixp,iy )) * (vx(ix,iy) - vx(ix ,iym)) &
+            + (alpha2(ix ,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ix ,iyp))) &
             / cv_v(ix,iy)
 
         fy_visc(ix,iy) = ( &
-            + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vy(ix,iy) - vy(ixm,iy))   &
-            + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vy(ix,iy) - vy(ixp,iy))  &
-            + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vy(ix,iy) - vy(ix,iym)) &
-            + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ix,iyp)) ) &
+            + (alpha1(ix ,iyp) + alpha3(ix ,iy )) * (vy(ix,iy) - vy(ixm,iy )) &
+            + (alpha1(ixp,iyp) + alpha3(ixp,iy )) * (vy(ix,iy) - vy(ixp,iy )) &
+            + (alpha2(ix ,iy ) + alpha4(ixp,iy )) * (vy(ix,iy) - vy(ix ,iym)) &
+            + (alpha2(ix ,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ix ,iyp))) &
             / cv_v(ix,iy)
 
         fz_visc(ix,iy) = ( &
-            + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vz(ix,iy) - vz(ixm,iy))   &
-            + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vz(ix,iy) - vz(ixp,iy))  &
-            + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vz(ix,iy) - vz(ix,iym)) &
-            + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vz(ix,iyp)) ) &
+            + (alpha1(ix ,iyp) + alpha3(ix ,iy )) * (vz(ix,iy) - vz(ixm,iy )) &
+            + (alpha1(ixp,iyp) + alpha3(ixp,iy )) * (vz(ix,iy) - vz(ixp,iy )) &
+            + (alpha2(ix ,iy ) + alpha4(ixp,iy )) * (vz(ix,iy) - vz(ix ,iym)) &
+            + (alpha2(ix ,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vz(ix ,iyp))) &
             / cv_v(ix,iy)
 
       END DO
@@ -441,14 +441,18 @@ CONTAINS
     DEALLOCATE(cs, cs_v)
 
   CONTAINS
+
     DOUBLE PRECISION FUNCTION edge_viscosity()
-      !  actually returns q_kur*(1-psi)*(dvu.ds)
-      !  where dvu is unit vector in direction of dv
-      !  other symbols follow notation in Caramana
+
+      ! Actually returns q_kur*(1-psi)*(dvu.ds)
+      ! where dvu is unit vector in direction of dv
+      ! Other symbols follow notation in Caramana
+
       REAL(num) :: dvx, dvy, dv, dv2
       REAL(num) :: dvxm, dvxp, dvym, dvyp
       REAL(num) :: rl, rr, psi
       REAL(num) :: rho_edge, cs_edge
+
       dvdots = MIN(0.0_num, dvdots)
       rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) &
           / (rho_v(i1,j1) + rho_v(i2,j2))
@@ -461,7 +465,8 @@ CONTAINS
       dvyp = vy(i2,j2) - vy(i3,j3)
       dv2 = dvx**2 + dvy**2
       dv = SQRT(dv2)
-      IF (dv*dt/dx < 1.e-14_num) THEN
+
+      IF (dv * dt / dx < 1.e-14_num) THEN
         rl = 1.0_num
         rr = 1.0_num
         dvdots = 0.0_num
@@ -470,9 +475,11 @@ CONTAINS
         rr = (dvxm * dvx + dvym * dvy) * dx / (dxm * dv2)
         dvdots = dvdots / dv
       END IF
+
       psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
       edge_viscosity = rho_edge * (1.0_num - psi) * dvdots &
           * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))
+
     END FUNCTION edge_viscosity
 
   END SUBROUTINE viscosity
@@ -559,14 +566,14 @@ CONTAINS
         ixm = ix - 1
 
         visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix,iym))**2 &
-                             + (vy1(ixm,iym) - vy1(ix,iym))**2) &
-            - alpha2(ix,iy) * ((vx1(ix,iym) - vx1(ix,iy))**2 &
-                             + (vy1(ix,iym) - vy1(ix,iy))**2) &
-            - alpha3(ix,iy) * ((vx1(ix,iy) - vx1(ixm,iy))**2 &
-                             + (vy1(ix,iy) - vy1(ixm,iy))**2) &
-            - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym))**2 &
-                             + (vy1(ixm,iy) - vy1(ixm,iym))**2)
+            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
+                             + (vy1(ixm,iym) - vy1(ix ,iym))**2) &
+            - alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
+                             + (vy1(ix ,iym) - vy1(ix ,iy ))**2) &
+            - alpha3(ix,iy) * ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
+                             + (vy1(ix ,iy ) - vy1(ixm,iy ))**2) &
+            - alpha4(ix,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
+                             + (vy1(ixm,iy ) - vy1(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
