@@ -58,7 +58,7 @@ CONTAINS
         bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
         by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
         bz1(ix,iy) = bz(ix,iy)
-        
+
         pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
             * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
       END DO
@@ -278,14 +278,14 @@ CONTAINS
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
 
     ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
-    
+
     p_visc = 0.0_num
     visc_heat = 0.0_num
 
     DO ix = 0, nx + 1
       DO iy = 0, ny + 1
         rmin = MAX(rho(ix,iy), none_zero)
-        b2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2 
+        b2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + b2) / rmin)
       END DO
     END DO
@@ -299,11 +299,11 @@ CONTAINS
         rho_v(ix,iy) = rho(ix,iy) * cv(ix,iy) + rho(ixp,iy) * cv(ixp,iy) &
             +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
         cv_v(ix,iy) = cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp)
-        rho_v(ix,iy) = rho_v(ix,iy) / cv_v(ix,iy) 
+        rho_v(ix,iy) = rho_v(ix,iy) / cv_v(ix,iy)
 
         cs_v(ix,iy) = cs(ix,iy) * cv(ix,iy) + cs(ixp,iy) * cv(ixp,iy) &
             +   cs(ix,iyp) * cv(ix,iyp) + cs(ixp,iyp) * cv(ixp,iyp)
-        cs_v(ix,iy) = cs_v(ix,iy) / cv_v(ix,iy) 
+        cs_v(ix,iy) = cs_v(ix,iy) / cv_v(ix,iy)
 
         cv_v(ix,iy) = 0.25_num * cv_v(ix,iy)
       END DO
@@ -340,9 +340,9 @@ CONTAINS
         j1 = iym
         i2 = ix
         j2 = iy
-        i0 = i1 
+        i0 = i1
         j0 = j1 - 1
-        i3 = i2 
+        i3 = i2
         j3 = j1 + 1
         dx = dyb(iy)
         dxp = dyb(iyp)
@@ -372,9 +372,9 @@ CONTAINS
         j1 = iy
         i2 = ixm
         j2 = iym
-        i0 = i1 
+        i0 = i1
         j0 = j1 + 1
-        i3 = i2 
+        i3 = i2
         j3 = j1 - 1
         dx = dyb(iy)
         dxp = dyb(iym)
@@ -391,7 +391,7 @@ CONTAINS
             - alpha3(ix,iy) * ((vx(ix,iy) - vx(ixm,iy))**2 + (vy(ix,iy) - vy(ixm,iy))**2  &
                               + (vz(ix,iy) - vz(ixm,iy))**2) &
             - alpha4(ix,iy) * ((vx(ixm,iy) - vx(ixm,iym))**2 + (vy(ixm,iy) - vy(ixm,iym))**2 &
-                              + (vz(ixm,iy) - vz(ixm,iym))**2)     
+                              + (vz(ixm,iy) - vz(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
 
@@ -401,10 +401,10 @@ CONTAINS
     fx_visc = 0.0_num
     fy_visc = 0.0_num
     fz_visc = 0.0_num
-    DO iy = 0, ny 
+    DO iy = 0, ny
       iym = iy - 1
       iyp = iy + 1
-      DO ix = 0, nx 
+      DO ix = 0, nx
         ixm = ix - 1
         ixp = ix + 1
 
@@ -412,19 +412,19 @@ CONTAINS
           + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vx(ix,iy) - vx(ixm,iy))   &
           + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vx(ix,iy) - vx(ixp,iy))  &
           + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vx(ix,iy) - vx(ix,iym)) &
-          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ix,iyp)) ) / cv_v(ix,iy) 
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vx(ix,iy) - vx(ix,iyp)) ) / cv_v(ix,iy)
 
         fy_visc(ix,iy) = ( &
           + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vy(ix,iy) - vy(ixm,iy))   &
           + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vy(ix,iy) - vy(ixp,iy))  &
           + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vy(ix,iy) - vy(ix,iym)) &
-          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ix,iyp)) ) / cv_v(ix,iy) 
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vy(ix,iyp)) ) / cv_v(ix,iy)
 
         fz_visc(ix,iy) = ( &
           + (alpha1(ix,iyp) + alpha3(ix,iy)) * (vz(ix,iy) - vz(ixm,iy))   &
           + (alpha1(ixp,iyp) + alpha3(ixp,iy)) * (vz(ix,iy) - vz(ixp,iy))  &
           + (alpha2(ix,iy) + alpha4(ixp,iy)) * (vz(ix,iy) - vz(ix,iym)) &
-          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vz(ix,iyp)) ) / cv_v(ix,iy) 
+          + (alpha2(ix,iyp) + alpha4(ixp,iyp)) * (vy(ix,iy) - vz(ix,iyp)) ) / cv_v(ix,iy)
 
       END DO
     END DO
@@ -433,7 +433,7 @@ CONTAINS
 
     CONTAINS
       DOUBLE PRECISION FUNCTION edge_viscosity()
-      !  actually returns q_kur*(1-psi)*(dvu.ds) 
+      !  actually returns q_kur*(1-psi)*(dvu.ds)
       !  where dvu is unit vector in direction of dv
       !  other symbols follow notation in Caramana
         REAL(num) :: dvx, dvy, dv, dv2
@@ -462,7 +462,7 @@ CONTAINS
         END IF
         psi = MAX(0.0_num, MIN(0.5_num*(rr+rl), 2.0_num*rl, 2.0_num*rr, 1.0_num))
         edge_viscosity = rho_edge * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1*cs_edge)**2))  &
-            * (1.0_num - psi) * dvdots 
+            * (1.0_num - psi) * dvdots
       END FUNCTION edge_viscosity
 
   END SUBROUTINE viscosity
@@ -520,7 +520,7 @@ CONTAINS
         vzbm = (vz(ix ,iym) + vz(ixm,iym)) * 0.5_num
         dvzdx = (vzb - vzbm) / dxb(ix)
         dvzdy = (vzb - vzbm) / dyb(iy)
-  
+
         w3 =  bx1(ix,iy) * dvxdx + by1(ix,iy) * dvxdy
         w4 =  bx1(ix,iy) * dvydx + by1(ix,iy) * dvydy
         w5 =  bx1(ix,iy) * dvzdx + by1(ix,iy) * dvzdy
@@ -543,16 +543,16 @@ CONTAINS
 
     visc_heat = 0.0_num
 
-    DO iy = 1, ny 
+    DO iy = 1, ny
       iym = iy - 1
-      DO ix = 1, nx 
+      DO ix = 1, nx
         ixm = ix - 1
 
         visc_heat(ix,iy) = &
             - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix,iym))**2 + (vy1(ixm,iym) - vy1(ix,iym))**2) &
             - alpha2(ix,iy) * ((vx1(ix,iym) - vx1(ix,iy))**2 + (vy1(ix,iym) - vy1(ix,iy))**2) &
             - alpha3(ix,iy) * ((vx1(ix,iy) - vx1(ixm,iy))**2 + (vy1(ix,iy) - vy1(ixm,iy))**2) &
-            - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym))**2 + (vy1(ixm,iy) - vy1(ixm,iym))**2)     
+            - alpha4(ix,iy) * ((vx1(ixm,iy) - vx1(ixm,iym))**2 + (vy1(ixm,iy) - vy1(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO

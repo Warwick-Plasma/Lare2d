@@ -8,7 +8,7 @@ MODULE conduct
   PRIVATE
 
   PUBLIC :: conduct_heat
-  
+
   INTEGER :: n_s_stages
   REAL(num),PARAMETER :: pow = 5.0_num/2.0_num
   REAL(num),PARAMETER :: min_b = 1.0e-6_num
@@ -42,7 +42,7 @@ CONTAINS
 
     stages = 0.5_num*(SQRT(9.0_num + 16.0_num * (dt/dt_parab))-1.0_num)
     n_s_stages = CEILING(stages)
-    IF (MODULO(n_s_stages,2) .EQ. 0) THEN 
+    IF (MODULO(n_s_stages,2) .EQ. 0) THEN
       n_s_stages = n_s_stages + 1
     ENDIF
     n_s_stages_local = n_s_stages
@@ -72,7 +72,7 @@ CONTAINS
         DO ix = 1,nx
           ixp = ix + 1
           ixm = ix - 1
-  
+
           !X flux
           byf1 = 0.25_num*(by(ixm,iy)+by(ix,iy)+by(ixm,iym)+by(ix,iym))
           byf2 = 0.25_num*(by(ix,iy)+by(ixp,iy)+by(ix,iym)+by(ixp,iym))
@@ -81,19 +81,19 @@ CONTAINS
 
           modb2 = SQRT(bx(ix,iy)**2+byf2**2+bzf2**2)
           modb1 = SQRT(bx(ixm,iy)**2+byf1**2+bzf1**2)
-          
+
           !Braginskii Conductive Flux
           !Temperature at the x boundaries in the current cell
           tb2 = (temperature(ixp,iy) + temperature(ix,iy))/2.0_num
           tb1 = (temperature(ix,iy) + temperature(ixm,iy))/2.0_num
-  
-          !Temperature at the x boundaries in the cell above		  
+
+          !Temperature at the x boundaries in the cell above		
           tb_p2 = (temperature(ixp,iyp)+temperature(ix,iyp))/2.0_num
           tb_p1 = (temperature(ix,iyp)+temperature(ixm,iyp))/2.0_num
-          !Temperature at the x boundaries in the cell below		  
+          !Temperature at the x boundaries in the cell below		
           tb_m2 = (temperature(ixp,iym)+temperature(ix,iym))/2.0_num
           tb_m1 = (temperature(ix,iym)+temperature(ixm,iym))/2.0_num
-          !X temperature gradient at the x boundaries of the current cell		  
+          !X temperature gradient at the x boundaries of the current cell		
           tg2 = (temperature(ixp,iy) - temperature(ix,iy))/dxc(ix)
           tg1 = (temperature(ix,iy) - temperature(ixm,iy))/dxc(ixm)
           !Y temperature gradient at the x boundaries of the current cell
@@ -102,7 +102,7 @@ CONTAINS
           tg_a1 = (tb_p1 - tb_m1)/(dyc(iy)+dyc(iym))
 
           fc_sp2 = kappa_0 * tb2**pow * (bx(ix,iy) * (tg2 * bx(ix,iy) + &
-              tg_a2 * byf2)+tg2*min_b)/(modb2**2+min_b) 
+              tg_a2 * byf2)+tg2*min_b)/(modb2**2+min_b)
           fc_sp1 = kappa_0 * tb1**pow * (bx(ixm,iy) * (tg1 * bx(ixm,iy) + &
               tg_a1 * byf1)+tg1*min_b)/(modb1**2+min_b)
 
@@ -130,26 +130,26 @@ CONTAINS
           tb2 = (temperature(ix,iyp) + temperature(ix,iy))/2.0_num
           tb1 = (temperature(ix,iy) + temperature(ix,iym))/2.0_num
 
-          !Temperature at the y boundaries in the cell right		  
+          !Temperature at the y boundaries in the cell right		
           tb_p2 = (temperature(ixp,iyp)+temperature(ixp,iy))/2.0_num
           tb_p1 = (temperature(ixp,iy)+temperature(ixp,iym))/2.0_num
-          !Temperature at the y boundaries in the cell left		  
+          !Temperature at the y boundaries in the cell left		
           tb_m2 = (temperature(ixm,iyp)+temperature(ixm,iy))/2.0_num
           tb_m1 = (temperature(ixm,iy)+temperature(ixm,iym))/2.0_num
-          !Y temperature gradient at the y boundaries of the current cell		  
+          !Y temperature gradient at the y boundaries of the current cell		
           tg2 = (temperature(ix,iyp) - temperature(ix,iy))/dyc(iy)
           tg1 = (temperature(ix,iy) - temperature(ix,iym))/dyc(iym)
           !X temperature gradient at the y boundaries of the current cell
           !Uses centred difference on averaged values, so likely very smoothed
           tg_a2 = (tb_p2 - tb_m2)/(dxc(ix)+dxc(ixm))
           tg_a1 = (tb_p1 - tb_m1)/(dxc(ix)+dxc(ixm))
- 
+
           fc_sp2 = kappa_0 * tb2**pow * (by(ix,iy) * (tg2 * by(ix,iy)&
               + tg_a2 * bxf2)+min_b*tg2)/(modb2**2+min_b)
           fc_sp1 = kappa_0 * tb1**pow * (by(ix,iym) * (tg1 * by(ix,iym)&
               + tg_a1 * bxf1)+min_b*tg1)/(modb1**2+min_b)
 
-          ! Saturated Conductive Flux     
+          ! Saturated Conductive Flux
           rho_b2 = (rho(ix,iyp)+rho(ix,iy))/2.0_num
           rho_b1 = (rho(ix,iy)+rho(ix,iym))/2.0_num
           fc_sa2 = 42.85_num * rho_b2 * tb2**(1.5_num)  !42.85 = SRQT(m_p/m_e)
@@ -173,7 +173,7 @@ CONTAINS
   !****************************************************************************
 
   SUBROUTINE conduct_heat
-  
+
     CALL s_stages
     CALL heat_conduct_sts2
 
@@ -204,13 +204,13 @@ CONTAINS
     ALLOCATE(Y(0:3,-1:nx+2,-1:ny+2))
     flux = 0.0_num
     Y = 0.0_num
-    
+
     omega_1 = 4.0_num/(DBLE(n_s_stages)**2.0_num + DBLE(n_s_stages) - 2.0_num)
     b(0:2) = 1.0_num/3.0_num
     DO j = 3, n_s_stages
        b(j) = (DBLE(j)**2.0_num + DBLE(j)- 2.0_num) / &
            (2.0_num * DBLE(j) *(DBLE(j) + 1.0_num))
-    ENDDO 
+    ENDDO
     a = 1.0_num - b
     mu_tilde(1) = omega_1/3.0_num
 
@@ -225,7 +225,7 @@ CONTAINS
     !!!!! RKL2 s stage scheme !!!!!
     ! initial condition
     Y(0,:,:) = energy
-    !! boundary conditions 
+    !! boundary conditions
     DO j = 1,3
       Y(j,:,:) = energy
     END DO
@@ -234,7 +234,7 @@ CONTAINS
     !! First STS stage
     CALL heat_flux(Y(0,:,:) * ((gamma - 1.0_num)/2.0_num),flux)
     DO iy = 1,ny
-      DO ix = 1,nx 
+      DO ix = 1,nx
         ! Store L^c(Y_0) to use in stages 2-s
         Lc_Y0(ix,iy) = (1.0_num / rho(ix,iy)) * flux(ix,iy)
         c0 =  mu_tilde(1) * dt * Lc_Y0(ix,iy)
