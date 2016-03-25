@@ -115,7 +115,8 @@ CONTAINS
     conduction = .FALSE.
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit
     ! Fraction of free streaming heat flux used in limiter.
-    ! Set to any number larger than 10 to turn off limiter! See after_control in setup.F90
+    ! Set to any number larger than 10 to turn off limiter
+    ! See after_control in setup.F90
     flux_limiter = 0.05_num
 
     ! Use radiation as specified in SUBROUTINE rad_losses
