@@ -383,7 +383,7 @@ CONTAINS
         dx = dyb(iy)
         dxp = dyb(iym)
         dxm = dyb(iyp)
-        dvdots = 0.5_num * dxb(iy) * (vy(i1,j1) - vy(i2,j2))
+        dvdots = 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
         alpha4(ix,iy) = edge_viscosity()
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha4(ix,iy) / dxb(ix)
 
@@ -429,7 +429,7 @@ CONTAINS
         fz_visc(ix,iy) = (a1 * (vz(ix,iy) - vz(ixm,iy )) &
                         + a2 * (vz(ix,iy) - vz(ixp,iy )) &
                         + a3 * (vz(ix,iy) - vz(ix ,iym)) &
-                        + a4 * (vy(ix,iy) - vz(ix ,iyp)) ) / cv_v(ix,iy)
+                        + a4 * (vz(ix,iy) - vz(ix ,iyp)) ) / cv_v(ix,iy)
 
       END DO
     END DO
