@@ -37,6 +37,7 @@ CONTAINS
     !normalised equations
 
     gamma = 1.4_num !5.0_num / 3.0_num
+    visc2_norm = 0.25_num * (gamma + 1.0_num) * visc2
 
     vx = 0.0_num
     vy = 0.0_num
