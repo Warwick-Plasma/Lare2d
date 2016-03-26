@@ -293,6 +293,30 @@ CONTAINS
         time_prev)
     CALL sdf_write_srl(sdf_handle, 'visc_heating', 'Viscous heating total', &
         visc_heating)
+    CALL sdf_write_srl(sdf_handle, 'material_gamma', &
+        'Material parameters', gamma)
+
+    CALL sdf_write_namevalue(sdf_handle, 'logical_flags', 'Logical flags', &
+        (/'use_edge        ', 'x_stretch       ', 'y_stretch       ', &
+          'resistive_mhd   ', 'hall_mhd        ', 'rke             '/), &
+        (/.TRUE., x_stretch, y_stretch, resistive_mhd, hall_mhd, rke/))
+
+    CALL sdf_write_namevalue(sdf_handle, 'integer_flags', 'Integer flags', &
+        (/'nx_global   ', 'ny_global   ', 'nsteps      ', 'xbc_min     ', &
+          'xbc_max     ', 'ybc_min     ', 'ybc_max     ', 'nramp       ', &
+          'nramp_start ', 'nramp_steps ', 'nrsteps     '/), &
+        (/nx_global, ny_global, nsteps, xbc_min, xbc_max, ybc_min, ybc_max, &
+          nramp, nramp_start, nramp_steps, nrsteps/))
+
+    CALL sdf_write_namevalue(sdf_handle, 'real_flags', 'Real flags', &
+        (/'t_end         ', 'visc1         ', 'visc2         ', &
+          'x_min         ', 'x_max         ', 'y_min         ', &
+          'y_max         ', 'eta_background', 'j_max         ', &
+          'eta0          ', 'dt_snapshot   ', 'dt_multiplier ', &
+          'dt_previous   ', 'dt_factor     ', 'material_gamma'/), &
+        (/t_end, visc1, visc2, x_min, x_max, y_min, y_max, eta_background, &
+          j_max, eta0, dt_snapshots, dt_multiplier, dt_previous, dt_factor, &
+          gamma/))
 
     CALL sdf_write_srl_plain_mesh(sdf_handle, 'grid', 'Grid/Grid', &
         xb_global, yb_global, convert)
