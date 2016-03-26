@@ -447,7 +447,7 @@ CONTAINS
       REAL(num) :: dvx, dvy, dv, dv2
       REAL(num) :: dvxm, dvxp, dvym, dvyp
       REAL(num) :: rl, rr, psi
-      REAL(num) :: rho_edge, cs_edge
+      REAL(num) :: rho_edge, cs_edge, c2term, q_kur
 
       dvdots = MIN(0.0_num, dvdots)
       rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) &
@@ -472,10 +472,13 @@ CONTAINS
         dvdots = dvdots / dv
       END IF
 
+      c2term = visc2 * (gamma + 1.0_num) * 0.25_num
+      q_kur = rho_edge * dvdots &
+          * (c2term * dv + SQRT(c2term**2 * dv2 + (visc1 * cs_edge)**2))
+
       psi = MIN(0.5_num * (rr + rl), 2.0_num * rl, 2.0_num * rr, 1.0_num)
       psi = MAX(0.0_num, psi)
-      edge_viscosity = rho_edge * (1.0_num - psi) * dvdots &
-          * (visc2 * dv + SQRT(visc2**2 * dv2 + (visc1 * cs_edge)**2))
+      edge_viscosity = q_kur * (1.0_num - psi)
 
     END FUNCTION edge_viscosity
 
