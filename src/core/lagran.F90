@@ -594,7 +594,7 @@ CONTAINS
 
     REAL(num) :: vxbm, vxbp, avxm, avxp, dvx, ax
     REAL(num) :: vybm, vybp, avym, avyp, dvy, ay
-    REAL(num) :: cs, area
+    REAL(num) :: cs2, area, rho0
     REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local, dt_rad
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, dt_factor, dt_previous
@@ -629,10 +629,10 @@ CONTAINS
         ! Fix dt for Lagrangian step
         w1 = bx(ix,iy)**2 + by(ix,iy)**2 + bz(ix,iy)**2
         ! Sound speed squared
-        cs = gamma * pressure(ix,iy)
+        rho0 = MAX(rho(ix,iy), none_zero)
+        cs2 = gamma * (pressure(ix,iy) + p_visc(ix,iy)) / rho0
 
-        w2 = SQRT(cs + w1 / MAX(rho(ix,iy), none_zero) &
-            + p_visc(ix,iy) / MAX(rho(ix,iy), none_zero))
+        w2 = SQRT(cs2 + w1 / rho0)
 
         ! Find ideal MHD CFL limit for Lagrangian step
         dt1 = MIN(dxb(ix), dyb(iy)) / w2
