@@ -113,11 +113,6 @@ MODULE shared_data
   REAL(num) :: y_min, y_max, length_y
   REAL(num) :: gamma, eta0, j_max, dt_snapshots, eta_background, lambda0
   REAL(num) :: total_visc_heating = 0.0_num, total_ohmic_heating = 0.0_num
-  REAL(num) :: dt_factor, dt_previous
-  INTEGER :: nramp_start = 5
-  INTEGER :: nramp_steps = 5
-  INTEGER :: nrsteps = 5
-  INTEGER :: nramp = 0
 
   INTEGER :: xbc_min, xbc_max, ix, ixm, ixp, xpass
   INTEGER :: ybc_min, ybc_max, iy, iym, iyp, ypass
