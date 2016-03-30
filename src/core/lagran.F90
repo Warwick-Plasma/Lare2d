@@ -603,13 +603,8 @@ CONTAINS
     REAL(num) :: cs2, area, rho0
     REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local, dt_rad
     REAL(num) :: dt_locals(3), dt_min(3)
-    REAL(num) :: dt0, dt_factor, dt_previous
-    REAL(num) :: time_dump, time_rem
+    REAL(num) :: dt0, time_dump, time_rem
     REAL(num) :: dt_fudge = 1e-4_num
-    INTEGER :: nramp_start = 5
-    INTEGER :: nramp_steps = 5
-    INTEGER :: nrsteps = 5
-    INTEGER :: nramp = 0
     CHARACTER(LEN=1) :: dt_reason
     LOGICAL :: is_restart = .FALSE.
     LOGICAL, SAVE :: first = .TRUE.
