@@ -531,50 +531,50 @@ CONTAINS
     bybc(0) = byg
     bzbc(0) = bzg
 
-!    var_min = min(efar, ebc(1))
-!    var_max = max(efar, ebc(1))
-!    ebc(0) = min(ebc(0), var_max)
-!    ebc(0) = max(ebc(0), var_min)
-!
-!    var_min = min(rhofar, rbc(1))
-!    var_max = max(rhofar, rbc(1))
-!    rbc(0) = min(rbc(0), var_max)
-!    rbc(0) = max(rbc(0), var_min)
-!
-!    var_min = min(rhofar, rbc(1))
-!    var_max = max(rhofar, rbc(1))
-!    rbc(0) = min(rbc(0), var_max)
-!    rbc(0) = max(rbc(0), var_min)
-!
-!    var_min = min(bxfar, bxbc(1))
-!    var_max = max(bxfar, bxbc(1))
-!    bxbc(0) = min(bxbc(0), var_max)
-!    bxbc(0) = max(bxbc(0), var_min)
-!
-!    var_min = min(byfar, bybc(1))
-!    var_max = max(byfar, bybc(1))
-!    bybc(0) = min(bybc(0), var_max)
-!    bybc(0) = max(bybc(0), var_min)
-!
-!    var_min = min(bzfar, bzbc(1))
-!    var_max = max(bzfar, bzbc(1))
-!    bzbc(0) = min(bzbc(0), var_max)
-!    bzbc(0) = max(bzbc(0), var_min)
-!
-!    var_min = min(uxfar, vxbc(1))
-!    var_max = max(uxfar, vxbc(1))
-!    vxbc(0) = min(vxbc(0), var_max)
-!    vxbc(0) = max(vxbc(0), var_min)
-!
-!    var_min = min(uyfar, vybc(1))
-!    var_max = max(uyfar, vybc(1))
-!    vybc(0) = min(vybc(0), var_max)
-!    vybc(0) = max(vybc(0), var_min)
-!
-!    var_min = min(uzfar, vzbc(1))
-!    var_max = max(uzfar, vzbc(1))
-!    vzbc(0) = min(vzbc(0), var_max)
-!    vzbc(0) = max(vzbc(0), var_min)
+    !var_min = min(efar, ebc(1))
+    !var_max = max(efar, ebc(1))
+    !ebc(0) = min(ebc(0), var_max)
+    !ebc(0) = max(ebc(0), var_min)
+
+    !var_min = min(rhofar, rbc(1))
+    !var_max = max(rhofar, rbc(1))
+    !rbc(0) = min(rbc(0), var_max)
+    !rbc(0) = max(rbc(0), var_min)
+
+    !var_min = min(rhofar, rbc(1))
+    !var_max = max(rhofar, rbc(1))
+    !rbc(0) = min(rbc(0), var_max)
+    !rbc(0) = max(rbc(0), var_min)
+
+    !var_min = min(bxfar, bxbc(1))
+    !var_max = max(bxfar, bxbc(1))
+    !bxbc(0) = min(bxbc(0), var_max)
+    !bxbc(0) = max(bxbc(0), var_min)
+
+    !var_min = min(byfar, bybc(1))
+    !var_max = max(byfar, bybc(1))
+    !bybc(0) = min(bybc(0), var_max)
+    !bybc(0) = max(bybc(0), var_min)
+
+    !var_min = min(bzfar, bzbc(1))
+    !var_max = max(bzfar, bzbc(1))
+    !bzbc(0) = min(bzbc(0), var_max)
+    !bzbc(0) = max(bzbc(0), var_min)
+
+    !var_min = min(uxfar, vxbc(1))
+    !var_max = max(uxfar, vxbc(1))
+    !vxbc(0) = min(vxbc(0), var_max)
+    !vxbc(0) = max(vxbc(0), var_min)
+
+    !var_min = min(uyfar, vybc(1))
+    !var_max = max(uyfar, vybc(1))
+    !vybc(0) = min(vybc(0), var_max)
+    !vybc(0) = max(vybc(0), var_min)
+
+    !var_min = min(uzfar, vzbc(1))
+    !var_max = max(uzfar, vzbc(1))
+    !vzbc(0) = min(vzbc(0), var_max)
+    !vzbc(0) = max(vzbc(0), var_min)
 
   END SUBROUTINE open_bcs_3
 

@@ -108,11 +108,16 @@ MODULE shared_data
   REAL(num) :: w1, w2, w3, w4, w5, w6, w7, w8, w9
   REAL(num) :: dt, dt2, dtr, dth, t_end, time
   REAL(num) :: dt_from_restart, time_prev
-  REAL(num) :: visc1, visc2, visc3
+  REAL(num) :: visc1, visc2, visc3, visc2_norm
   REAL(num) :: x_min, x_max, length_x
   REAL(num) :: y_min, y_max, length_y
   REAL(num) :: gamma, eta0, j_max, dt_snapshots, eta_background, lambda0
   REAL(num) :: total_visc_heating = 0.0_num, total_ohmic_heating = 0.0_num
+  REAL(num) :: dt_factor, dt_previous
+  INTEGER :: nramp_start = 5
+  INTEGER :: nramp_steps = 5
+  INTEGER :: nrsteps = 5
+  INTEGER :: nramp = 0
 
   INTEGER :: xbc_min, xbc_max, ix, ixm, ixp, xpass
   INTEGER :: ybc_min, ybc_max, iy, iym, iyp, ypass
