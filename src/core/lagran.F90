@@ -207,19 +207,14 @@ CONTAINS
         fy = fy - rho_v(ix,iy) * grav(iy)
 
         !Add viscous forces
-        fx = fx + fx_visc(ix,iy)
-        fy = fy + fy_visc(ix,iy)
-        fz = fz + fz_visc(ix,iy)
+        fx_visc(ix,iy) = fx + fx_visc(ix,iy)
+        fy_visc(ix,iy) = fy + fy_visc(ix,iy)
+        fz_visc(ix,iy) = fz + fz_visc(ix,iy)
 
         ! Find half step velocity needed for remap
-        vx1(ix,iy) = vx(ix,iy) + dt2 * fx / rho_v(ix,iy)
-        vy1(ix,iy) = vy(ix,iy) + dt2 * fy / rho_v(ix,iy)
-        vz1(ix,iy) = vz(ix,iy) + dt2 * fz / rho_v(ix,iy)
-
-        ! Velocity at the end of the Lagrangian step
-        vx(ix,iy) = vx(ix,iy) + dt * fx / rho_v(ix,iy)
-        vy(ix,iy) = vy(ix,iy) + dt * fy / rho_v(ix,iy)
-        vz(ix,iy) = vz(ix,iy) + dt * fz / rho_v(ix,iy)
+        vx1(ix,iy) = vx(ix,iy) + dt2 * fx_visc(ix,iy) / rho_v(ix,iy)
+        vy1(ix,iy) = vy(ix,iy) + dt2 * fy_visc(ix,iy) / rho_v(ix,iy)
+        vz1(ix,iy) = vz(ix,iy) + dt2 * fz_visc(ix,iy) / rho_v(ix,iy)
       END DO
     END DO
 
@@ -227,6 +222,15 @@ CONTAINS
 
     CALL visc_heating
 
+    DO iy = 0, ny
+      DO ix = 0, nx
+           ! Velocity at the end of the Lagrangian step
+           vx(ix,iy) = vx(ix,iy) + dt * fx_visc(ix,iy) / rho_v(ix,iy)
+           vy(ix,iy) = vy(ix,iy) + dt * fy_visc(ix,iy) / rho_v(ix,iy)
+           vz(ix,iy) = vz(ix,iy) + dt * fz_visc(ix,iy) / rho_v(ix,iy)
+      END DO
+    END DO
+    
     ! Finally correct density and energy to final values
     DO iy = 1, ny
       iym = iy - 1
@@ -565,18 +569,20 @@ CONTAINS
         ixm = ix - 1
 
         visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
-                             + (vy1(ixm,iym) - vy1(ix ,iym))**2) &
-            - alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
-                             + (vy1(ix ,iym) - vy1(ix ,iy ))**2) &
-            - alpha3(ix,iy) * ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
-                             + (vy1(ix ,iy ) - vy1(ixm,iy ))**2) &
-            - alpha4(ix,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
-                             + (vy1(ixm,iy ) - vy1(ixm,iym))**2)
+            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym)) * (vx(ixm,iym) - vx(ix ,iym))  &
+                             + (vy1(ixm,iym) - vy1(ix ,iym)) * (vy(ixm,iym) - vy(ix ,iym))) &
+            - alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy )) * (vx(ix ,iym) - vx(ix ,iy ))  &
+                             + (vy1(ix ,iym) - vy1(ix ,iy )) * (vy(ix ,iym) - vy(ix ,iy ))) &
+            - alpha3(ix,iy) * ((vx1(ix ,iy ) - vx1(ixm,iy )) * (vx(ix ,iy ) - vx(ixm,iy ))  &
+                             + (vy1(ix ,iy ) - vy1(ixm,iy )) * (vy(ix ,iy ) - vy(ixm,iy ))) &
+            - alpha4(ix,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym)) * (vx(ixm,iy ) - vx(ixm,iym))  &
+                             + (vy1(ixm,iy ) - vy1(ixm,iym)) * (vy(ixm,iy ) - vy(ixm,iym)))
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
     END DO
+
+    visc_heat = MAX(visc_heat, 0.0_num)
 
   END SUBROUTINE visc_heating
 
