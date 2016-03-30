@@ -633,7 +633,7 @@ CONTAINS
         ixm = ix - 1
 
         ! Fix dt for Lagrangian step
-        w1 = bx(ix,iy)**2 + by(ix,iy)**2 + bz(ix,iy)**2
+        w1 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         ! Sound speed squared
         rho0 = MAX(rho(ix,iy), none_zero)
         cs2 = (gamma * pressure(ix,iy) + 2.0_num * p_visc(ix,iy))/ rho0
