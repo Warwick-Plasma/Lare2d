@@ -42,8 +42,8 @@ CONTAINS
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num
-    !bx = 0.75_num
-    bx = 0.0_num
+    bx = 0.75_num
+!     bx = 0.0_num
     by = 0.0_num
     bz = 0.0_num
 
@@ -51,11 +51,11 @@ CONTAINS
       IF (xc(ix) >= 0.0_num) THEN
         rho(ix,:) = 0.125_num
         energy(ix,:) = 0.1_num / (gamma - 1.0_num)
-        !by(ix,:) = -1.0_num
+        by(ix,:) = -1.0_num
       ELSE
         rho(ix,:) = 1.0_num
         energy(ix,:) = 1.0_num / (gamma - 1.0_num)
-        !by(ix,:) = 1.0_num
+        by(ix,:) = 1.0_num
       END IF
     END DO
 

@@ -20,6 +20,7 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v, cv_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc, fy_visc, fz_visc
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx, fy, fz
 
 CONTAINS
 
@@ -43,6 +44,9 @@ CONTAINS
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(rho_v(-1:nx+1,-1:ny+1))
     ALLOCATE(cv_v(-1:nx+1,-1:ny+1))
+    ALLOCATE(fx(0:nx,0:ny))
+    ALLOCATE(fy(0:nx,0:ny))
+    ALLOCATE(fz(0:nx,0:ny))
     ALLOCATE(fx_visc(0:nx,0:ny))
     ALLOCATE(fy_visc(0:nx,0:ny))
     ALLOCATE(fz_visc(0:nx,0:ny))
@@ -63,6 +67,10 @@ CONTAINS
             * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
       END DO
     END DO
+
+    vx1 = vx
+    vy1 = vy
+    vz1 = vz
 
     CALL viscosity
     CALL set_dt
@@ -102,6 +110,7 @@ CONTAINS
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2, alpha3, alpha4)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
+    DEALLOCATE(fx, fy, fz)
 
     CALL energy_bcs
     CALL density_bcs
@@ -119,7 +128,6 @@ CONTAINS
 
     REAL(num) :: pp, ppx, ppy, ppxy
     REAL(num) :: e1
-    REAL(num) :: fx, fy, fz
     REAL(num) :: vxb, vxbm, vyb, vybm
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
     REAL(num) :: cvx, cvxp, cvy, cvyp
@@ -160,15 +168,15 @@ CONTAINS
         w1 = (pp + ppy) * 0.5_num
         ! P total at Ex(i+1,j)
         w2 = (ppx + ppxy) * 0.5_num
-        fx = -(w2 - w1) / dxc(ix)
+        fx(ix,iy) = -(w2 - w1) / dxc(ix)
 
         ! P total at Ey(i,j)
         w1 = (pp + ppx) * 0.5_num
         ! P total at Ey(i,j+1)
         w2 = (ppy + ppxy) * 0.5_num
-        fy = -(w2 - w1) / dyc(iy)
+        fy(ix,iy) = -(w2 - w1) / dyc(iy)
 
-        fz = 0.0_num
+        fz(ix,iy) = 0.0_num
 
         cvx  = cv1(ix ,iy ) + cv1(ix ,iyp)
         cvxp = cv1(ixp,iy ) + cv1(ixp,iyp)
@@ -200,34 +208,35 @@ CONTAINS
         bzv = (bz1(ix,iy ) + bz1(ixp,iy ) + bz1(ix,iyp) + bz1(ixp,iyp)) &
             / (cvx + cvxp)
 
-        fx = fx + (jy * bzv - jz * byv)
-        fy = fy + (jz * bxv - jx * bzv)
-        fz = fz + (jx * byv - jy * bxv)
+        fx(ix,iy) = fx(ix,iy) + (jy * bzv - jz * byv)
+        fy(ix,iy) = fy(ix,iy) + (jz * bxv - jx * bzv)
+        fz(ix,iy) = fz(ix,iy) + (jx * byv - jy * bxv)
 
-        fy = fy - rho_v(ix,iy) * grav(iy)
-
-        !Add viscous forces
-        fx_visc(ix,iy) = fx + fx_visc(ix,iy)
-        fy_visc(ix,iy) = fy + fy_visc(ix,iy)
-        fz_visc(ix,iy) = fz + fz_visc(ix,iy)
+        fy(ix,iy) = fy(ix,iy) - rho_v(ix,iy) * grav(iy)
 
         ! Find half step velocity needed for remap
-        vx1(ix,iy) = vx(ix,iy) + dt2 * fx_visc(ix,iy) / rho_v(ix,iy)
-        vy1(ix,iy) = vy(ix,iy) + dt2 * fy_visc(ix,iy) / rho_v(ix,iy)
-        vz1(ix,iy) = vz(ix,iy) + dt2 * fz_visc(ix,iy) / rho_v(ix,iy)
+        vx1(ix,iy) = vx(ix,iy) + dt2 * (fx_visc(ix,iy) + fx(ix,iy)) / rho_v(ix,iy)
+        vy1(ix,iy) = vy(ix,iy) + dt2 * (fy_visc(ix,iy) + fy(ix,iy)) / rho_v(ix,iy)
+        vz1(ix,iy) = vz(ix,iy) + dt2 * (fz_visc(ix,iy) + fz(ix,iy)) / rho_v(ix,iy)
       END DO
     END DO
 
     CALL remap_v_bcs
 
-    CALL visc_heating
+    bx1 = bx1 / cv1(0:nx+2,0:ny+2)
+    by1 = by1 / cv1(0:nx+2,0:ny+2)
+    bz1 = bz1 / cv1(0:nx+2,0:ny+2)
+    CALL viscosity
 
     DO iy = 0, ny
       DO ix = 0, nx
-           ! Velocity at the end of the Lagrangian step
-           vx(ix,iy) = vx(ix,iy) + dt * fx_visc(ix,iy) / rho_v(ix,iy)
-           vy(ix,iy) = vy(ix,iy) + dt * fy_visc(ix,iy) / rho_v(ix,iy)
-           vz(ix,iy) = vz(ix,iy) + dt * fz_visc(ix,iy) / rho_v(ix,iy)
+        ! Velocity at the end of the Lagrangian step
+        vx1(ix,iy) = vx(ix,iy) + dt2 * (fx_visc(ix,iy) + fx(ix,iy)) / rho_v(ix,iy)
+        vy1(ix,iy) = vy(ix,iy) + dt2 * (fy_visc(ix,iy) + fy(ix,iy)) / rho_v(ix,iy)
+        vz1(ix,iy) = vz(ix,iy) + dt2 * (fz_visc(ix,iy) + fz(ix,iy)) / rho_v(ix,iy)        
+        vx(ix,iy) = vx(ix,iy) + dt * (fx_visc(ix,iy) + fx(ix,iy)) / rho_v(ix,iy)
+        vy(ix,iy) = vy(ix,iy) + dt * (fy_visc(ix,iy) + fy(ix,iy)) / rho_v(ix,iy)
+        vz(ix,iy) = vz(ix,iy) + dt * (fz_visc(ix,iy) + fz(ix,iy)) / rho_v(ix,iy)
       END DO
     END DO
     
@@ -295,6 +304,8 @@ CONTAINS
 
     cs(-1,:) = cs(0,:)
     cs(:,-1) = cs(:,0)
+    cs(nx+2,:) = cs(nx+1,:)
+    cs(:,ny+2) = cs(:,ny+1)
 
     DO iy = -1, ny + 1
       iyp = iy + 1
@@ -335,7 +346,7 @@ CONTAINS
         dx = dxb(ix)
         dxp = dxb(ixp)
         dxm = dxb(ixm)
-        dvdots = - 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
+        dvdots = - 0.5_num * dyb(iy) * (vx1(i1,j1) - vx1(i2,j2))
         ! Force on node is alpha*dv but store only alpha and convert to force
         ! when needed
         alpha1(ix,iy) = edge_viscosity()
@@ -355,7 +366,7 @@ CONTAINS
         dx = dyb(iy)
         dxp = dyb(iyp)
         dxm = dyb(iym)
-        dvdots = - 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
+        dvdots = - 0.5_num * dxb(ix) * (vy1(i1,j1) - vy1(i2,j2))
         alpha2(ix,iy) = edge_viscosity()
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha2(ix,iy) / dxb(ix)
 
@@ -371,7 +382,7 @@ CONTAINS
         dx = dxb(ix)
         dxp = dxb(ixm)
         dxm = dxb(ixp)
-        dvdots = 0.5_num * dyb(iy) * (vx(i1,j1) - vx(i2,j2))
+        dvdots = 0.5_num * dyb(iy) * (vx1(i1,j1) - vx1(i2,j2))
         alpha3(ix,iy) = edge_viscosity()
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha3(ix,iy) / dyb(iy)
 
@@ -387,19 +398,19 @@ CONTAINS
         dx = dyb(iy)
         dxp = dyb(iym)
         dxm = dyb(iyp)
-        dvdots = 0.5_num * dxb(ix) * (vy(i1,j1) - vy(i2,j2))
+        dvdots = 0.5_num * dxb(ix) * (vy1(i1,j1) - vy1(i2,j2))
         alpha4(ix,iy) = edge_viscosity()
         p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha4(ix,iy) / dxb(ix)
 
         visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx(ixm,iym) - vx(ix ,iym))**2  &
-                             + (vy(ixm,iym) - vy(ix ,iym))**2) &
-            - alpha2(ix,iy) * ((vx(ix ,iym) - vx(ix ,iy ))**2  &
-                             + (vy(ix ,iym) - vy(ix ,iy ))**2) &
-            - alpha3(ix,iy) * ((vx(ix ,iy ) - vx(ixm,iy ))**2  &
-                             + (vy(ix ,iy ) - vy(ixm,iy ))**2) &
-            - alpha4(ix,iy) * ((vx(ixm,iy ) - vx(ixm,iym))**2  &
-                             + (vy(ixm,iy ) - vy(ixm,iym))**2)
+            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
+                             + (vy1(ixm,iym) - vy1(ix ,iym))**2) &
+            - alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
+                             + (vy1(ix ,iym) - vy1(ix ,iy ))**2) &
+            - alpha3(ix,iy) * ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
+                             + (vy1(ix ,iy ) - vy1(ixm,iy ))**2) &
+            - alpha4(ix,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
+                             + (vy1(ixm,iy ) - vy1(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
@@ -420,20 +431,20 @@ CONTAINS
         a3 = alpha2(ix ,iy ) + alpha4(ixp,iy )
         a4 = alpha2(ix ,iyp) + alpha4(ixp,iyp)
 
-        fx_visc(ix,iy) = (a1 * (vx(ix,iy) - vx(ixm,iy )) &
-                        + a2 * (vx(ix,iy) - vx(ixp,iy )) &
-                        + a3 * (vx(ix,iy) - vx(ix ,iym)) &
-                        + a4 * (vx(ix,iy) - vx(ix ,iyp)) ) / cv_v(ix,iy)
+        fx_visc(ix,iy) = (a1 * (vx1(ix,iy) - vx1(ixm,iy )) &
+                        + a2 * (vx1(ix,iy) - vx1(ixp,iy )) &
+                        + a3 * (vx1(ix,iy) - vx1(ix ,iym)) &
+                        + a4 * (vx1(ix,iy) - vx1(ix ,iyp)) ) / cv_v(ix,iy)
 
-        fy_visc(ix,iy) = (a1 * (vy(ix,iy) - vy(ixm,iy )) &
-                        + a2 * (vy(ix,iy) - vy(ixp,iy )) &
-                        + a3 * (vy(ix,iy) - vy(ix ,iym)) &
-                        + a4 * (vy(ix,iy) - vy(ix ,iyp)) ) / cv_v(ix,iy)
+        fy_visc(ix,iy) = (a1 * (vy1(ix,iy) - vy1(ixm,iy )) &
+                        + a2 * (vy1(ix,iy) - vy1(ixp,iy )) &
+                        + a3 * (vy1(ix,iy) - vy1(ix ,iym)) &
+                        + a4 * (vy1(ix,iy) - vy1(ix ,iyp)) ) / cv_v(ix,iy)
 
-        fz_visc(ix,iy) = (a1 * (vz(ix,iy) - vz(ixm,iy )) &
-                        + a2 * (vz(ix,iy) - vz(ixp,iy )) &
-                        + a3 * (vz(ix,iy) - vz(ix ,iym)) &
-                        + a4 * (vz(ix,iy) - vz(ix ,iyp)) ) / cv_v(ix,iy)
+        fz_visc(ix,iy) = (a1 * (vz1(ix,iy) - vz1(ixm,iy )) &
+                        + a2 * (vz1(ix,iy) - vz1(ixp,iy )) &
+                        + a3 * (vz1(ix,iy) - vz1(ix ,iym)) &
+                        + a4 * (vz1(ix,iy) - vz1(ix ,iyp)) ) / cv_v(ix,iy)
 
       END DO
     END DO
@@ -457,12 +468,12 @@ CONTAINS
       rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) &
           / (rho_v(i1,j1) + rho_v(i2,j2))
       cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
-      dvx = vx(i1,j1) - vx(i2,j2)
-      dvxm = vx(i0,j0) - vx(i1,j1)
-      dvxp = vx(i2,j2) - vx(i3,j3)
-      dvy = vy(i1,j1) - vy(i2,j2)
-      dvym = vy(i0,j0) - vy(i1,j1)
-      dvyp = vy(i2,j2) - vy(i3,j3)
+      dvx = vx1(i1,j1) - vx1(i2,j2)
+      dvxm = vx1(i0,j0) - vx1(i1,j1)
+      dvxp = vx1(i2,j2) - vx1(i3,j3)
+      dvy = vy1(i1,j1) - vy1(i2,j2)
+      dvym = vy1(i0,j0) - vy1(i1,j1)
+      dvyp = vy1(i2,j2) - vy1(i3,j3)
       dv2 = dvx**2 + dvy**2
       dv = SQRT(dv2)
 
@@ -552,40 +563,6 @@ CONTAINS
     END DO
 
   END SUBROUTINE b_pressure_cv1_update
-
-
-
-  !****************************************************************************
-  ! Calculate the viscous heating
-  !****************************************************************************
-
-  SUBROUTINE visc_heating
-
-    visc_heat = 0.0_num
-
-    DO iy = 1, ny
-      iym = iy - 1
-      DO ix = 1, nx
-        ixm = ix - 1
-
-        visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym)) * (vx(ixm,iym) - vx(ix ,iym))  &
-                             + (vy1(ixm,iym) - vy1(ix ,iym)) * (vy(ixm,iym) - vy(ix ,iym))) &
-            - alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy )) * (vx(ix ,iym) - vx(ix ,iy ))  &
-                             + (vy1(ix ,iym) - vy1(ix ,iy )) * (vy(ix ,iym) - vy(ix ,iy ))) &
-            - alpha3(ix,iy) * ((vx1(ix ,iy ) - vx1(ixm,iy )) * (vx(ix ,iy ) - vx(ixm,iy ))  &
-                             + (vy1(ix ,iy ) - vy1(ixm,iy )) * (vy(ix ,iy ) - vy(ixm,iy ))) &
-            - alpha4(ix,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym)) * (vx(ixm,iy ) - vx(ixm,iym))  &
-                             + (vy1(ixm,iy ) - vy1(ixm,iym)) * (vy(ixm,iy ) - vy(ixm,iym)))
-
-        visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
-      END DO
-    END DO
-
-    visc_heat = MAX(visc_heat, 0.0_num)
-
-  END SUBROUTINE visc_heating
-
 
 
 
