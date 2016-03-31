@@ -305,18 +305,13 @@ CONTAINS
     p_visc = 0.0_num
     visc_heat = 0.0_num
 
-    DO ix = 0, nx + 1
-      DO iy = 0, ny + 1
+    DO ix = -1, nx + 2
+      DO iy = -1, ny + 2
         rmin = MAX(rho(ix,iy), none_zero)
         b2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + b2) / rmin)
       END DO
     END DO
-
-    cs(-1,:) = cs(0,:)
-    cs(:,-1) = cs(:,0)
-    cs(nx+2,:) = cs(nx+1,:)
-    cs(:,ny+2) = cs(:,ny+1)
 
     DO iy = -1, ny + 1
       iyp = iy + 1
@@ -419,9 +414,9 @@ CONTAINS
         ixp = ix + 1
 
         a1 = alpha1(ix ,iyp) * dyc(iy)
-        a2 = alpha1(ixp,iyp) * dyc(iyp)
+        a2 = alpha1(ixp,iyp) * dyc(iy)
         a3 = alpha2(ix ,iy ) * dxc(ix)
-        a4 = alpha2(ix ,iyp) * dxc(ixp)
+        a4 = alpha2(ix ,iyp) * dxc(ix)
 
         fx_visc(ix,iy) = (a1 * (vx1(ix,iy) - vx1(ixm,iy )) &
                         + a2 * (vx1(ix,iy) - vx1(ixp,iy )) &
