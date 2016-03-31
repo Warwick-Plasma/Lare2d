@@ -16,7 +16,7 @@ MODULE lagran
   PUBLIC :: lagrangian_step, eta_calc
 
   ! Only used inside lagran.f90
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha1, alpha2, alpha3, alpha4
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: alpha1, alpha2
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v, cv_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc, fy_visc, fz_visc
@@ -38,8 +38,6 @@ CONTAINS
     ALLOCATE(bz1(0:nx+2,0:ny+2))
     ALLOCATE(alpha1(0:nx+1,0:ny+1))
     ALLOCATE(alpha2(0:nx+1,0:ny+1))
-    ALLOCATE(alpha3(0:nx+1,0:ny+1))
-    ALLOCATE(alpha4(0:nx+1,0:ny+1))
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(rho_v(-1:nx+1,-1:ny+1))
@@ -107,7 +105,7 @@ CONTAINS
 
     CALL predictor_corrector_step
 
-    DEALLOCATE(bx1, by1, bz1, alpha1, alpha2, alpha3, alpha4)
+    DEALLOCATE(bx1, by1, bz1, alpha1, alpha2)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
     DEALLOCATE(fx, fy, fz)
@@ -346,13 +344,10 @@ CONTAINS
         dx = dxb(ix)
         dxp = dxb(ixp)
         dxm = dxb(ixm)
-        dvdots = - 0.5_num * dyb(iy) * (vx1(i1,j1) - vx1(i2,j2))
-        ! Force on node is alpha*dv but store only alpha and convert to force
-        ! when needed
+        dvdots = - (vx1(i1,j1) - vx1(i2,j2))
+        ! Force on node is alpha*dv*ds but store only alpha and convert to force
+        ! when needed. Here alpha = q_kur*(1-psi)
         alpha1(ix,iy) = edge_viscosity()
-        ! Estimate p_visc based on q_kur*(1-psi), i.e. alpha/ds, for timestep
-        ! control
-        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha1(ix,iy) / dyb(iy)
 
         ! Edge viscosity for triangle 2
         i1 = ix
@@ -366,50 +361,30 @@ CONTAINS
         dx = dyb(iy)
         dxp = dyb(iyp)
         dxm = dyb(iym)
-        dvdots = - 0.5_num * dxb(ix) * (vy1(i1,j1) - vy1(i2,j2))
+        dvdots = - (vy1(i1,j1) - vy1(i2,j2))
         alpha2(ix,iy) = edge_viscosity()
-        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha2(ix,iy) / dxb(ix)
+      END DO
+    END DO
 
-        ! Edge viscosity for triangle 3
-        i1 = ix
-        j1 = iy
-        i2 = ixm
-        j2 = iy
-        i0 = i1 + 1
-        j0 = j1
-        i3 = i2 - 1
-        j3 = j1
-        dx = dxb(ix)
-        dxp = dxb(ixm)
-        dxm = dxb(ixp)
-        dvdots = 0.5_num * dyb(iy) * (vx1(i1,j1) - vx1(i2,j2))
-        alpha3(ix,iy) = edge_viscosity()
-        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha3(ix,iy) / dyb(iy)
-
-        ! Edge viscosity for triangle 4
-        i1 = ixm
-        j1 = iy
-        i2 = ixm
-        j2 = iym
-        i0 = i1
-        j0 = j1 + 1
-        i3 = i2
-        j3 = j1 - 1
-        dx = dyb(iy)
-        dxp = dyb(iym)
-        dxm = dyb(iyp)
-        dvdots = 0.5_num * dxb(ix) * (vy1(i1,j1) - vy1(i2,j2))
-        alpha4(ix,iy) = edge_viscosity()
-        p_visc(ix,iy) = p_visc(ix,iy) - 2.0_num * alpha4(ix,iy) / dxb(ix)
+    DO iy = 1, ny 
+      iym = iy - 1
+      iyp = iy + 1
+      DO ix = 1, nx 
+        ixm = ix - 1
+        ixp = ix + 1
+        ! Estimate p_visc based on q_kur*(1-psi), i.e. alpha, for timestep
+        ! control
+        p_visc(ix,iy) = -  alpha1(ix,iy) - alpha2(ix,iy)
+        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iyp) - alpha2(ixm,iy)
 
         visc_heat(ix,iy) = &
-            - alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
+            - 0.5_num * dyb(iy) * alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
                              + (vy1(ixm,iym) - vy1(ix ,iym))**2) &
-            - alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
+            - 0.5_num * dxb(ix) * alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
                              + (vy1(ix ,iym) - vy1(ix ,iy ))**2) &
-            - alpha3(ix,iy) * ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
+            - 0.5_num * dyb(iy) * alpha1(ix,iyp) * ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
                              + (vy1(ix ,iy ) - vy1(ixm,iy ))**2) &
-            - alpha4(ix,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
+            - 0.5_num * dxb(ix) * alpha2(ixm,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
                              + (vy1(ixm,iy ) - vy1(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
@@ -426,10 +401,10 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
 
-        a1 = alpha1(ix ,iyp) + alpha3(ix ,iy )
-        a2 = alpha1(ixp,iyp) + alpha3(ixp,iy )
-        a3 = alpha2(ix ,iy ) + alpha4(ixp,iy )
-        a4 = alpha2(ix ,iyp) + alpha4(ixp,iyp)
+        a1 = alpha1(ix ,iyp) * dyb(iy)
+        a2 = alpha1(ixp,iyp) * dyb(iyp)
+        a3 = alpha2(ix ,iy ) * dxb(ix)
+        a4 = alpha2(ix ,iyp) * dxb(ixp)
 
         fx_visc(ix,iy) = (a1 * (vx1(ix,iy) - vx1(ixm,iy )) &
                         + a2 * (vx1(ix,iy) - vx1(ixp,iy )) &
