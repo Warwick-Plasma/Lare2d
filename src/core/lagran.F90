@@ -33,11 +33,11 @@ CONTAINS
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
 
-    ALLOCATE(bx1(0:nx+2,0:ny+2))
-    ALLOCATE(by1(0:nx+2,0:ny+2))
-    ALLOCATE(bz1(0:nx+2,0:ny+2))
-    ALLOCATE(alpha1(0:nx+1,0:ny+1))
-    ALLOCATE(alpha2(0:nx+1,0:ny+1))
+    ALLOCATE(bx1(-1:nx+2,-1:ny+2))
+    ALLOCATE(by1(-1:nx+2,-1:ny+2))
+    ALLOCATE(bz1(-1:nx+2,-1:ny+2))
+    ALLOCATE(alpha1(0:nx+1,0:ny+2))
+    ALLOCATE(alpha2(-1:nx+1,0:ny+1))
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(rho_v(-1:nx+1,-1:ny+1))
@@ -53,9 +53,9 @@ CONTAINS
     ALLOCATE(flux_z(0:nx,0:ny))
     ALLOCATE(curlb (0:nx,0:ny))
 
-    DO iy = 0, ny + 2
+    DO iy = -1, ny + 2
       iym = iy - 1
-      DO ix = 0, nx + 2
+      DO ix = -1, nx + 2
         ixm = ix - 1
         bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
         by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
@@ -63,6 +63,19 @@ CONTAINS
 
         pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
             * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
+      END DO
+    END DO
+
+    DO iy = -1, ny + 1
+      iyp = iy + 1
+      DO ix = -1, nx + 1
+        ixp = ix + 1
+        rho_v(ix,iy) = rho(ix,iy) * cv(ix,iy) + rho(ixp,iy) * cv(ixp,iy) &
+            +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
+        cv_v(ix,iy) = cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp)
+        rho_v(ix,iy) = rho_v(ix,iy) / cv_v(ix,iy)
+
+        cv_v(ix,iy) = 0.25_num * cv_v(ix,iy)
       END DO
     END DO
 
@@ -131,11 +144,11 @@ CONTAINS
     REAL(num) :: cvx, cvxp, cvy, cvyp
     REAL(num) :: dv
 
-    CALL b_pressure_cv1_update
+    CALL b_field_and_cv1_update
 
-    bx1 = bx1 * cv1(0:nx+2,0:ny+2)
-    by1 = by1 * cv1(0:nx+2,0:ny+2)
-    bz1 = bz1 * cv1(0:nx+2,0:ny+2)
+    bx1 = bx1 * cv1
+    by1 = by1 * cv1
+    bz1 = bz1 * cv1
 
     DO iy = 0, ny + 1
       DO ix = 0, nx + 1
@@ -221,9 +234,9 @@ CONTAINS
 
     CALL remap_v_bcs
 
-    bx1 = bx1 / cv1(0:nx+2,0:ny+2)
-    by1 = by1 / cv1(0:nx+2,0:ny+2)
-    bz1 = bz1 / cv1(0:nx+2,0:ny+2)
+    bx1 = bx1 / cv1
+    by1 = by1 / cv1
+    bz1 = bz1 / cv1
     CALL viscosity
 
     DO iy = 0, ny
@@ -309,20 +322,15 @@ CONTAINS
       iyp = iy + 1
       DO ix = -1, nx + 1
         ixp = ix + 1
-        rho_v(ix,iy) = rho(ix,iy) * cv(ix,iy) + rho(ixp,iy) * cv(ixp,iy) &
-            +   rho(ix,iyp) * cv(ix,iyp) + rho(ixp,iyp) * cv(ixp,iyp)
-        cv_v(ix,iy) = cv(ix,iy) + cv(ixp,iy) + cv(ix,iyp) + cv(ixp,iyp)
-        rho_v(ix,iy) = rho_v(ix,iy) / cv_v(ix,iy)
 
         cs_v(ix,iy) = cs(ix,iy) * cv(ix,iy) + cs(ixp,iy) * cv(ixp,iy) &
             +   cs(ix,iyp) * cv(ix,iyp) + cs(ixp,iyp) * cv(ixp,iyp)
-        cs_v(ix,iy) = cs_v(ix,iy) / cv_v(ix,iy)
+        cs_v(ix,iy) = 0.25_num * cs_v(ix,iy) / cv_v(ix,iy)
 
-        cv_v(ix,iy) = 0.25_num * cv_v(ix,iy)
       END DO
     END DO
 
-    DO iy = 0, ny + 1
+    DO iy = 0, ny + 2
       iym = iy - 1
       iyp = iy + 1
       DO ix = 0, nx + 1
@@ -348,8 +356,17 @@ CONTAINS
         ! Force on node is alpha*dv*ds but store only alpha and convert to force
         ! when needed. Here alpha = q_kur*(1-psi)
         alpha1(ix,iy) = edge_viscosity()
+      END DO
+    END DO
 
-        ! Edge viscosity for triangle 2
+      ! Edge viscosity for triangle 2
+    DO iy = 0, ny + 1
+      iym = iy - 1
+      iyp = iy + 1
+      DO ix = -1, nx + 1
+        ixm = ix - 1
+        ixp = ix + 1
+
         i1 = ix
         j1 = iym
         i2 = ix
@@ -366,10 +383,10 @@ CONTAINS
       END DO
     END DO
 
-    DO iy = 1, ny 
+    DO iy = 0, ny + 1 
       iym = iy - 1
       iyp = iy + 1
-      DO ix = 1, nx 
+      DO ix = 0, nx + 1 
         ixm = ix - 1
         ixp = ix + 1
         ! Estimate p_visc based on q_kur*(1-psi), i.e. alpha, for timestep
@@ -401,10 +418,10 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
 
-        a1 = alpha1(ix ,iyp) * dyb(iy)
-        a2 = alpha1(ixp,iyp) * dyb(iyp)
-        a3 = alpha2(ix ,iy ) * dxb(ix)
-        a4 = alpha2(ix ,iyp) * dxb(ixp)
+        a1 = alpha1(ix ,iyp) * dyc(iy)
+        a2 = alpha1(ixp,iyp) * dyc(iyp)
+        a3 = alpha2(ix ,iy ) * dxc(ix)
+        a4 = alpha2(ix ,iyp) * dxc(ixp)
 
         fx_visc(ix,iy) = (a1 * (vx1(ix,iy) - vx1(ixm,iy )) &
                         + a2 * (vx1(ix,iy) - vx1(ixp,iy )) &
@@ -475,18 +492,16 @@ CONTAINS
 
 
 
-  SUBROUTINE b_pressure_cv1_update
+  SUBROUTINE b_field_and_cv1_update
 
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
     REAL(num) :: dvxdx, dvydx, dvzdx
     REAL(num) :: dvxdy, dvydy, dvzdy
     REAL(num) :: dv
 
-    p_visc = 0.0_num
-
-    DO iy = 0, ny + 1
+    DO iy = -1, ny + 2
       iym = iy - 1
-      DO ix = 0, nx + 1
+      DO ix = -1, nx + 2
         ixm = ix - 1
 
         ! vx at Bx(i,j)
@@ -537,7 +552,7 @@ CONTAINS
       END DO
     END DO
 
-  END SUBROUTINE b_pressure_cv1_update
+  END SUBROUTINE b_field_and_cv1_update
 
 
 
