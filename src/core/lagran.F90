@@ -446,8 +446,8 @@ CONTAINS
       ! where dvu is unit vector in direction of dv
       ! Other symbols follow notation in Caramana
 
-      REAL(num) :: dvx, dvy, dv, dv2
-      REAL(num) :: dvxm, dvxp, dvym, dvyp
+      REAL(num) :: dvx, dvy, dvz, dv, dv2
+      REAL(num) :: dvxm, dvxp, dvym, dvyp, dvzm, dvzp
       REAL(num) :: rl, rr, psi
       REAL(num) :: rho_edge, cs_edge, q_kur
 
@@ -461,7 +461,10 @@ CONTAINS
       dvy = vy1(i1,j1) - vy1(i2,j2)
       dvym = vy1(i0,j0) - vy1(i1,j1)
       dvyp = vy1(i2,j2) - vy1(i3,j3)
-      dv2 = dvx**2 + dvy**2
+      dvz = vz1(i1,j1) - vz1(i2,j2)
+      dvzm = vz1(i0,j0) - vz1(i1,j1)
+      dvzp = vz1(i2,j2) - vz1(i3,j3)
+      dv2 = dvx**2 + dvy**2 + dvz**2
       dv = SQRT(dv2)
 
       IF (dv * dt / dx < 1.e-14_num) THEN
@@ -469,8 +472,8 @@ CONTAINS
         rr = 1.0_num
         dvdots = 0.0_num
       ELSE
-        rl = (dvxp * dvx + dvyp * dvy) * dx / (dxp * dv2)
-        rr = (dvxm * dvx + dvym * dvy) * dx / (dxm * dv2)
+        rl = (dvxp * dvx + dvyp * dvy + dvzp * dvz) * dx / (dxp * dv2)
+        rr = (dvxm * dvx + dvym * dvy + dvzm * dvz) * dx / (dxm * dv2)
         dvdots = dvdots / dv
       END IF
 
