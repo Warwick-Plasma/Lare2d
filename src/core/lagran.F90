@@ -391,13 +391,13 @@ CONTAINS
 
         visc_heat(ix,iy) = &
             - 0.5_num * dyb(iy) * alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
-                             + (vy1(ixm,iym) - vy1(ix ,iym))**2) &
+                             + (vy1(ixm,iym) - vy1(ix ,iym))**2 + (vz1(ixm,iym) - vz1(ix ,iym))**2) &
             - 0.5_num * dxb(ix) * alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
-                             + (vy1(ix ,iym) - vy1(ix ,iy ))**2) &
+                             + (vy1(ix ,iym) - vy1(ix ,iy ))**2 + (vz1(ix ,iym) - vz1(ix ,iy ))**2) &
             - 0.5_num * dyb(iy) * alpha1(ix,iyp) * ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
-                             + (vy1(ix ,iy ) - vy1(ixm,iy ))**2) &
+                             + (vy1(ix ,iy ) - vy1(ixm,iy ))**2 + (vz1(ix ,iy ) - vz1(ixm,iy ))**2) &
             - 0.5_num * dxb(ix) * alpha2(ixm,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
-                             + (vy1(ixm,iy ) - vy1(ixm,iym))**2)
+                             + (vy1(ixm,iy ) - vy1(ixm,iym))**2 + (vz1(ixm,iy ) - vz1(ixm,iym))**2)
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
