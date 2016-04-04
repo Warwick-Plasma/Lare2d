@@ -540,10 +540,11 @@ CONTAINS
         ! vz at Bx(i-1,j)
         vzbm = (vz(ixm,iy ) + vz(ixm,iym)) * 0.5_num
         ! vz at By(i,j)
+        dvzdx = (vzb - vzbm) / dxb(ix)
+
         vzb  = (vz(ix ,iy ) + vz(ixm,iy )) * 0.5_num
         ! vz at By(i,j-1)
         vzbm = (vz(ix ,iym) + vz(ixm,iym)) * 0.5_num
-        dvzdx = (vzb - vzbm) / dxb(ix)
         dvzdy = (vzb - vzbm) / dyb(iy)
 
         w3 =  bx1(ix,iy) * dvxdx + by1(ix,iy) * dvxdy
@@ -572,7 +573,7 @@ CONTAINS
     REAL(num) :: vxbm, vxbp, avxm, avxp, dvx, ax
     REAL(num) :: vybm, vybp, avym, avyp, dvy, ay
     REAL(num) :: cs2, area, rho0
-    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local, dt_rad
+    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
     REAL(num) :: dt_fudge = 1e-4_num
@@ -591,7 +592,6 @@ CONTAINS
     dt_local = largest_number
     dtr_local = largest_number
     dth_local = largest_number
-    dt_rad = largest_number
 
     DO iy = 0, ny
       iym = iy - 1
@@ -630,7 +630,7 @@ CONTAINS
         dt2 = area / MAX(avym, avyp, dvy, 1.e-10_num * area)
 
         ! Fix dt for remap step
-        dt_local = MIN(dt_local, dt1, dt2, dt_rad)
+        dt_local = MIN(dt_local, dt1, dt2)
 
         ! Note resistive limits assumes uniform resistivity hence cautious
         ! factor 0.2
