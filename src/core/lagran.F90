@@ -299,8 +299,14 @@ CONTAINS
     REAL(num) :: a1, a2, a3, a4
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
     INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
+    LOGICAL, SAVE :: first_call = .TRUE.
 
     ALLOCATE(cs(-1:nx+2,-1:ny+2), cs_v(-1:nx+1,-1:ny+1))
+
+    IF (first_call) THEN
+      first_call = .FALSE.
+      visc2_norm = 0.25_num * (gamma + 1.0_num) * visc2
+    END IF
 
     p_visc = 0.0_num
     visc_heat = 0.0_num
