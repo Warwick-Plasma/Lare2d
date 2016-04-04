@@ -289,12 +289,12 @@ CONTAINS
 
 
 
-  SUBROUTINE rad_losses(density, temperature, xi, height, rad, alf)
+  SUBROUTINE rad_losses(density, temperature, xi, height, rad)
 
     ! Returns the normalised RTV losses
 
     REAL(num), INTENT(IN) :: density, temperature, xi, height
-    REAL(num), INTENT(OUT) :: rad, alf
+    REAL(num), INTENT(OUT) :: rad
     REAL(num), DIMENSION(7) :: trange = (/0.02_num, 0.0398_num, 0.0794_num, &
         0.251_num, 0.562_num, 1.995_num, 10.0_num/)
     REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, &
@@ -305,7 +305,6 @@ CONTAINS
     INTEGER :: i
 
     rad = 0.0_num
-    alf = 0.0_num
 
     IF (.NOT. radiation) RETURN
     IF (height < 1.0_num) RETURN
@@ -323,7 +322,6 @@ CONTAINS
 
     rad = factor * density**2 * psi(i) * tmk**alpha(i)
     rad = rad * h_star * lr_star
-    alf = alpha(i)
 
   END SUBROUTINE rad_losses
 
