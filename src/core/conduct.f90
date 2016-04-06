@@ -64,11 +64,13 @@ CONTAINS
     REAL(num), INTENT(IN), DIMENSION(-1:,-1:) :: temperature
     REAL(num), INTENT(OUT), DIMENSION(-1:,-1:) :: flux
     INTEGER :: ix, ixp, ixm
-    REAL(num) :: tb1, tb2, tg1, tg2, fc_sp1, fc_sp2, rho_b1, rho_b2
-    REAL(num) :: tg_a1, tg_a2, tb_p2, tb_p1, tb_m1, tb_m2
-    REAL(num) :: fc_sa1, fc_sa2, fc1, fc2, modb1, modb2
-    REAL(num) :: byf1, byf2, bxf1, bxf2, bzf1, bzf2
+    REAL(num) :: tb, tg, fc_sp, rho_b
+    REAL(num) :: tg_a, tb_p, tb_m
+    REAL(num) :: fc_sa, fc, modb
+    REAL(num) :: byf, bxf, bzf
+    REAL(num), DIMENSION(:), ALLOCATABLE :: temp
 
+    flux=0.0_num
     DO iy = 1, ny
       iyp = iy + 1
       iym = iy - 1
@@ -77,95 +79,89 @@ CONTAINS
         ixm = ix - 1
 
         ! X flux
-        byf1 = 0.25_num * (by(ix,iy) + by(ix,iym) + by(ixm,iy) + by(ixm,iym))
-        byf2 = 0.25_num * (by(ix,iy) + by(ix,iym) + by(ixp,iy) + by(ixp,iym))
-        bzf1 = 0.5_num * (bz(ix,iy) + bz(ixm,iy))
-        bzf2 = 0.5_num * (bz(ix,iy) + bz(ixp,iy))
+        byf = 0.25_num * (by(ix,iy) + by(ix,iym) + by(ixp,iy) + by(ixp,iym))
+        bzf = 0.5_num * (bz(ix,iy) + bz(ixp,iy))
 
-        modb1 = SQRT(bx(ixm,iy)**2 + byf1**2 + bzf1**2)
-        modb2 = SQRT(bx(ix ,iy)**2 + byf2**2 + bzf2**2)
+        modb = SQRT(bx(ix ,iy)**2 + byf**2 + bzf**2)
 
         ! Braginskii Conductive Flux
         ! Temperature at the x boundaries in the current cell
-        tb1 = 0.5_num * (temperature(ix,iy) + temperature(ixm,iy))
-        tb2 = 0.5_num * (temperature(ix,iy) + temperature(ixp,iy))
+        tb = 0.5_num * (temperature(ix,iy) + temperature(ixp,iy))
 
-        ! Temperature at the x boundaries in the cell above		
-        tb_p1 = 0.5_num * (temperature(ix,iyp) + temperature(ixm,iyp))
-        tb_p2 = 0.5_num * (temperature(ix,iyp) + temperature(ixp,iyp))
-        ! Temperature at the x boundaries in the cell below		
-        tb_m1 = 0.5_num * (temperature(ix,iym) + temperature(ixm,iym))
-        tb_m2 = 0.5_num * (temperature(ix,iym) + temperature(ixp,iym))
-        ! X temperature gradient at the x boundaries of the current cell		
-        tg1 = (temperature(ix,iy) - temperature(ixm,iy)) / dxc(ixm)
-        tg2 = (temperature(ix,iy) - temperature(ixp,iy)) / dxc(ix)
+        ! Temperature at the x boundaries in the cell above
+        tb_p = 0.5_num * (temperature(ix,iyp) + temperature(ixp,iyp))
+        ! Temperature at the x boundaries in the cell below
+        tb_m = 0.5_num * (temperature(ix,iym) + temperature(ixp,iym))
+        ! X temperature gradient at the x boundaries of the current cell
+        tg = (temperature(ix,iy) - temperature(ixp,iy)) / dxc(ix)
         ! Y temperature gradient at the x boundaries of the current cell
         ! Uses centred difference on averaged values, so likely very smoothed
-        tg_a1 = (tb_p1 - tb_m1) / (dyc(iy) + dyc(iym))
-        tg_a2 = (tb_p2 - tb_m2) / (dyc(iy) + dyc(iym))
+        tg_a = (tb_p - tb_m) / (dyc(iy) + dyc(iym))
 
-        fc_sp1 = kappa_0 * tb1**pow / (modb1**2 + min_b) &
-            * (bx(ixm,iy) * (tg1 * bx(ixm,iy) + tg_a1 * byf1) + tg1 * min_b)
-        fc_sp2 = kappa_0 * tb2**pow / (modb2**2 + min_b) &
-            * (bx(ix ,iy) * (tg2 * bx(ix ,iy) + tg_a2 * byf2) + tg2 * min_b)
+        fc_sp = kappa_0 * tb**pow / (modb**2 + min_b) &
+            * (bx(ix ,iy) * (tg * bx(ix ,iy) + tg_a * byf) + tg * min_b)
 
         ! Saturated Conductive Flux
-        rho_b1 = 0.5_num * (rho(ix,iy) + rho(ixm,iy))
-        rho_b2 = 0.5_num * (rho(ix,iy) + rho(ixp,iy))
-        fc_sa1 = 42.85_num * rho_b1 * tb1**1.5_num
-        fc_sa2 = 42.85_num * rho_b2 * tb2**1.5_num  ! 42.85 = SRQT(m_p/m_e)
+        rho_b = 0.5_num * (rho(ix,iy) + rho(ixp,iy))
+        fc_sa = 42.85_num * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
 
         ! Conductive Flux Limiter. Note flux_limiter is inverse of usual
         ! definition here
-        fc1 = 1.0_num / (1.0_num / fc_sp1 + flux_limiter / fc_sa1)
-        fc2 = 1.0_num / (1.0_num / fc_sp2 + flux_limiter / fc_sa2)
+        fc = 1.0_num / (1.0_num / fc_sp + flux_limiter / fc_sa)
 
-        flux(ix,iy) = (fc2 - fc1) / dxb(ix)
+        flux(ix,iy) = flux(ix,iy) + fc / dxb(ix)
+        flux(ixp,iy) = flux(ixp,iy) - fc / dxb(ix)
 
         ! Y flux
-        bxf1 = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iyp) + bx(ixm,iyp))
-        bxf2 = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iym) + bx(ixm,iym))
-        bzf1 = 0.5_num * (bz(ix,iy) + bz(ix,iym))
-        bzf2 = 0.5_num * (bz(ix,iy) + bz(ix,iyp))
-        modb1 = SQRT(by(ix,iy )**2 + bxf1**2 + bzf1**2)
-        modb2 = SQRT(by(ix,iym)**2 + bxf2**2 + bzf2**2)
+        bxf = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iym) + bx(ixm,iym))
+        bzf = 0.5_num * (bz(ix,iy) + bz(ix,iyp))
+        modb = SQRT(by(ix,iym)**2 + bxf**2 + bzf**2)
 
         ! Braginskii Conductive Flux
-        tb1 = 0.5_num * (temperature(ix,iy) + temperature(ix,iym))
-        tb2 = 0.5_num * (temperature(ix,iy) + temperature(ix,iyp))
+        tb = 0.5_num * (temperature(ix,iy) + temperature(ix,iyp))
 
-        ! Temperature at the y boundaries in the cell right		
-        tb_p1 = 0.5_num * (temperature(ixp,iy) + temperature(ixp,iym))
-        tb_p2 = 0.5_num * (temperature(ixp,iy) + temperature(ixp,iyp))
-        ! Temperature at the y boundaries in the cell left		
-        tb_m1 = 0.5_num * (temperature(ixm,iy) + temperature(ixm,iym))
-        tb_m2 = 0.5_num * (temperature(ixm,iy) + temperature(ixm,iyp))
-        ! Y temperature gradient at the y boundaries of the current cell		
-        tg1 = (temperature(ix,iy) - temperature(ix,iym)) / dyc(iym)
-        tg2 = (temperature(ix,iy) - temperature(ix,iyp)) / dyc(iy )
+        ! Temperature at the y boundaries in the cell right
+        tb_p = 0.5_num * (temperature(ixp,iy) + temperature(ixp,iyp))
+        ! Temperature at the y boundaries in the cell left
+        tb_m = 0.5_num * (temperature(ixm,iy) + temperature(ixm,iyp))
+        ! Y temperature gradient at the y boundaries of the current cell
+        tg = (temperature(ix,iy) - temperature(ix,iyp)) / dyc(iy)
         ! X temperature gradient at the y boundaries of the current cell
         ! Uses centred difference on averaged values, so likely very smoothed
-        tg_a1 = (tb_p1 - tb_m1) / (dxc(ix) + dxc(ixm))
-        tg_a2 = (tb_p2 - tb_m2) / (dxc(ix) + dxc(ixm))
+        tg_a = (tb_p - tb_m) / (dxc(ix) + dxc(ixm))
 
-        fc_sp1 = kappa_0 * tb1**pow / (modb1**2 + min_b) &
-            * (by(ix,iym) * (tg1 * by(ix,iym) + tg_a1 * bxf1) + min_b * tg1)
-        fc_sp2 = kappa_0 * tb2**pow / (modb2**2 + min_b) &
-            * (by(ix,iy ) * (tg2 * by(ix,iy ) + tg_a2 * bxf2) + min_b * tg2)
+        fc_sp = kappa_0 * tb**pow / (modb**2 + min_b) &
+            * (by(ix,iy ) * (tg * by(ix,iy ) + tg_a * bxf) + min_b * tg)
 
         ! Saturated Conductive Flux
-        rho_b1 = 0.5_num * (rho(ix,iy) + rho(ix,iym))
-        rho_b2 = 0.5_num * (rho(ix,iy) + rho(ix,iyp))
-        fc_sa1 = 42.85_num * rho_b1 * tb1**1.5_num
-        fc_sa2 = 42.85_num * rho_b2 * tb2**1.5_num  ! 42.85 = SRQT(m_p/m_e)
+        rho_b = 0.5_num * (rho(ix,iy) + rho(ix,iyp))
+        fc_sa = 42.85_num * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
 
         ! Conductive Flux Limiter
-        fc1 = 1.0_num / (1.0_num / fc_sp1 + flux_limiter / fc_sa1)
-        fc2 = 1.0_num / (1.0_num / fc_sp2 + flux_limiter / fc_sa2)
+        fc = 1.0_num / (1.0_num / fc_sp + flux_limiter / fc_sa)
 
-        flux(ix,iy) = flux(ix,iy) + (fc2 - fc1) / dyb(iy)
+        flux(ix,iy) = flux(ix,iy) + fc / dyb(iy)
+        flux(ix,iyp) = flux(ix,iyp) - fc / dyb(iy)
       END DO
     END DO
+
+    !Send and add the flux on the x face
+    ALLOCATE(temp(-1:ny+2))
+    temp=0.0_num
+    CALL MPI_SENDRECV(flux(nx+1,:),(ny+4),mpireal,&
+        proc_x_max,tag,temp,(ny+4),mpireal, &
+        proc_x_min,tag, comm, status, errcode)
+    flux(1,:)=flux(1,:)+temp
+    DEALLOCATE(temp)
+
+    !Send and add the flux on the y face
+    ALLOCATE(temp(-1:nx+2))
+    temp=0.0_num
+    CALL MPI_SENDRECV(flux(:,ny+1),(nx+4),mpireal,&
+        proc_y_max,tag,temp,(nx+4),mpireal, &
+        proc_y_min,tag, comm, status, errcode)
+    flux(:,1)=flux(:,1)+temp
+    DEALLOCATE(temp)
 
   END SUBROUTINE heat_flux
 
