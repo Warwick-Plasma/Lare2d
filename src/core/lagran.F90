@@ -798,9 +798,9 @@ CONTAINS
     ALLOCATE( c3(0:nx,0:ny),  c4(0:nx,0:ny))
 #endif
 
-    bx1 = bx(0:nx+1,0:ny+1)
-    by1 = by(0:nx+1,0:ny+1)
-    bz1 = bz(0:nx+1,0:ny+1)
+    bx1 = bx(-1:nx+2,-1:ny+2)
+    by1 = by(-1:nx+2,-1:ny+2)
+    bz1 = bz(-1:nx+2,-1:ny+2)
 
     ! Step 1
     CALL rkstep
@@ -937,6 +937,19 @@ CONTAINS
     DEALLOCATE(k1x, k2x, k3x, k4x, k1y, k2y, k3y, k4y, k1z, k2z, k3z, k4z)
     DEALLOCATE(c1, c2, c3, c4)
 #endif
+
+    DO iy = -1, ny + 2
+      iym = iy - 1
+      DO ix = -1, nx + 2
+        ixm = ix - 1
+        bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
+        by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
+        bz1(ix,iy) = bz(ix,iy)
+
+        pressure(ix,iy) = (gamma - 1.0_num) * rho(ix,iy) &
+            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
+      END DO
+    END DO
 
   END SUBROUTINE resistive_effects
 
