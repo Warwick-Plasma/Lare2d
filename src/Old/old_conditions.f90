@@ -448,7 +448,7 @@ SUBROUTINE set_initial_conditions
 
     IF (eos_number /= EOS_IDEAL) THEN
       DO iy = 0, ny_global
-        xi_v = get_neutral(temp_ref(iy), rho_ref(iy), yb_global(iy))
+        xi_v = get_neutral(temp_ref(iy), rho_ref(iy))
         r1 = mu_m(iy)
         mu_m(iy) = 1.0_num / (2.0_num - xi_v)
         maxerr = MAX(maxerr, ABS(mu_m(iy) - r1))
@@ -478,7 +478,7 @@ SUBROUTINE set_initial_conditions
       bx(ix,iy) = mag_ref(iy1)
 
       IF (eos_number /= EOS_IDEAL) THEN
-        xi_v = get_neutral(energy(ix,iy), rho(ix,iy), yb(iy))
+        xi_v = get_neutral(energy(ix,iy), rho(ix,iy))
       ELSE
         IF (neutral_gas) THEN
           xi_v = 1.0_num

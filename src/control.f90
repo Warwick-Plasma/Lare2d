@@ -56,15 +56,15 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 800
-    ny_global = 4
+    nx_global = 4
+    ny_global = 400
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
     nsteps = -1
 
     ! The maximum runtime of the code
-    t_end = 0.1_num
+    t_end = 1.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 1.0_num
@@ -86,7 +86,7 @@ CONTAINS
 
     ! The length of the domain in the y direction
     y_min = 0.0_num
-    y_max = 1.0_num
+    y_max = 15.0_num
     ! Should the y grid be stretched or uniform
     y_stretch = .FALSE.
 
@@ -151,10 +151,10 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Reimann far-field characteristic boundary conditions
     ! BC_OTHER    - Other boundary conditions specified in "boundary.f90"
-    xbc_min = BC_OTHER
-    xbc_max = BC_OTHER
-    ybc_min = BC_PERIODIC
-    ybc_max = BC_PERIODIC
+    xbc_min = BC_PERIODIC
+    xbc_max = BC_PERIODIC
+    ybc_min = BC_OTHER
+    ybc_max = BC_OTHER
 
     ! Set to true to turn on routine for damped boundaries.
     ! These routines are in boundary.f90 and you should check that they
