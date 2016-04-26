@@ -251,6 +251,8 @@ CONTAINS
       END DO
     END DO
     
+    CALL remap_v_bcs
+
     ! Finally correct density and energy to final values
     DO iy = 1, ny
       iym = iy - 1
