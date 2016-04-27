@@ -355,9 +355,10 @@ CONTAINS
         dx = dxb(ix)
         dxp = dxb(ixp)
         dxm = dxb(ixm)
+        ! dv in direction of dS, i.e. dv.dS / abs(dS)
         dvdots = - (vx1(i1,j1) - vx1(i2,j2))
         ! Force on node is alpha*dv*ds but store only alpha and convert to force
-        ! when needed. Here alpha = q_kur*(1-psi)
+        ! when needed.  
         alpha1(ix,iy) = edge_viscosity()
       END DO
     END DO
@@ -392,20 +393,24 @@ CONTAINS
       DO ix = 0, nx + 1 
         ixm = ix - 1
         ixp = ix + 1
-        ! Estimate p_visc based on q_kur*(1-psi), i.e. alpha, for timestep
-        ! control
-        p_visc(ix,iy) = -  alpha1(ix,iy) - alpha2(ix,iy)
-        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iyp) - alpha2(ixm,iy)
+        ! Estimate p_visc based on alpha * dv, for timestep control
+        a1 = ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
+              + (vy1(ixm,iym) - vy1(ix ,iym))**2 + (vz1(ixm,iym) - vz1(ix ,iym))**2) 
+        a2 = ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
+              + (vy1(ix ,iym) - vy1(ix ,iy ))**2 + (vz1(ix ,iym) - vz1(ix ,iy ))**2)
+        a3 = ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
+              + (vy1(ix ,iy ) - vy1(ixm,iy ))**2 + (vz1(ix ,iy ) - vz1(ixm,iy ))**2) 
+        a4 = ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
+              + (vy1(ixm,iy ) - vy1(ixm,iym))**2 + (vz1(ixm,iy ) - vz1(ixm,iym))**2)
+
+        p_visc(ix,iy) = - alpha1(ix,iy)*SQRT(a1) - alpha2(ix,iy)*SQRT(a2)
+        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iyp)*SQRT(a3) - alpha2(ixm,iy)*SQRT(a4)
 
         visc_heat(ix,iy) = &
-            - 0.5_num * dyb(iy) * alpha1(ix,iy) * ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
-                             + (vy1(ixm,iym) - vy1(ix ,iym))**2 + (vz1(ixm,iym) - vz1(ix ,iym))**2) &
-            - 0.5_num * dxb(ix) * alpha2(ix,iy) * ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
-                             + (vy1(ix ,iym) - vy1(ix ,iy ))**2 + (vz1(ix ,iym) - vz1(ix ,iy ))**2) &
-            - 0.5_num * dyb(iy) * alpha1(ix,iyp) * ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
-                             + (vy1(ix ,iy ) - vy1(ixm,iy ))**2 + (vz1(ix ,iy ) - vz1(ixm,iy ))**2) &
-            - 0.5_num * dxb(ix) * alpha2(ixm,iy) * ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
-                             + (vy1(ixm,iy ) - vy1(ixm,iym))**2 + (vz1(ixm,iy ) - vz1(ixm,iym))**2)
+            - 0.5_num * dyb(iy) * alpha1(ix,iy) * a1 &
+            - 0.5_num * dxb(ix) * alpha2(ix,iy) * a2 &
+            - 0.5_num * dyb(iy) * alpha1(ix,iyp) * a3 &
+            - 0.5_num * dxb(ix) * alpha2(ixm,iy) * a4
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
@@ -450,14 +455,13 @@ CONTAINS
 
     DOUBLE PRECISION FUNCTION edge_viscosity()
 
-      ! Actually returns q_kur*(1-psi)*(dvu.ds)
-      ! where dvu is unit vector in direction of dv
+      ! Actually returns q_k_bar = q_kur*(1-psi) / abs(dv)
       ! Other symbols follow notation in Caramana
 
       REAL(num) :: dvx, dvy, dvz, dv, dv2
       REAL(num) :: dvxm, dvxp, dvym, dvyp, dvzm, dvzp
       REAL(num) :: rl, rr, psi
-      REAL(num) :: rho_edge, cs_edge, q_kur
+      REAL(num) :: rho_edge, cs_edge, q_k_bar
 
       dvdots = MIN(0.0_num, dvdots)
       rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) &
@@ -485,12 +489,14 @@ CONTAINS
         dvdots = dvdots / dv
       END IF
 
-      q_kur = rho_edge &
+      ! Find q_kur / abs(dv)
+      q_k_bar = rho_edge &
           * (visc2_norm * dv + SQRT(visc2_norm**2 * dv2 + (visc1 * cs_edge)**2))
 
       psi = MIN(0.5_num * (rr + rl), 2.0_num * rl, 2.0_num * rr, 1.0_num)
       psi = MAX(0.0_num, psi)
-      edge_viscosity = q_kur * (1.0_num - psi) * dvdots
+
+      edge_viscosity = q_k_bar * (1.0_num - psi) * dvdots
 
     END FUNCTION edge_viscosity
 
