@@ -574,7 +574,7 @@ CONTAINS
 
     REAL(num) :: vxbm, vxbp, avxm, avxp, dvx, ax
     REAL(num) :: vybm, vybp, avym, avyp, dvy, ay
-    REAL(num) :: cs, cs2, area, rho0, length
+    REAL(num) :: cs, cs2, c_visc2, area, rho0, length
     REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
@@ -604,13 +604,16 @@ CONTAINS
         w1 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         ! Sound speed squared
         rho0 = MAX(rho(ix,iy), none_zero)
-        cs2 = (gamma * pressure(ix,iy))/ rho0
-        w2 = SQRT(cs2)
+        cs2 = (gamma * pressure(ix,iy) + w1)/ rho0
 
+        !effective speed from viscous pressure
+        c_visc2 = p_visc(ix,iy) / rho0
+
+        ! length based on simple DYNA2D estimates
         length = dxb(ix) * dyb(iy) / SQRT(dxb(ix)**2 + dyb(iy)**2)
 
         ! Find ideal MHD CFL limit for Lagrangian step
-        dt1 = length / (w2 + SQRT(cs2 + p_visc(ix,iy)/rho0))
+        dt1 = length / (SQRT(c_visc2) + SQRT(cs2 + c_visc2))
         dt_local = MIN(dt_local, dt1)
 
         ! Now find dt for remap step
