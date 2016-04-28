@@ -133,6 +133,12 @@ DEFINES := $(DEFINE)
 # The following are a list of pre-processor defines which can be added to
 # the above line modifying the code behaviour at compile time.
 
+# Uncomment the following line to run with limiters on shock viscosity
+#DEFINES += $(D)SHOCKLIMITER
+
+# Uncomment the following line to allow shock viscosity in expanding shocks
+#DEFINES += $(D)EXPANDINGSHOCK
+
 # Uncomment the following line to run in single precision
 #DEFINES += $(D)SINGLE
 

@@ -83,7 +83,7 @@ CONTAINS
     vy1 = vy
     vz1 = vz
 
-    CALL viscosity
+    CALL shock_viscosity
     CALL set_dt
     dt2 = dt * 0.5_num
 
@@ -237,7 +237,7 @@ CONTAINS
     bx1 = bx1 / cv1
     by1 = by1 / cv1
     bz1 = bz1 / cv1
-    CALL viscosity
+    CALL shock_viscosity
 
     DO iy = 0, ny
       DO ix = 0, nx
@@ -294,7 +294,7 @@ CONTAINS
   ! magnetic field
   !****************************************************************************
 
-  SUBROUTINE viscosity
+  SUBROUTINE shock_viscosity
 
     REAL(num) :: dvdots, dx, dxm, dxp
     REAL(num) :: b2, rmin
@@ -463,44 +463,57 @@ CONTAINS
       REAL(num) :: rl, rr, psi
       REAL(num) :: rho_edge, cs_edge, q_k_bar
 
+#ifdef EXPANDINGSHOCK 
+      ! Allow shock viscoity on expanding edge
+      dvdots = -ABS(dvdots)
+#else
+      ! Turn off shock viscoity if cell edge expanding
       dvdots = MIN(0.0_num, dvdots)
+#endif
+
       rho_edge = 2.0_num * rho_v(i1,j1) * rho_v(i2,j2) &
           / (rho_v(i1,j1) + rho_v(i2,j2))
       cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
+
       dvx = vx1(i1,j1) - vx1(i2,j2)
-      dvxm = vx1(i0,j0) - vx1(i1,j1)
-      dvxp = vx1(i2,j2) - vx1(i3,j3)
       dvy = vy1(i1,j1) - vy1(i2,j2)
-      dvym = vy1(i0,j0) - vy1(i1,j1)
-      dvyp = vy1(i2,j2) - vy1(i3,j3)
       dvz = vz1(i1,j1) - vz1(i2,j2)
-      dvzm = vz1(i0,j0) - vz1(i1,j1)
-      dvzp = vz1(i2,j2) - vz1(i3,j3)
       dv2 = dvx**2 + dvy**2 + dvz**2
       dv = SQRT(dv2)
+      psi = 0.0_num
+      IF (dv * dt / dx < 1.e-14_num) THEN
+        dvdots = 0.0_num
+      ELSE
+        dvdots = dvdots / dv
+      END IF
 
+#ifdef SHOCKLIMITER
+      dvxm = vx1(i0,j0) - vx1(i1,j1)
+      dvxp = vx1(i2,j2) - vx1(i3,j3)
+      dvym = vy1(i0,j0) - vy1(i1,j1)
+      dvyp = vy1(i2,j2) - vy1(i3,j3)
+      dvzm = vz1(i0,j0) - vz1(i1,j1)
+      dvzp = vz1(i2,j2) - vz1(i3,j3)
       IF (dv * dt / dx < 1.e-14_num) THEN
         rl = 1.0_num
         rr = 1.0_num
-        dvdots = 0.0_num
       ELSE
         rl = (dvxp * dvx + dvyp * dvy + dvzp * dvz) * dx / (dxp * dv2)
         rr = (dvxm * dvx + dvym * dvy + dvzm * dvz) * dx / (dxm * dv2)
-        dvdots = dvdots / dv
       END IF
+      psi = MIN(0.5_num * (rr + rl), 2.0_num * rl, 2.0_num * rr, 1.0_num)
+      psi = MAX(0.0_num, psi)
+#endif
 
       ! Find q_kur / abs(dv)
       q_k_bar = rho_edge &
           * (visc2_norm * dv + SQRT(visc2_norm**2 * dv2 + (visc1 * cs_edge)**2))
 
-      psi = MIN(0.5_num * (rr + rl), 2.0_num * rl, 2.0_num * rr, 1.0_num)
-      psi = MAX(0.0_num, psi)
-
       edge_viscosity = q_k_bar * (1.0_num - psi) * dvdots
 
     END FUNCTION edge_viscosity
 
-  END SUBROUTINE viscosity
+  END SUBROUTINE shock_viscosity
 
 
 
