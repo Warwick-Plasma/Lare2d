@@ -79,10 +79,6 @@ CONTAINS
       END DO
     END DO
 
-    vx1 = vx
-    vy1 = vy
-    vz1 = vz
-
     CALL shock_viscosity
     CALL set_dt
     dt2 = dt * 0.5_num
@@ -237,14 +233,11 @@ CONTAINS
     bx1 = bx1 / cv1
     by1 = by1 / cv1
     bz1 = bz1 / cv1
-    CALL shock_viscosity
+    CALL shock_heating
 
     DO iy = 0, ny
       DO ix = 0, nx
         ! Velocity at the end of the Lagrangian step
-        vx1(ix,iy) = vx(ix,iy) + dt2 * (fx_visc(ix,iy) + fx(ix,iy)) / rho_v(ix,iy)
-        vy1(ix,iy) = vy(ix,iy) + dt2 * (fy_visc(ix,iy) + fy(ix,iy)) / rho_v(ix,iy)
-        vz1(ix,iy) = vz(ix,iy) + dt2 * (fz_visc(ix,iy) + fz(ix,iy)) / rho_v(ix,iy)        
         vx(ix,iy) = vx(ix,iy) + dt * (fx_visc(ix,iy) + fx(ix,iy)) / rho_v(ix,iy)
         vy(ix,iy) = vy(ix,iy) + dt * (fy_visc(ix,iy) + fy(ix,iy)) / rho_v(ix,iy)
         vz(ix,iy) = vz(ix,iy) + dt * (fz_visc(ix,iy) + fz(ix,iy)) / rho_v(ix,iy)
@@ -356,7 +349,7 @@ CONTAINS
         dxp = dxb(ixp)
         dxm = dxb(ixm)
         ! dv in direction of dS, i.e. dv.dS / abs(dS)
-        dvdots = - (vx1(i1,j1) - vx1(i2,j2))
+        dvdots = - (vx(i1,j1) - vx(i2,j2))
         ! Force on node is alpha*dv*ds but store only alpha and convert to force
         ! when needed.  
         alpha1(ix,iy) = edge_viscosity()
@@ -382,7 +375,7 @@ CONTAINS
         dx = dyb(iy)
         dxp = dyb(iyp)
         dxm = dyb(iym)
-        dvdots = - (vy1(i1,j1) - vy1(i2,j2))
+        dvdots = - (vy(i1,j1) - vy(i2,j2))
         alpha2(ix,iy) = edge_viscosity()
       END DO
     END DO
@@ -394,23 +387,23 @@ CONTAINS
         ixm = ix - 1
         ixp = ix + 1
         ! Estimate p_visc based on alpha * dv, for timestep control
-        a1 = ((vx1(ixm,iym) - vx1(ix ,iym))**2  &
-              + (vy1(ixm,iym) - vy1(ix ,iym))**2 + (vz1(ixm,iym) - vz1(ix ,iym))**2) 
-        a2 = ((vx1(ix ,iym) - vx1(ix ,iy ))**2  &
-              + (vy1(ix ,iym) - vy1(ix ,iy ))**2 + (vz1(ix ,iym) - vz1(ix ,iy ))**2)
-        a3 = ((vx1(ix ,iy ) - vx1(ixm,iy ))**2  &
-              + (vy1(ix ,iy ) - vy1(ixm,iy ))**2 + (vz1(ix ,iy ) - vz1(ixm,iy ))**2) 
-        a4 = ((vx1(ixm,iy ) - vx1(ixm,iym))**2  &
-              + (vy1(ixm,iy ) - vy1(ixm,iym))**2 + (vz1(ixm,iy ) - vz1(ixm,iym))**2)
+        a1 = ((vx(ixm,iym) - vx(ix ,iym))**2  &
+              + (vy(ixm,iym) - vy(ix ,iym))**2 + (vz(ixm,iym) - vz(ix ,iym))**2) 
+        a2 = ((vx(ix ,iym) - vx(ix ,iy ))**2  &
+              + (vy(ix ,iym) - vy(ix ,iy ))**2 + (vz(ix ,iym) - vz(ix ,iy ))**2)
+        a3 = ((vx(ix ,iy ) - vx(ixm,iy ))**2  &
+              + (vy(ix ,iy ) - vy(ixm,iy ))**2 + (vz(ix ,iy ) - vz(ixm,iy ))**2) 
+        a4 = ((vx(ixm,iy ) - vx(ixm,iym))**2  &
+              + (vy(ixm,iy ) - vy(ixm,iym))**2 + (vz(ixm,iy ) - vz(ixm,iym))**2)
 
         p_visc(ix,iy) = - alpha1(ix,iy)*SQRT(a1) - alpha2(ix,iy)*SQRT(a2)
         p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iyp)*SQRT(a3) - alpha2(ixm,iy)*SQRT(a4)
 
         visc_heat(ix,iy) = &
-            - 0.5_num * dyb(iy) * alpha1(ix,iy) * a1 &
-            - 0.5_num * dxb(ix) * alpha2(ix,iy) * a2 &
-            - 0.5_num * dyb(iy) * alpha1(ix,iyp) * a3 &
-            - 0.5_num * dxb(ix) * alpha2(ixm,iy) * a4
+            - 0.5_num * dyb(iy) * alpha1(ix ,iy ) * a1 &
+            - 0.5_num * dxb(ix) * alpha2(ix ,iy ) * a2 &
+            - 0.5_num * dyb(iy) * alpha1(ix ,iyp) * a3 &
+            - 0.5_num * dxb(ix) * alpha2(ixm,iy ) * a4
 
         visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
       END DO
@@ -431,20 +424,20 @@ CONTAINS
         a3 = alpha2(ix ,iy ) * dxc(ix)
         a4 = alpha2(ix ,iyp) * dxc(ix)
 
-        fx_visc(ix,iy) = (a1 * (vx1(ix,iy) - vx1(ixm,iy )) &
-                        + a2 * (vx1(ix,iy) - vx1(ixp,iy )) &
-                        + a3 * (vx1(ix,iy) - vx1(ix ,iym)) &
-                        + a4 * (vx1(ix,iy) - vx1(ix ,iyp)) ) / cv_v(ix,iy)
+        fx_visc(ix,iy) = (a1 * (vx(ix,iy) - vx(ixm,iy )) &
+                        + a2 * (vx(ix,iy) - vx(ixp,iy )) &
+                        + a3 * (vx(ix,iy) - vx(ix ,iym)) &
+                        + a4 * (vx(ix,iy) - vx(ix ,iyp)) ) / cv_v(ix,iy)
 
-        fy_visc(ix,iy) = (a1 * (vy1(ix,iy) - vy1(ixm,iy )) &
-                        + a2 * (vy1(ix,iy) - vy1(ixp,iy )) &
-                        + a3 * (vy1(ix,iy) - vy1(ix ,iym)) &
-                        + a4 * (vy1(ix,iy) - vy1(ix ,iyp)) ) / cv_v(ix,iy)
+        fy_visc(ix,iy) = (a1 * (vy(ix,iy) - vy(ixm,iy )) &
+                        + a2 * (vy(ix,iy) - vy(ixp,iy )) &
+                        + a3 * (vy(ix,iy) - vy(ix ,iym)) &
+                        + a4 * (vy(ix,iy) - vy(ix ,iyp)) ) / cv_v(ix,iy)
 
-        fz_visc(ix,iy) = (a1 * (vz1(ix,iy) - vz1(ixm,iy )) &
-                        + a2 * (vz1(ix,iy) - vz1(ixp,iy )) &
-                        + a3 * (vz1(ix,iy) - vz1(ix ,iym)) &
-                        + a4 * (vz1(ix,iy) - vz1(ix ,iyp)) ) / cv_v(ix,iy)
+        fz_visc(ix,iy) = (a1 * (vz(ix,iy) - vz(ixm,iy )) &
+                        + a2 * (vz(ix,iy) - vz(ixp,iy )) &
+                        + a3 * (vz(ix,iy) - vz(ix ,iym)) &
+                        + a4 * (vz(ix,iy) - vz(ix ,iyp)) ) / cv_v(ix,iy)
 
       END DO
     END DO
@@ -475,9 +468,9 @@ CONTAINS
           / (rho_v(i1,j1) + rho_v(i2,j2))
       cs_edge = MIN(cs_v(i1,j1), cs_v(i2,j2))
 
-      dvx = vx1(i1,j1) - vx1(i2,j2)
-      dvy = vy1(i1,j1) - vy1(i2,j2)
-      dvz = vz1(i1,j1) - vz1(i2,j2)
+      dvx = vx(i1,j1) - vx(i2,j2)
+      dvy = vy(i1,j1) - vy(i2,j2)
+      dvz = vz(i1,j1) - vz(i2,j2)
       dv2 = dvx**2 + dvy**2 + dvz**2
       dv = SQRT(dv2)
       psi = 0.0_num
@@ -488,12 +481,12 @@ CONTAINS
       END IF
 
 #ifdef SHOCKLIMITER
-      dvxm = vx1(i0,j0) - vx1(i1,j1)
-      dvxp = vx1(i2,j2) - vx1(i3,j3)
-      dvym = vy1(i0,j0) - vy1(i1,j1)
-      dvyp = vy1(i2,j2) - vy1(i3,j3)
-      dvzm = vz1(i0,j0) - vz1(i1,j1)
-      dvzp = vz1(i2,j2) - vz1(i3,j3)
+      dvxm = vx(i0,j0) - vx(i1,j1)
+      dvxp = vx(i2,j2) - vx(i3,j3)
+      dvym = vy(i0,j0) - vy(i1,j1)
+      dvyp = vy(i2,j2) - vy(i3,j3)
+      dvzm = vz(i0,j0) - vz(i1,j1)
+      dvzp = vz(i2,j2) - vz(i3,j3)
       IF (dv * dt / dx < 1.e-14_num) THEN
         rl = 1.0_num
         rr = 1.0_num
@@ -514,6 +507,53 @@ CONTAINS
     END FUNCTION edge_viscosity
 
   END SUBROUTINE shock_viscosity
+
+
+
+  SUBROUTINE shock_heating
+
+    REAL(num) :: dvdots, dx, dxm, dxp
+    REAL(num) :: b2, rmin
+    REAL(num) :: a1, a2, a3, a4
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
+    INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
+    LOGICAL, SAVE :: first_call = .TRUE.
+
+    visc_heat = 0.0_num
+
+    DO iy = 0, ny + 1 
+      iym = iy - 1
+      iyp = iy + 1
+      DO ix = 0, nx + 1 
+        ixm = ix - 1
+        ixp = ix + 1
+        ! Estimate p_visc based on alpha * dv, for timestep control
+        a1 =  (vx(ixm,iym) - vx(ix ,iym))*(vx1(ixm,iym) - vx1(ix ,iym)) &
+            + (vy(ixm,iym) - vy(ix ,iym))*(vy1(ixm,iym) - vy1(ix ,iym)) &
+            + (vz(ixm,iym) - vz(ix ,iym))*(vz1(ixm,iym) - vz1(ix ,iym)) 
+        a2 =  (vx(ix ,iym) - vx(ix ,iy ))*(vx1(ix ,iym) - vx1(ix ,iy )) &
+            + (vy(ix ,iym) - vy(ix ,iy ))*(vy1(ix ,iym) - vy1(ix ,iy )) &
+            + (vz(ix ,iym) - vz(ix ,iy ))*(vz1(ix ,iym) - vz1(ix ,iy ))
+        a3 =  (vx(ix ,iy ) - vx(ixm,iy ))*(vx1(ix ,iy ) - vx1(ixm,iy )) &
+            + (vy(ix ,iy ) - vy(ixm,iy ))*(vy1(ix ,iy ) - vy1(ixm,iy )) &
+            + (vz(ix ,iy ) - vz(ixm,iy ))*(vz1(ix ,iy ) - vz1(ixm,iy ))
+        a4 =  (vx(ixm,iy ) - vx(ixm,iym))*(vx1(ixm,iy ) - vx1(ixm,iym)) &
+            + (vy(ixm,iy ) - vy(ixm,iym))*(vy1(ixm,iy ) - vy1(ixm,iym)) &
+            + (vz(ixm,iy ) - vz(ixm,iym))*(vz1(ixm,iy ) - vz1(ixm,iym))
+
+        visc_heat(ix,iy) = &
+            - 0.5_num * dyb(iy) * alpha1(ix,iy) * a1 &
+            - 0.5_num * dxb(ix) * alpha2(ix,iy) * a2 &
+            - 0.5_num * dyb(iy) * alpha1(ix,iyp) * a3 &
+            - 0.5_num * dxb(ix) * alpha2(ixm,iy) * a4
+
+        visc_heat(ix,iy) = visc_heat(ix,iy) / cv(ix,iy)
+      END DO
+    END DO
+
+    visc_heat = MAX(visc_heat, 0.0_num)
+
+  END SUBROUTINE shock_heating
 
 
 
