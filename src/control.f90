@@ -68,9 +68,7 @@ CONTAINS
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.2_num
-    visc2 = 0.5_num
-    ! Real viscosity expressed as the inverse Reynolds number
-    visc3 = 0.0_num
+    visc2 = 1.0_num
 
     ! Set these constants to manually override the domain decomposition.
     ! If either constant is set to zero then the code will try to automatically
