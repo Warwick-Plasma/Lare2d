@@ -76,12 +76,12 @@ SUBROUTINE set_initial_conditions
     ! typically run with 800 points until t=0.1
     !normalised equations
 
-    gamma = 5.0_num / 3.0_num
+    gamma = 1.4_num
 
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num
-    bx =  0.75_num
+    bx = 0.75_num
     by = 0.0_num
     bz = 0.0_num
 
