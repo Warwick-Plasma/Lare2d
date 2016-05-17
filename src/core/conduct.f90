@@ -285,41 +285,41 @@ CONTAINS
 
 
 
-  SUBROUTINE rad_losses(density, temperature, xi, height, rad)
+!   SUBROUTINE rad_losses(density, temperature, xi, height, rad)
 
-    ! Returns the normalised RTV losses
+!     ! Returns the normalised RTV losses
 
-    REAL(num), INTENT(IN) :: density, temperature, xi, height
-    REAL(num), INTENT(OUT) :: rad
-    REAL(num), DIMENSION(7) :: trange = (/0.02_num, 0.0398_num, 0.0794_num, &
-        0.251_num, 0.562_num, 1.995_num, 10.0_num/)
-    REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, &
-        0.3467_num, 1.0_num, 1.6218_num/)
-    REAL(num), DIMENSION(6) :: alpha = (/0.0_num, 2.0_num, 0.0_num, &
-        -2.0_num, 0.0_num, -2.0_num / 3.0_num/)
-    REAL(num) :: tmk, factor
-    INTEGER :: i
+!     REAL(num), INTENT(IN) :: density, temperature, xi, height
+!     REAL(num), INTENT(OUT) :: rad
+!     REAL(num), DIMENSION(7) :: trange = (/0.02_num, 0.0398_num, 0.0794_num, &
+!         0.251_num, 0.562_num, 1.995_num, 10.0_num/)
+!     REAL(num), DIMENSION(6) :: psi = (/1.2303_num, 870.96_num, 5.496_num, &
+!         0.3467_num, 1.0_num, 1.6218_num/)
+!     REAL(num), DIMENSION(6) :: alpha = (/0.0_num, 2.0_num, 0.0_num, &
+!         -2.0_num, 0.0_num, -2.0_num / 3.0_num/)
+!     REAL(num) :: tmk, factor
+!     INTEGER :: i
 
-    rad = 0.0_num
+!     rad = 0.0_num
 
-    IF (.NOT. radiation) RETURN
-    IF (height < 1.0_num) RETURN
+!     IF (.NOT. radiation) RETURN
+!     IF (height < 1.0_num) RETURN
 
-    tmk = temperature * t2tmk
-    IF (tmk < trange(1) .OR. tmk > trange(7)) RETURN
+!     tmk = temperature * t2tmk
+!     IF (tmk < trange(1) .OR. tmk > trange(7)) RETURN
 
-    DO i = 1, 6
-      IF (tmk >= trange(i) .AND. tmk <= trange(i+1)) EXIT
-    END DO
+!     DO i = 1, 6
+!       IF (tmk >= trange(i) .AND. tmk <= trange(i+1)) EXIT
+!     END DO
 
-    ! Account for reduced electron number density due to neutrals
-    factor = (1.0_num - xi)**2
-    IF (eos_number == EOS_IDEAL) factor = 1.0_num
+!     ! Account for reduced electron number density due to neutrals
+!     factor = (1.0_num - xi)**2
+!     IF (eos_number == EOS_IDEAL) factor = 1.0_num
 
-    rad = factor * density**2 * psi(i) * tmk**alpha(i)
-    rad = rad * h_star * lr_star
+!     rad = factor * density**2 * psi(i) * tmk**alpha(i)
+!     rad = rad * h_star * lr_star
 
-  END SUBROUTINE rad_losses
+!   END SUBROUTINE rad_losses
 
 
 
