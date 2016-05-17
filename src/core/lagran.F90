@@ -118,6 +118,8 @@ CONTAINS
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
     DEALLOCATE(fx, fy, fz)
+    DEALLOCATE(flux_x, flux_y, flux_z)
+    DEALLOCATE(curlb)
 
     CALL energy_bcs
     CALL density_bcs
@@ -396,8 +398,8 @@ CONTAINS
         a4 = ((vx(ixm,iy ) - vx(ixm,iym))**2  &
               + (vy(ixm,iy ) - vy(ixm,iym))**2 + (vz(ixm,iy ) - vz(ixm,iym))**2)
 
-        p_visc(ix,iy) = - alpha1(ix,iy)*SQRT(a1) - alpha2(ix,iy)*SQRT(a2)
-        p_visc(ix,iy) = p_visc(ix,iy) - alpha1(ix,iyp)*SQRT(a3) - alpha2(ixm,iy)*SQRT(a4)
+        p_visc(ix,iy) = MAX(p_visc(ix,iy), - alpha1(ix,iy)*SQRT(a1)) 
+        p_visc(ix,iy) = MAX(p_visc(ix,iy), - alpha2(ix,iy)*SQRT(a2)) 
 
         visc_heat(ix,iy) = &
             - 0.5_num * dyb(iy) * alpha1(ix ,iy ) * a1 &
@@ -452,9 +454,11 @@ CONTAINS
       ! Other symbols follow notation in Caramana
 
       REAL(num) :: dvx, dvy, dvz, dv, dv2
+#ifdef SHOCKLIMITER      
       REAL(num) :: dvxm, dvxp, dvym, dvyp, dvzm, dvzp
-      REAL(num) :: rl, rr, psi
-      REAL(num) :: rho_edge, cs_edge, q_k_bar
+      REAL(num) :: rl, rr
+#endif
+      REAL(num) :: psi, rho_edge, cs_edge, q_k_bar
 
 #ifdef EXPANDINGSHOCK 
       ! Allow shock viscoity on expanding edge
@@ -512,12 +516,7 @@ CONTAINS
 
   SUBROUTINE shock_heating
 
-    REAL(num) :: dvdots, dx, dxm, dxp
-    REAL(num) :: b2, rmin
     REAL(num) :: a1, a2, a3, a4
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: cs, cs_v
-    INTEGER :: i0, i1, i2, i3, j0, j1, j2, j3
-    LOGICAL, SAVE :: first_call = .TRUE.
 
     visc_heat = 0.0_num
 
@@ -527,7 +526,7 @@ CONTAINS
       DO ix = 0, nx + 1 
         ixm = ix - 1
         ixp = ix + 1
-        ! Estimate p_visc based on alpha * dv, for timestep control
+
         a1 =  (vx(ixm,iym) - vx(ix ,iym))*(vx1(ixm,iym) - vx1(ix ,iym)) &
             + (vy(ixm,iym) - vy(ix ,iym))*(vy1(ixm,iym) - vy1(ix ,iym)) &
             + (vz(ixm,iym) - vz(ix ,iym))*(vz1(ixm,iym) - vz1(ix ,iym)) 
@@ -633,7 +632,7 @@ CONTAINS
 
     REAL(num) :: vxbm, vxbp, avxm, avxp, dvx, ax
     REAL(num) :: vybm, vybp, avym, avyp, dvy, ay
-    REAL(num) :: cs, cs2, c_visc2, area, rho0, length
+    REAL(num) :: cs2, c_visc2, area, rho0, length
     REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
