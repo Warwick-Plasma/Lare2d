@@ -137,7 +137,7 @@ DEFINES := $(DEFINE)
 #DEFINES += $(D)SHOCKLIMITER
 
 # Uncomment the following line to allow shock viscosity in expanding shocks
-#DEFINES += $(D)EXPANDINGSHOCK
+#DEFINES += $(D)SHOCKCOMPRESSION
 
 # Uncomment the following line to run in single precision
 #DEFINES += $(D)SINGLE
