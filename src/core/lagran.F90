@@ -246,7 +246,7 @@ CONTAINS
       END DO
     END DO
     
-    CALL remap_v_bcs
+    CALL velocity_bcs
 
     ! Finally correct density and energy to final values
     DO iy = 1, ny
