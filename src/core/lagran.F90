@@ -128,8 +128,6 @@ CONTAINS
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
     DEALLOCATE(fx, fy, fz)
-    DEALLOCATE(flux_x, flux_y, flux_z)
-    DEALLOCATE(curlb)
 
     CALL energy_bcs
     CALL density_bcs
