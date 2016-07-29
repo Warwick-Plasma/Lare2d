@@ -93,7 +93,7 @@ CONTAINS
         ! Temperature at the x boundaries in the cell below
         tb_m = 0.5_num * (temperature(ix,iym) + temperature(ixp,iym))
         ! X temperature gradient at the x boundaries of the current cell
-        tg = (temperature(ix,iy) - temperature(ixp,iy)) / dxc(ix)
+        tg = (temperature(ixp,iy) - temperature(ix,iy)) / dxc(ix)
         ! Y temperature gradient at the x boundaries of the current cell
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dyc(iy) + dyc(iym))
@@ -125,7 +125,7 @@ CONTAINS
         ! Temperature at the y boundaries in the cell left
         tb_m = 0.5_num * (temperature(ixm,iy) + temperature(ixm,iyp))
         ! Y temperature gradient at the y boundaries of the current cell
-        tg = (temperature(ix,iy) - temperature(ix,iyp)) / dyc(iy)
+        tg = (temperature(ix,iyp) - temperature(ix,iy)) / dyc(iy)
         ! X temperature gradient at the y boundaries of the current cell
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dxc(ix) + dxc(ixm))
@@ -174,6 +174,7 @@ CONTAINS
 
   SUBROUTINE conduct_heat
 
+    kappa_0 = 1.0_num
     CALL s_stages
     CALL heat_conduct_sts2
 
