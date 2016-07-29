@@ -107,6 +107,16 @@ CONTAINS
         IF (resistive_mhd) CALL resistive_effects
       END DO
 
+      DO iy = -1, ny + 2
+        iym = iy - 1
+        DO ix = -1, nx + 2
+          ixm = ix - 1
+          bx1(ix,iy) = (bx(ix,iy) + bx(ixm,iy )) * 0.5_num
+          by1(ix,iy) = (by(ix,iy) + by(ix ,iym)) * 0.5_num
+          bz1(ix,iy) = bz(ix,iy)
+        END DO
+      END DO
+
       dt = actual_dt
     END IF
 
