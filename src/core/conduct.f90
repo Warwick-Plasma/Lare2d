@@ -109,8 +109,8 @@ CONTAINS
         ! definition here
         fc = fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
 
-        flux(ix,iy) = flux(ix,iy) + fc / dxb(ix)
-        flux(ixp,iy) = flux(ixp,iy) - fc / dxb(ix)
+        flux(ix,iy) = flux(ix,iy) - fc / dxb(ix)
+        flux(ixp,iy) = flux(ixp,iy) + fc / dxb(ix)
 
         ! Y flux
         bxf = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iym) + bx(ixm,iym))
