@@ -115,7 +115,7 @@ CONTAINS
     ! Fraction of free streaming heat flux used in limiter.
     ! Set to any number larger than 10 to turn off limiter
     ! See after_control in setup.F90
-    flux_limiter = 0.05_num
+    flux_limiter = 20.0_num
 
     ! Use radiation as specified in SUBROUTINE rad_losses
     ! in src/core/conduct.f90
