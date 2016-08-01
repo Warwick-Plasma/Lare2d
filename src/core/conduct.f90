@@ -98,7 +98,7 @@ CONTAINS
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dyc(iy) + dyc(iym))
 
-        fc_sp = kappa_0 * tb**pow / (modb**2 + min_b) &
+        fc_sp = - kappa_0 * tb**pow / (modb**2 + min_b) &
             * (bx(ix ,iy) * (tg * bx(ix ,iy) + tg_a * byf) + tg * min_b)
 
         ! Saturated Conductive Flux
@@ -130,7 +130,7 @@ CONTAINS
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dxc(ix) + dxc(ixm))
 
-        fc_sp = kappa_0 * tb**pow / (modb**2 + min_b) &
+        fc_sp = - kappa_0 * tb**pow / (modb**2 + min_b) &
             * (by(ix,iy ) * (tg * by(ix,iy ) + tg_a * bxf) + min_b * tg)
 
         ! Saturated Conductive Flux
@@ -140,8 +140,8 @@ CONTAINS
         ! Conductive Flux Limiter
         fc = 1.0_num / (1.0_num / fc_sp + flux_limiter / fc_sa)
 
-        flux(ix,iy) = flux(ix,iy) + fc / dyb(iy)
-        flux(ix,iyp) = flux(ix,iyp) - fc / dyb(iy)
+        flux(ix,iy) = flux(ix,iy) - fc / dyb(iy)
+        flux(ix,iyp) = flux(ix,iyp) + fc / dyb(iy)
       END DO
     END DO
 
