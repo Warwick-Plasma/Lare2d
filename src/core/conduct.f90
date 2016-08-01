@@ -107,7 +107,7 @@ CONTAINS
 
         ! Conductive Flux Limiter. Note flux_limiter is inverse of usual
         ! definition here
-        fc = 1.0_num / (1.0_num / fc_sp + flux_limiter / fc_sa)
+        fc = fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
 
         flux(ix,iy) = flux(ix,iy) + fc / dxb(ix)
         flux(ixp,iy) = flux(ixp,iy) - fc / dxb(ix)
@@ -138,7 +138,7 @@ CONTAINS
         fc_sa = 42.85_num * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
 
         ! Conductive Flux Limiter
-        fc = 1.0_num / (1.0_num / fc_sp + flux_limiter / fc_sa)
+        fc = fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
 
         flux(ix,iy) = flux(ix,iy) - fc / dyb(iy)
         flux(ix,iyp) = flux(ix,iyp) + fc / dyb(iy)
@@ -174,7 +174,6 @@ CONTAINS
 
   SUBROUTINE conduct_heat
 
-    kappa_0 = 1.0_num
     CALL s_stages
     CALL heat_conduct_sts2
 
