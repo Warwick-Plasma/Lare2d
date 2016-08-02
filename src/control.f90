@@ -110,12 +110,11 @@ CONTAINS
     ! with steep temperature gradients and very hot regions with
     ! large thermal conductivity. For many problems it is however
     ! fine.
-    conduction = .FALSE.
+    conduction = .TRUE.
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit
-    ! Fraction of free streaming heat flux used in limiter.
-    ! Set to any number larger than 10 to turn off limiter
-    ! See after_control in setup.F90
-    flux_limiter = 20.0_num
+    heat_flux_limiter = .TRUE.
+    ! Fraction of free streaming heat flux used if limiter on
+    flux_limiter = 0.06_num
 
     ! Use radiation as specified in SUBROUTINE rad_losses
     ! in src/core/conduct.f90

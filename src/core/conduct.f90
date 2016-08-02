@@ -66,9 +66,12 @@ CONTAINS
     INTEGER :: ix, ixp, ixm
     REAL(num) :: tb, tg, fc_sp, rho_b
     REAL(num) :: tg_a, tb_p, tb_m
-    REAL(num) :: fc_sa, fc, modb
+    REAL(num) :: fc_sa, fc, modb, hfl
     REAL(num) :: byf, bxf, bzf
     REAL(num), DIMENSION(:), ALLOCATABLE :: temp
+
+    hfl = 0.0_num
+    IF (heat_flux_limiter) hfl = 1.0_num
 
     flux=0.0_num
     DO iy = 1, ny
@@ -103,11 +106,11 @@ CONTAINS
 
         ! Saturated Conductive Flux
         rho_b = 0.5_num * (rho(ix,iy) + rho(ixp,iy))
-        fc_sa = 42.85_num * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
+        fc_sa = 42.85_num * flux_limiter * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
 
         ! Conductive Flux Limiter. Note flux_limiter is inverse of usual
         ! definition here
-        fc = fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
+        fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
 
         flux(ix,iy) = flux(ix,iy) - fc / dxb(ix)
         flux(ixp,iy) = flux(ixp,iy) + fc / dxb(ix)
@@ -135,10 +138,10 @@ CONTAINS
 
         ! Saturated Conductive Flux
         rho_b = 0.5_num * (rho(ix,iy) + rho(ix,iyp))
-        fc_sa = 42.85_num * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
+        fc_sa = 42.85_num * flux_limiter * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
 
         ! Conductive Flux Limiter
-        fc = fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
+        fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
 
         flux(ix,iy) = flux(ix,iy) - fc / dyb(iy)
         flux(ix,iyp) = flux(ix,iyp) + fc / dyb(iy)
