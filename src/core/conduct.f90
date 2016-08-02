@@ -108,8 +108,7 @@ CONTAINS
         rho_b = 0.5_num * (rho(ix,iy) + rho(ixp,iy))
         fc_sa = 42.85_num * flux_limiter * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
 
-        ! Conductive Flux Limiter. Note flux_limiter is inverse of usual
-        ! definition here
+        ! Conductive Flux Limiter. 
         fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
 
         flux(ix,iy) = flux(ix,iy) - fc / dxb(ix)
