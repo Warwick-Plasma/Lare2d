@@ -74,10 +74,10 @@ CONTAINS
     IF (heat_flux_limiter) hfl = 1.0_num
 
     flux=0.0_num
-    DO iy = 1, ny
+    DO iy = 0, ny
       iyp = iy + 1
       iym = iy - 1
-      DO ix = 1, nx
+      DO ix = 0, nx
         ixp = ix + 1
         ixm = ix - 1
 
@@ -147,24 +147,6 @@ CONTAINS
         flux(ix,iyp) = flux(ix,iyp) + fc / dyb(iy)
       END DO
     END DO
-
-    !Send and add the flux on the x face
-    ALLOCATE(temp(-1:ny+2))
-    temp=0.0_num
-    CALL MPI_SENDRECV(flux(nx+1,:),(ny+4),mpireal,&
-        proc_x_max,tag,temp,(ny+4),mpireal, &
-        proc_x_min,tag, comm, status, errcode)
-    flux(1,:)=flux(1,:)+temp
-    DEALLOCATE(temp)
-
-    !Send and add the flux on the y face
-    ALLOCATE(temp(-1:nx+2))
-    temp=0.0_num
-    CALL MPI_SENDRECV(flux(:,ny+1),(nx+4),mpireal,&
-        proc_y_max,tag,temp,(nx+4),mpireal, &
-        proc_y_min,tag, comm, status, errcode)
-    flux(:,1)=flux(:,1)+temp
-    DEALLOCATE(temp)
 
   END SUBROUTINE heat_flux
 
@@ -281,8 +263,10 @@ CONTAINS
     END DO
 
     energy(1:nx,1:ny) = Y(3,1:nx,1:ny)
-
     CALL energy_bcs
+
+    DEALLOCATE(flux)
+    DEALLOCATE(Y)
 
   END SUBROUTINE heat_conduct_sts2
 
