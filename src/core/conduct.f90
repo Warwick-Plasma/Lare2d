@@ -2,6 +2,7 @@ MODULE conduct
 
   USE shared_data
   USE boundary
+  USE neutral
 
   IMPLICIT NONE
 
@@ -31,7 +32,9 @@ CONTAINS
     DO iy = 1, ny
       DO ix = 1, nx
         ! Estimate explicit thermal conduction time-step
-        temp = gm1 * energy(ix,iy)
+        temp = gm1 * (2.0_num - xi_n(ix,iy)) &
+            *(energy(ix,iy)-(1.0_num - xi_n(ix,iy))&
+            *ionise_pot)
         temp = gm1 * rho(ix,iy) / (kappa_0 * temp**pow)
         dt1 = temp * dxb(ix)**2
         dt2 = temp * dyb(iy)**2
@@ -39,7 +42,7 @@ CONTAINS
       END DO
     END DO
 
-    dt_parab = dt_multiplier * dt_parab
+    dt_parab = dt_multiplier * dt_parab/SQRT(2.0_num)
 
     stages = 0.5_num * (SQRT(9.0_num + 16.0_num * (dt / dt_parab)) - 1.0_num)
     n_s_stages_local = CEILING(stages)
@@ -68,16 +71,15 @@ CONTAINS
     REAL(num) :: tg_a, tb_p, tb_m
     REAL(num) :: fc_sa, fc, modb, hfl
     REAL(num) :: byf, bxf, bzf
-    REAL(num), DIMENSION(:), ALLOCATABLE :: temp
 
     hfl = 0.0_num
     IF (heat_flux_limiter) hfl = 1.0_num
 
     flux=0.0_num
-    DO iy = 1, ny
+    DO iy = 0, ny
       iyp = iy + 1
       iym = iy - 1
-      DO ix = 1, nx
+      DO ix = 0, nx
         ixp = ix + 1
         ixm = ix - 1
 
@@ -147,24 +149,6 @@ CONTAINS
       END DO
     END DO
 
-    !Send and add the flux on the x face
-    ALLOCATE(temp(-1:ny+2))
-    temp=0.0_num
-    CALL MPI_SENDRECV(flux(nx+1,:),(ny+4),mpireal,&
-        proc_x_max,tag,temp,(ny+4),mpireal, &
-        proc_x_min,tag, comm, status, errcode)
-    flux(1,:)=flux(1,:)+temp
-    DEALLOCATE(temp)
-
-    !Send and add the flux on the y face
-    ALLOCATE(temp(-1:nx+2))
-    temp=0.0_num
-    CALL MPI_SENDRECV(flux(:,ny+1),(nx+4),mpireal,&
-        proc_y_max,tag,temp,(nx+4),mpireal, &
-        proc_y_min,tag, comm, status, errcode)
-    flux(:,1)=flux(:,1)+temp
-    DEALLOCATE(temp)
-
   END SUBROUTINE heat_flux
 
 
@@ -192,7 +176,7 @@ CONTAINS
     ! 2nd order Runge-Kutta-Lagrange (RKL2) scheme
     ! Based on Meyer at al. 2012 variables named as in that paper
 
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux, Lc_Y0, temperature
     REAL(num) :: omega_1
     REAL(num), DIMENSION(0:n_s_stages) :: a, b
     REAL(num), DIMENSION(1:n_s_stages) :: mu_tilde
@@ -201,10 +185,11 @@ CONTAINS
     REAL(num), DIMENSION(:,:,:), ALLOCATABLE :: Y
     REAL(num) :: c0, c1, dj, fac
     REAL(num) :: Lc_Yj_1                  ! L^c(Y_j-1)
-    REAL(num), DIMENSION(1:nx,1:ny) :: Lc_Y0    ! L^c(Y_0)
     INTEGER :: j
 
     ALLOCATE(flux(-1:nx+2,-1:ny+2))
+	ALLOCATE(temperature(-1:nx+2,-1:ny+2))
+	ALLOCATE(Lc_Y0(1:nx,1:ny))
     ALLOCATE(Y(0:3,-1:nx+2,-1:ny+2))
     flux = 0.0_num
     Y = 0.0_num
@@ -238,7 +223,12 @@ CONTAINS
 
 
     !! First STS stage
-    CALL heat_flux(Y(0,:,:) * 0.5_num * (gamma - 1.0_num), flux)
+    temperature = (gamma-1.0_num) / &
+        (2.0_num - xi_n) &
+	    *(Y(0,:,:)-(1.0_num - xi_n)&
+	    *ionise_pot)
+
+    CALL heat_flux(temperature, flux)
 
     DO iy = 1, ny
       DO ix = 1, nx
@@ -253,7 +243,12 @@ CONTAINS
     Y(1,1:nx,1:ny) = Y(0,1:nx,1:ny)
 
     DO j = 2, n_s_stages
-      CALL heat_flux(Y(2,:,:) * 0.5_num * (gamma - 1.0_num), flux)
+      temperature = (gamma-1.0_num) / &
+	      (2.0_num - xi_n) &
+		  *(Y(2,:,:)-(1.0_num - xi_n)&
+		  *ionise_pot)
+		  
+      CALL heat_flux(temperature, flux)
 
       DO iy = 1, ny
         DO ix = 1, nx
@@ -274,14 +269,19 @@ CONTAINS
         ! conditions
         energy = Y(3,:,:)
         CALL energy_bcs
+        IF (eos_number /= EOS_IDEAL) CALL neutral_fraction
         Y(2,:,:) = energy
         Y(3,1:nx,1:ny) = 0.0_num
       END IF
     END DO
 
     energy(1:nx,1:ny) = Y(3,1:nx,1:ny)
-
     CALL energy_bcs
+
+    DEALLOCATE(flux)
+    DEALLOCATE(Y)
+	DEALLOCATE(Lc_Y0)
+	DEALLOCATE(temperature)
 
   END SUBROUTINE heat_conduct_sts2
 
