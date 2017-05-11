@@ -25,7 +25,7 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{Version 2.11}
+\date{Version 3.2}
 \maketitle
 
 \thispagestyle{empty}
@@ -53,7 +53,11 @@ This manual should be sufficient to set up {\it LareXd} for any initial conditio
 
 \section{Equations and Normalisation}
 
-{\it LareXd} includes options to run with partially ionised hydrogen and the Hall term (only in 2D). Other options are being added. In order to get used to using the code, and to make the initial description easier, these options are moved to the next section. Here we concentrate just on standard resistive MHD. In almost all cases the code should be run with viscosity, either real or shock viscosity, but how this is treated is postponed until later to keep the first steps easier. In S.I. units the standard resistive MHD equations are
+In order to get used to using the code, and to make the initial description easier, here we concentrate just on
+ standard resistive MHD. In almost all cases the code should be run with 
+ shock viscosity
+ but how this is treated is postponed until later to keep the first steps easier. 
+ In S.I. units the standard resistive MHD equations are
 
 \begin{eqnarray}
 \frac{\partial \rho}{\partial t}&=&- \nabla\cdot(\rho \mathbf{v})\\
@@ -126,32 +130,6 @@ The fact that the thermal pressure is normalised to the reference magnetic press
 -\frac{1}{\rho}\nabla P-\hat{g}
 \end{displaymath}
 where $\hat{g}=L_0 g / v_0^2$. In {\it LareXd} $\hat{g}$ is only a function of $z$, i.e. it is a 1D array, and it does not change in time. Note also that gravity is defined on the cell vertex, i.e. the same location as all components of velocity. More on this later when the computational grid is defined.
-
-\subsection{Viscosity}
-Viscosity is added through the stress tensor $\sigma_{ij}$ and strain rate $\varepsilon_{ij}$ which add an additional force onto the $i$ component of the momentum equation
-\begin{displaymath}
-\frac{\mathrm{D}v_i}{Dt}=\frac{1}{\rho}\frac{\partial \sigma_{ij}}{\partial x_j}
-\end{displaymath}
-and an associated heating term
-\begin{displaymath}
-\frac{\mathrm{D}\epsilon}{Dt}=\frac{1}{\rho}\varepsilon_{ij}\sigma_{ij}
-\end{displaymath}
-In order to ensure that the stress tensor is zero under uniform rotation or compression it must be isotropic and traceless
-\begin{eqnarray*}
-\sigma_{ij} &=& 2 \nu \left(\varepsilon_{ij}-\frac{1}{3}\delta_{ij}\nabla\cdot\mathbf{v}\right) \\
-\varepsilon_{ij} &=& \frac{1}{2}\left(\frac{\partial v_i}{\partial x_j} + \frac{\partial v_j}{\partial x_i} \right)
-\end{eqnarray*}
-As with the normalisation of the resistivity when the normalisation procedure above is applied the viscosity $\nu$ above is replaced by $\hat{\nu}$ such that
-\begin{displaymath}
- \hat{\nu}=\frac{\nu}{\rho_0 L_0 v_0}
-\end{displaymath}
-Since $v_0$ is the normalised Alfv\'en speed this means that $\hat{\nu}=1/R$ where $R$ is the Reynolds number defined using the Alfv\'en speed. Note that in {\it LareXd}  $\hat{\nu}$ is called {\it visc3}. In practice $\nu$ is often limited by the numerical resolution but should you wish to calculate a real $\nu$ for a real physical problem remember not to confuse viscosity and kinematic viscosity. The kinematic viscosity is defined as $\nu/\rho$.
-
-For fully ionised plasma with no magnetic field the bulk plasma viscosity is proportional to $\rho T \tau_i$ \cite{nrl} where $\tau_i$ is the ion collision time. Since $\tau_i \propto T^{3/2}/\rho$ this means the real viscosity, in the absence of a magnetic field, should vary as
-\begin{displaymath}
-  \nu \propto T^{5/2}
-\end{displaymath}
-and therefore does not depend on density. However the majority of people working in MHD for space and astrophysics never want to use the real viscosity but instead have an equation of the form $\partial_t v = - \nu \nabla^2 v$, suitable for incompressible flows, with constant $\nu$. So that the viscosity in {\it Lare} reduces to this form the viscosity internally is defined to be proportional to density. Since this is divided by density in the momentum equation this will reduce to the simple incompressible form if the density is uniform. Should you wish to use real viscosity then you must make {\it visc3} a function of space and include the correct density and temperature dependence. To do this note that the stress tensor is labelled as, for example, \texttt{qxy} with the \texttt{q} read as $\sigma$ so that $\sigma_{x,y}$ in the code is \texttt{qxy}. These are defined inside \texttt{SUBROUTINE viscosity\_and\_b\_update} in \texttt{lagran.F90}.
 
 
 \subsection{Shock viscosity}
