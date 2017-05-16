@@ -133,30 +133,63 @@ where $\hat{g}=L_0 g / v_0^2$. In {\it LareXd} $\hat{g}$ is only a function of $
 
 
 \subsection{Shock viscosity}
-At shocks the gradients become singular and the differential equations are not defined. Instead we can use the integrated form of the equations to get jump conditions across shocks. To keep things simple let's just consider the 1D Euler equations, i.e. ideal MHD with $\mathbf{B}=0$. The jump condition for the pressure across the shock is
+The shock viscosity in {\it LareXd} is based on the edge viscosity formulation in Reference \cite{caramana}.
+This is presented first for Euler's equation only and MHD added later.
+First find the area weighted nodal density and sound speed $\rho_v$ and $cs_v$. Then for 
+each edge of the cell find $cs_i=\min(cs_v^i,cv_v^{i+1})$ where $i$ labels the nodes of the cell
+as in Figure~\ref{fig:larexd-grid} and is cyclic so for $i=1$, $i-1=4$ etc. 
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.8]{larexd-grid.png}
+  \caption{Labels used for edge viscosity.}
+  \label{fig:larexd-grid}
+\end{figure} 
+
+Next define the edge
+density through $\rho_i=2\rho_v^i \rho_v^{i+1} / (\rho_v^i + \rho_v^{i+1})$. Then on
+edge $i$ the associated viscous force is
 \begin{equation}
-P_1-P_0=\frac{\gamma+1}{4}\rho_0(\Delta v)^2 + \rho_0 |\Delta v|\left[\left(\frac{\gamma+1}{4}\right)^2(\Delta v)^2 + c_s^2\right]^{1/2}\label{jump}
+  \mathbf{f}_i=\rho_i\{\bar{c}_2 \Delta v_i + (\bar{c}_2^2 \Delta v_i^2 +c_1^2 cs_i^2)^{1/2}\}
+  (1-\psi_i)(\Delta \hat{\mathbf{v}}_i . \mathbf{S}_i)\Delta \mathbf{v}_i
 \end{equation}
-where $P_1$ is the pressure behind the shock, $P_0$ is the pressure in front of the shock, $c_s$ is the sound speed and $\Delta v$ is the jump in velocity across the shock. Any finite differencing of the fluid equations higher than first order accurate will introduce false oscillations behind the shock unless something is done to reconcile those difference equations with the jump condition above. The jump in entropy associated with the shock is not zero, however the Euler equations are ideal and contain no dissipation. To introduce some dissipation, but only at steep gradients, consistent with the jump conditions we can add a scalar $q$ to $P$ when computational cells are compressed. Noting that in 1D $\Delta v=\Delta x \nabla\cdot\mathbf{v}$, where $\Delta x$ is the cell size, we add to each cell
-\begin{displaymath}
-q = \nu_1 \rho c_s \Delta x |\nabla\cdot\mathbf{v}| + \nu_2 \rho \Delta x^2 (\nabla\cdot\mathbf{v})^2
-\end{displaymath}
-provided that $\nabla\cdot\mathbf{v}<0$, i.e. the cell is being compressed. Since this is added to the pressure there is an associated heating term added to equation \ref{energy_eqn} of $-q \nabla\cdot\mathbf{v}/\rho$. Note that $q$ is always positive and hence we must insist it is only applied when $\nabla\cdot\mathbf{v}<0$ to ensure that shocks only ever heat. The coefficients $\nu_1$ and $\nu_2$ are fixed by experimenting but usually $\nu_1=0.1$ and $\nu_2=0.5$ does a good job. By construction $\nu_1$ and $\nu_2$ are dimensionless. In smooth regions of the solution in the limit of increasing resolution $\nabla\cdot\mathbf{v}$ is finite and $\Delta x$ tends to zero so that $q$ vanishes. However at shocks $\Delta x \nabla\cdot\mathbf{v}=\Delta v$, the velocity jump across the shock, and $q$ remains finite. Therefore as the resolution is increased $q$ is only applied at shocks, it is only ever heating and has the functional form required to slightly diffuse the shock and reproduce the jump condition for pressure. If you've got to this point and think this is all a bit hand waving then good. If you want to study the grown up derivation then hit the library and references at the end of this manual.
-
-The above principle generalises easily to 3D Euler simulations except that now the scalar which is added to the pressure in each cell is
+with $\bar{c}_2=c_2 (\gamma+1)/4$ and usually $c_1=c_2=1$. The velocity difference is
+$\Delta \mathbf{v}_i=\mathbf{v}_i - \mathbf{v}_{i+1}$ and the edge force is only applied
+if $\Delta \hat{\mathbf{v}}_i . \mathbf{S}_i<0$, i.e. cell edge compression. 
+In these expressions the median mesh vector $\mathbf{S}_i$ is normal to the median mesh, points anti-clockwise
+and has magnitude of the distance from the centre of the cell to the edge $i$.
+This viscous force
+is applied to node $i$ and $-\mathbf{f}_i$ is applied to cell $i+1$. Thus the viscous force applied
+to node 1, due to the edge viscosity, is $\mathbf{f}_1^{visc}=\mathbf{f}_1-\mathbf{f}_4$ from this cell. 
+There will be 4 similar contributions to the total viscous force on this node from srounding cells.
+The compatible heating
+in the cell due to shock viscosity on its edges is
 \begin{equation}
-q = \nu_1 \rho c_s L|s| + \nu_2 \rho L^2 s^2 \label{qmono}
-\end{equation}
-$s$ is the rate of strain tensor in the direction normal to the shock front \cite{wilkins}. Again this is only applied to cell with $\nabla\cdot\mathbf{v}<0$ so that $-q \nabla\cdot\mathbf{v}$ heating is positive. The only change is that the scale length used is no longer just $\Delta x$. The $L$ in this formula is the distance across the cell in the direction normal to the shock front. This prevents the shock viscosity from introducing grid scale noise and preserves circular shocks on the Cartesian grid. The full theory for this can be found in \cite{wilkins}. When $L$ is used the shock viscosity is still just a scalar even though we are working in 2 or 3 dimensions. This technique is often called Wilkins $q_{mono}$ viscosity which may help to explain some of the compiler directive names. $q_{mono}$ viscosity is the minimum requirement for fluid shock viscosity and is often all that is needed.
+  M_z\frac{de}{dt}=-\sum_{i=1}^4\mathbf{f}_i.\Delta \mathbf{v}_i   
+\end{equation} 
 
-The above is fine for non-MHD problems. If the derivation of the shock jump conditions is repeated for MHD then no simple version of equation \ref{jump} drops out. In simplified cases, e.g. 1D problems with the magnetic field in the ignoreable direction, similar expressions to equation \ref{jump} can be derived and these have lead to some people using  equation \ref{qmono} but with $c_s$ replaced by the fast magnetoacoustic speed $c_f$. This is what you get in {\it LareXd} if you use the \texttt{QMONO} precompiler option. However, since this is a scalar which is added to the pressure it has no control over the shear forces which can come into play in MHD shocks. To deal with such possibilities the {\it LareXd} codes, by default, use a tensor shock viscosity. This is a hybrid between the $q_{mono}$ and the real tensor viscosity described above. The only  justification is that it has the correct tensor properties and is only applied at shocks. This tensor shock viscosity is
-
+The function $\psi_i$ acts as a limiter to turn off viscosity in smooth regions of flow. It is defined through
 \begin{equation}
-\sigma_{ij}^{shock} =  (\nu_1 \rho c_f L + \nu_2 \rho L^2 |s|)  \left(\varepsilon_{ij}-\frac{1}{3}\delta_{ij}\nabla\cdot\mathbf{v}\right)   \label{shock}
+  \psi_i=\max\left\{ 0, \min\left( \frac{r_{Li}+r_{ri}}{2},2r_{Li},2r_{ri}\right)\right\}
 \end{equation}
-This is applied to all cells, not just those which are compressed, as significant shear forces may exist across expanding cells. The heating term is however always positive.
+with 
+\begin{equation}
+  r_{Li}=\frac{\Delta \mathbf{v}_{a}. \Delta \hat{\mathbf{v}}_i }{\Delta \mathbf{x}_{a} .\Delta \hat{\mathbf{x}}_i }
+  \frac{|\Delta \mathbf{x}_{i}|}{|\Delta \mathbf{v}_{i}|}\quad ;\quad
+  r_{ri}=\frac{\Delta \mathbf{v}_{b} .\Delta \hat{\mathbf{v}}_i }{\Delta \mathbf{x}_{b}. \Delta \hat{\mathbf{x}}_i }
+  \frac{|\Delta \mathbf{x}_{i}|}{|\Delta \mathbf{v}_{i}|}
+\end{equation}
+Here the indexing $\Delta \mathbf{x}_{a} $ differs from that in Reference~\cite{caramana} as these differences
+are taken along an index line, not around cell edges. For example for edge 1 
+$\Delta \mathbf{v}_1 =\mathbf{v}_1-\mathbf{v}_2$ where the 
+subscripts match the node labelling scheme in Figure~\ref{fig:larexd-grid}. If this is cell $(ix,iy)$ then 
+$\Delta \mathbf{v}_{a} $ is the same difference but for cell $(ix+1,iy)$ and $\Delta \mathbf{v}_{a} $ that for cell
+$(ix-1,iy)$. 
 
-{\bf N.B.} The tensor viscosity, both shock and real, are known to fail with extreme grid aspect ratios, i.e. cells which are far from being square. The precise value of cell aspect ratio which is acceptable is problem dependent. High aspect ratio cells should be avoid for accuracy reasons anyway but if you do have highly elongated cells and notice problems with the code mysteriously hanging at some point try either no viscosity or $q_{mono}$. You will have to experiment to work out when or if this is needed.
+When this viscosuity is applied to MHD problems we simply replace the sound speed by an effective fast speed $c_f$
+defined through $c_f^2=c_s^2 + v_A^2$ where $v_A$ is the local Alfv\'en speed. Often for MHD problems it is
+better to turn off the $\Delta \hat{\mathbf{v}}_i . \mathbf{S}_i<0$ and always apply the viscosity on expanding
+cells as well. There is no good justification for doing this but it does always seem to give better results!
 
 \subsection{Boundary Conditions}
 Boundary conditions can be set in {\tt control.f90}. The preset routines are periodic, open and other. If you specify {\tt other} then you must be sure that what is in {\tt boundary.f90} matches precisely your imposed conditions - take care in getting the grid staggering right. Open boundary works on a simplified far-field characteristic model. For this it is best to test on your problem, if fine then go ahead and use. However if these do not work for you problem, they are not guaranteed to work well for all conditions, then you may have to resort to coding up your own conditions in {\tt boundary.f90} and using {\tt other} as your choice for boundaries.
@@ -900,6 +933,8 @@ Note that this $L_r$ is still in S.I. units and to convert to a normalised term 
 \bibitem{benson} D. J. Benson, \textit{Comput. Methods Appl. Mech. Eng.} \textbf{99} 148 (1992)
 
 \bibitem{wilkins} M. L. Wilkins, \textit{J. Comp. Phys.} \textbf{36} 281 (1980)
+
+\bibitem{caramana} E. J. Caramana et al., \textit{J. Comp. Phys.} \textbf{144} 70 (1998)
 
 \bibitem{vanleer} B. Van Leer, \textit{J. Comp. Phys.}, \textbf{32} 101 (1979)  \& \textit{J. Comp. Phys.}, \textbf{135} 229 (1997). The same paper was published twice! It's that good!
 
