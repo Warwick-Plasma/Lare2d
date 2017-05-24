@@ -844,44 +844,15 @@ where $\vec{k} = \kappa \vec{n}$, $\vec{n} = \vec{B}/(B^2+b_{min}^2)^{1/2}$ and 
 
 Firstly the conduction is written in terms of the heat flux vector $\vec{q}$ so that
 \[
-\vec{q}= \left(\vec{k} . \nabla T \right) \vec{n} +    \frac{B_{min}^2}{B^2+B_{min}^2} \kappa \nabla T
+\vec{q}= \left(\vec{k} . \nabla T \right) \vec{n} +    \frac{b_{min}^2}{B^2+b_{min}^2} \kappa \nabla T
 \]
-
-Using centre differencing, and assuming the grid stretching is modest,  then gives
-\[
-\rho_{i,j,k}^n \frac{\epsilon_{i,j,k}^{n+1}- \epsilon_{i,j,k}^{n}}{\Delta t}  =
-\frac{qx_{i,j,k}- qx_{i-1,j,k}}{\Delta x} + ...
-\]
-here terms in y and z derivatives have been dropped for simplicity. To avoid using nx as the x component of $\vec{n}$ (not allowed as nx is the number of grid points) the code defines $\vec{u}=\vec{B}/(B^2+b_{min}^2)^{1/2}$ so that $\vec{k} = \kappa \vec{u}$. The vector $\vec{u}$ is face centred the same as the magnetic field. The x component of the heat flux is therefore
-\begin{eqnarray*}
-qx_{i,j,k}&=&\left(uxkx_{i,j,k} + \frac{B_{min}^2}{B^2+B_{min}^2}\kappa \right)\left(\frac{T_{i+1,j,k}-T_{i,j,k}}{dxc_i}
-    \right) \\
-    &+& uxky_{i,j,k}\left(\frac{T_{i,j+1,k}+T_{i+1,j+1,k}-T_{i,j-1,k}+T_{i+1,j-1,k}}{2(dyc_j+dyc_{j-1})} \right) \\
-    &+& uxkz_{i,j,k}\left(\frac{T_{i,j,k+1}+T_{i+1,j,k+1}-T_{i,j,k-1}+T_{i+1,j,k-1}}{2(dzc_k+dzc_{k-1})} \right)
-\end{eqnarray*}
-In this equation $uxkx_{i,j,k}=ux_{i,j,k}kx_{i,j,k}$ and all quantities are defined at the x surface. The temperature used to determine $\kappa$ is fixed as $T^n$, i.e. the currently known value of temperature. All appearances of $T$ in the equations above are treated as either $T^n$ or $T^{n+1}$ as required for Gauss-Seidel iteration. In this way the update of specific internal energy density is through
-\[
-\rho_{i,j,k}^n \frac{\epsilon_{i,j,k}^{n+1}- \epsilon_{i,j,k}^{n}}{\Delta t}  =  - a_1\ T_{i,j,k}^{n+1} + a_2
-\]
-Here $a_2$ is all the terms not containing $T_{i,j,k}$ and $a_1$ is the sum of coefficients in front of all terms containing
-$T_{i,j,k}$.
-The variable $e2T$ is used in the code to convert $\epsilon$ into $T$ so that $T=e2t \ T$ hence the Gauss-Seidel update of $\epsilon$ is through
-\[
-\epsilon_{i,j,k}^{n+1}=\frac{\epsilon_{i,j,k}^{n} + a_2 \Delta t /\rho_{i,j,k}^n}{1+e2t\ a_1 \Delta t /\rho_{i,j,k}^n}
-\]
-
-This is iterated to convergence using SOR. The solution is deemed to have converged when the maximum residual error is less than \texttt{abs\_error} where \texttt{abs\_error=fractional\_error * MAXVAL(energy)} and \texttt{fractional\_error} is a constant specified at the top of {\tt SUBROUTINE conduct\_heat}. The parameter $b_{min}$ is also specified at the top of this routine. You may need to experiment with these values for different classes of problem.
-
-Note that the normalising constants \texttt{B0, L0, RHO0} must be set in \texttt{control.f90} for the conduction to work as it uses the real Braginskii thermal conductivity. Thus if \texttt{B0 = 0.005}, \texttt{L0 = 1.e6} and \texttt{RHO0 = 1.67e-13}, i.e. typical coronal values, then the normalising unit temperature is \texttt{T0 = 1.73e10} and as a result the normalised temperatures will all be much less than one for coronal temperatures.
+Then the specific energy density in each cell is updated using super-stepping \cite{Meyer:2012eb}
 
 It is possible that sufficient heating occurs so that $qx$ exceeds the free streaming heat flux $q_f=v_{the} k_B T$. In this case the Braginskii flux needs to be limited. This is done by calculating the components of the Braginskii (Spitzer-Harn) heat flux, e.g. $qsh_x$ and the free streaming limit $q_f$ and then finding the non-linear limited flux through
 \[
 q_{nl} = \frac{1}{(1/q_sh + 1/q_f)}
 \]
-The vectors components $uxkx$ etc. are then replaced with limited values defined by
-\[
-uxkx=uxkx\frac{q_{nl}}{qsh_x}
-\]
+
 Experience from measured heat fluxes in laser plasma experiments suggest that actually the heat flux must be limited not to $q_f=v_{the} k_B T$ but to $q_f=F_L v_{the} k_B T$  where $F_L$ is a flux limiter which is usually set to 0.05. The parameter $F_L$ is set in the input \texttt{control.f90} file as \texttt{flux\_limiter}. If flux limiters are unfamiliar you should read papers from the laser plasma community where these are measured and used in codes.
 
 \subsection*{Optically thin radiative losses}
@@ -920,7 +891,7 @@ Note that this $L_r$ is still in S.I. units and to convert to a normalised term 
 
 
 \subsection*{User specified heating function}
-{\tt conduct.f90} also contains a user specified routine for inputing heat anywhere in the simulation domain. The example given finds the radiative losses at the top of the computational domain and then scales this with $\rho^2$ in regions above a critical temperature and below a specified density. This can be replaced with any user specified prescription, even time dependent.
+{\tt conduct.f90} also contains a user specified routine for inputing heat anywhere in the simulation domain. The example given finds the radiative losses as a function of mass density and temperature first in S.I. and then converts to {\tt LareXd} units. This can be replaced with any user specified prescription.
 
 
 \newpage
@@ -949,6 +920,8 @@ Note that this $L_r$ is still in S.I. units and to convert to a normalised term 
 \bibitem{brown} J. Brown, \textit{Solar Physics} \textbf{29} 421 (1973)
 
 \bibitem{nrl} NRL Plasma Formulary, J. D. Huba (2002)
+
+\bibitem{Meyer:2012eb} C. Meyer, D. Balsara and T. Aslam, \textit{MNRAS} \textbf{422} 2101 (2012)
 
 \end{thebibliography}
 
