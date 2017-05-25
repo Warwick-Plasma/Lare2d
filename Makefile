@@ -172,7 +172,7 @@ MACHINE := $(shell uname -n)
 PREPROFLAGS = $(DEFINES) $(D)_COMMIT='"$(COMMIT)"' $(D)_DATE=$(DATE) \
   $(D)_MACHINE='"$(MACHINE)"'
 
-SRCFILES = boundary.f90 conduct.f90 control.f90 diagnostics.F90 \
+SRCFILES = boundary.f90 conduct.f90 radiative.f90 control.f90 diagnostics.F90 \
   initial_conditions.f90 lagran.F90 lare2d.f90 mpi_routines.F90 \
   mpiboundary.f90 neutral.f90 normalise.f90 openboundary.f90 \
   random_generator.f90 remap.f90 setup.F90 shared_data.F90 version_data.F90 \
