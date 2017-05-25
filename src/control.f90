@@ -117,7 +117,7 @@ CONTAINS
     flux_limiter = 0.06_num
 
     ! Use radiation as specified in SUBROUTINE rad_losses
-    ! in src/core/conduct.f90
+    ! in src/core/radiative.f90
     radiation = .FALSE.
     ! Use coronal heating as specified in SUBROUTINE heating
     ! in src/core/conduct.f90

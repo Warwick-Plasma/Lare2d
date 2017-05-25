@@ -8,6 +8,7 @@ MODULE lagran
   USE boundary
   USE neutral
   USE conduct
+  USE radiative
 
   IMPLICIT NONE
 
@@ -100,7 +101,7 @@ CONTAINS
       dt = dt / REAL(substeps, num)
 
       DO subcycle = 1, substeps
-        CALL eta_calc
+        IF (resistive_mhd) CALL eta_calc
         IF (eos_number /= EOS_IDEAL) CALL neutral_fraction
         IF (cowling_resistivity) CALL perpendicular_resistivity
         IF (hall_mhd) CALL hall_effects
@@ -120,7 +121,8 @@ CONTAINS
       dt = actual_dt
     END IF
 
-    IF (conduction .OR. coronal_heating .OR. radiation) CALL conduct_heat
+    IF (conduction) CALL conduct_heat
+    IF (radiation) CALL rad_losses
 
     CALL predictor_corrector_step
 
