@@ -40,7 +40,7 @@ The Lagrangian remap code comes in 2D ({\it Lare2d}) and 3D ({\it Lare3d}). For 
 
 Without going into detail, see \cite{jcp} for complete algorithm, the main features of the code are:
 \begin{itemize}
- \item Solves the nonlinear MHD equations with user controlled viscosity and resistivity. Optional physics packages are: gravity, the Hall term (only in 2D), partially ionised hydrogen equation of state, Cowling resistivity, parallel thermal conductivity optimically thin radiative losses and user specified heating functions.
+ \item Solves the nonlinear MHD equations with user controlled viscosity and resistivity. Optional physics packages are: gravity, the Hall term (only in 2D), partially ionised hydrogen equation of state, Cowling resistivity, parallel thermal conductivity, optically thin radiative losses and user specified heating functions.
  \item Splits each timestep into a Lagragrian step followed by a remap onto the original grid. This allows all of the physics to be included into a simple Lagrangian step making it easy to add additional physics. The remap step includes gradient limiters to ensure the correct shock solution.
  \item Uses a staggered grid to prevent the checkerboard instability and to build conservation laws into the finite difference scheme, i.e. it is a compatible difference scheme in Lagrangian numerical jargon.
  \item Parallelised via MPI and known to scale linearly.
@@ -190,9 +190,11 @@ When this viscosuity is applied to MHD problems we simply replace the sound spee
 defined through $c_f^2=c_s^2 + v_A^2$ where $v_A$ is the local Alfv\'en speed. Often for MHD problems it is
 better to turn off the $\Delta \hat{\mathbf{v}}_i . \mathbf{S}_i<0$ and always apply the viscosity on expanding
 cells as well. There is no good justification for doing this but it does always seem to give better results!
+If you want to do this it is controlled through the Makefile.
 
 \subsection{Boundary Conditions}
-Boundary conditions can be set in {\tt control.f90}. The preset routines are periodic, open and other. If you specify {\tt other} then you must be sure that what is in {\tt boundary.f90} matches precisely your imposed conditions - take care in getting the grid staggering right. Open boundary works on a simplified far-field characteristic model. For this it is best to test on your problem, if fine then go ahead and use. However if these do not work for you problem, they are not guaranteed to work well for all conditions, then you may have to resort to coding up your own conditions in {\tt boundary.f90} and using {\tt other} as your choice for boundaries.
+Boundary conditions can be set in {\tt control.f90}. The preset routines are {\tt periodic}, 
+{\tt open} and {\tt user}. If you specify {\tt user} then you must be sure that what is in {\tt boundary.f90} matches precisely your imposed conditions - take care in getting the grid staggering right. Open boundary works on a simplified far-field characteristic model. For this it is best to test on your problem, if fine then go ahead and use. However if these do not work for you problem, they are not guaranteed to work well for all conditions, then you may have to resort to coding up your own conditions in {\tt boundary.f90} and using {\tt user} as your choice for boundaries.
 
 All choices of boundary also allow damping to be applied near the boundary. This is entirely user configurable and requires that the appropriate boundaries are treated as you prefer in {\tt damp\_boundaries} inside {\tt boundary.f90}.
 
@@ -223,7 +225,7 @@ where $c$ is the speed of light and
 \end{displaymath}
 is the ion plasma frequency. Once the density is normalised, through the mass density, $n_0$ is known and thus $\lambda_i$ is not a free parameter. It is however treated as a free parameter in \texttt{control.f90} as it is often interesting to inflate $\lambda_i$, much as one does for the resistivity, for computational reasons. As a result care must be taken when choosing $\lambda_i$. In the code you must specify {\tt lambda\_i} which is $\lambda_i/L$.
 
-If Hall MHD is turned on in \texttt{control.f90} then {\tt lambda\_i} must be specified inside the initial conditions. Note that like gravity {\tt lambda\_i} is a function of space. This is important as there are occasions, such as reflecting wall boundary conditions, when you must set {\tt lambda\_i} on the boundary. Note also that {\tt lambda\_i} is defined at cell vertices and you need to specify all values in the range {\tt lambda\_i(0:nx, 0:ny)}.
+If Hall MHD is turned on in \texttt{control.f90} then {\tt lambda\_i} must be specified inside the initial conditions. Note that like gravity {\tt lambda\_i} is a function of space. This is important as there are occasions, such as reflecting wall boundary conditions, when you may need {\tt lambda\_i = 0} on the boundary. Note also that {\tt lambda\_i} is defined at cell vertices and you need to specify all values in the range {\tt lambda\_i(0:nx, 0:ny)}.
 
 \section{Partial Ionisation and Cowling Resistivity}
 {\it Lare3d} has an option to include partial ionisation. The equations this solves are documented in \cite{flux-emergence}. All of this physics is included in the file \texttt{neutral.f90}. Key to these routines is the calculation of the neutral fraction $\xi_n$ which is the ratio of the mass density of the neutral gas to the total mass density. For now let's assume that $\xi_n$ is known. $\xi_n$ affects the basic equations in a number of ways. At the simplest level it changes the partial pressures so that now the equation of state is different to that of ideal MHD. There are three options for the equations of state determined by setting \texttt{eos\_number} in \texttt{control.f90}
@@ -232,11 +234,12 @@ If Hall MHD is turned on in \texttt{control.f90} then {\tt lambda\_i} must be sp
 \begin{eqnarray*}
 P&=&\frac{\rho k_{B}T}{\mu_m}\\
 \epsilon&=&\frac{P}{\rho(\gamma-1)}\\
-\mu_m&=&\bar{m}\ m_{reduced}
+\mu_m&=&\bar{m}\hat{\mu}_m
 \end{eqnarray*}
 The reduced mass is controlled through the logical variable {\tt neutral\_gas} in  \texttt{control.f90}. If
-{\tt neutral\_gas = .TRUE.} then $m_{reduced}=1$, if {\tt neutral\_gas = .FALSE.} then $m_{reduced}=0.5$.
-Thus setting $m_{reduced}=1$ gives un-ionised atomic hydrogen while $m_{reduced}=0.5$ will give fully ionised hydrogen.
+{\tt neutral\_gas = .TRUE.} then $\hat{\mu}_m=1$, if {\tt neutral\_gas = .FALSE.} then $\hat{\mu}_m=0.5$.
+Thus setting $\hat{\mu}_m=1$ gives un-ionised atomic hydrogen while $\hat{\mu}_m=0.5$ will give fully ionised hydrogen.
+Setting the value of $\hat{\mu}_m$ is handled in {\tt LareXd.f90}.
 
 \item \texttt{eos\_number=EOS\_PI}: Here the effect of neutrals on the partial pressures is included
 \begin{eqnarray*}
@@ -257,7 +260,7 @@ where $X_i$ is the ionisation energy for hydrogen.
 
 Note that we always assume an ideal gas so the first equation is the same for all options. For an ideal plasma we assume a single ionisation state so that the reduced mass is half the ion mass. If including the effect of neutrals fully one should always use \texttt{eos\_number=EOS\_ION} as the ionisation energy of hydrogen must be taken into account. The second option is therefore never formally correct. It is however retained as the energy equation used in MHD is often missing important sources and sinks and therefore having the option to include this term is sometimes useful for sensitivity studies. This is explained in \cite{flux-emergence}.
 
-All of the above assumes that $\xi_n$ is known. This is specified in \texttt{neutral.f90}. In this version of the code $\xi_n$ is determined from a modified Saha equation based on a three level hydrogen model \cite{brown}. This is therefore only even approximately valid for an averaged quiet solar chromosphere. To change this the routines that need to return, or calculate, a different $\xi_n$ are \texttt{get\_neutral} and \texttt{neutral\_fraction} in \texttt{neutral.f90}. The current code assumes that below a height of zero is the sub-photospheric plasma. This is in LTE and thus the dilution factor and local ration temperature are changed in \texttt{get\_neutral} if this is true.
+All of the above assumes that $\xi_n$ is known. This is specified in \texttt{neutral.f90}. In this version of the code $\xi_n$ is determined from a modified Saha equation based on a three level hydrogen model \cite{brown}. This is therefore only even approximately valid for an averaged quiet solar chromosphere. To change this the routines that need to return, or calculate, a different $\xi_n$ are \texttt{get\_neutral} and \texttt{neutral\_fraction} in \texttt{neutral.f90}. 
 
 As well as affecting the partial pressure the neutral fraction can alter the nature of resistive effects. The dominant term here is the introduction of an anisotropic resistivity so that the Ohm's law becomes
 $\mathbf{E}+\mathbf{v}\times\mathbf{B}=\eta \mathbf{j_{\parallel}} + \eta_c \mathbf{j_{\perp}}$
@@ -269,7 +272,8 @@ Thermal conduction in LARE is based on the Braginskii thermal conduction in the 
 \[
 \frac{\partial \epsilon}{\partial t} = \nabla . \left(\left(\kappa \frac{\vec{B}}{B^2+b_{min}^2}. \nabla T\right) \vec{B} \right) +  \nabla . \left(\kappa  \frac{b_{min}^2}{B^2+b_{min}^2}  \nabla T \right)
 \]
-where $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. Finite $b_{min}$ is used to make the conductivity isotropic when $B=0$.  How this is implemented is described in the Appendix. Note that $\kappa_0$ is hard coded to $10^{-11}$ and therefore this routine only works if you have set {\tt B0, L0, RHO0} in {\tt control.f90} correctly. If you want to just pick the thermal conductivity, i.e. make it up and generate unphysical results, then you can do this by changing $\kappa_0$ which is set in {\tt SUBROUTINE set\_normalisation} in {\tt src/core/normalise.f90}.
+where $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. Finite $b_{min}$ is used to make the conductivity isotropic when $B=0$.  How this is implemented is described in the Appendix. Note that $\kappa_0$ in S.I. units is hard coded to $10^{-11}$ and then made dimensionless using 
+{\tt B0, L0, RHO0} in {\tt control.f90}. If you want to just pick the thermal conductivity, i.e. make it up and generate unphysical results, then you can do this by changing $\kappa_0$ which is set in {\tt SUBROUTINE normalise\_transport} in {\tt src/core/normalise.f90}.
 
 Depending on your problem you may need to change $b_{min}$ which is set as a constant (parameter) in {\tt src/core/conduct.f90}. It is also possible to control the fractional accuracy of the SOR Gauss-Seidel scheme that is used to update the temperature, this is also in {\tt src/core/conduct.f90} and a value of $10^{-5}$ is known to reproduce analytic results well. If runtime becomes an issue this can be reduced but then you will need to test more carefully.
 
