@@ -860,39 +860,36 @@ q_{nl} = \frac{1}{(1/q_sh + 1/q_f)}
 Experience from measured heat fluxes in laser plasma experiments suggest that actually the heat flux must be limited not to $q_f=v_{the} k_B T$ but to $q_f=F_L v_{the} k_B T$  where $F_L$ is a flux limiter which is usually set to 0.05. The parameter $F_L$ is set in the input \texttt{control.f90} file as \texttt{flux\_limiter}. If flux limiters are unfamiliar you should read papers from the laser plasma community where these are measured and used in codes.
 
 \subsection*{Optically thin radiative losses}
-Optically thin radiative losses are included implicitly in the thermal conduction step. If thermal conduction is off but optically thin radiation on then the same routines run but with zero thermal conductivity. This is computationally wasteful but is is not that likely that people would want to run with radiation and not conduction apart from test problems.
-
+Optically thin radiative losses are included by using the Townsend exact intergration method \cite{townsend:2009}.
+This scheme works by directly updating the temperature. Thus in \lare the dimensionless specific energy density
+is first converted to S.I. units. Then the Townsend scheme updates the temperature whch is finally converted back to
+dimensionless units. For this to work the user must specify the optically thin radiative loss function.
 Ignoring all other terms the radiative losses are modelled through
 \[
 \rho\frac{d\epsilon}{dt}=-L_r
 \]
-In the example used in the default code this is RTV loss so that $L_r=n_e^2 \chi T^{\alpha}$. This can be written as
-$L_r=a n_e[5\times10^{14}]^2 \chi_* T_{MK}^{\alpha}$ where $a=2.87\times10^{-6}$, $n_e[5\times10^{14}]$ is the electron number density in units of $5\times10^{15} \mathrm{m}^{-3}$ and $T_{MK}$ is the temperature in units of MK. For RTV the values of $\chi_*$ and $\alpha$ are given in table \ref{table:rtv}
-
+In the example used in the default code this is RTV loss so that $L_r=n_e^2 \chi T^{\alpha}$ where
+$\chi$ and $\alpha$ are both functions of temperature. 
+For RTV the values of $\chi$ and $\alpha$ are given in table \ref{table:rtv} for temperature in MK.
 \begin{table}[ht]
 \caption{RTV radiation coefficients}
 \centering
 \begin{tabular}{c c c}
 \hline\hline
-$T_{MK}$ & $\chi_*$ & $\alpha$ \\ [0.5ex] % inserts table %heading
+$T_{MK}$ & $\log_{10}(\chi)$ & $\alpha$ \\ [0.5ex] % inserts table %heading
 \hline
-0.02 -- 0.0398   & 1.2303 & 0 \\
-0.0398 -- 0.0794 & 870.96 & 2 \\
-0.0794 -- 0.251  & 5.496 & 0  \\
-0.251 -- 0.562   & 0.3467 & -2 \\
-0.562 -- 1.995   & 1 & 0 \\
-1.995 -- 10      & 1.6218 & -2/3   \\[1ex]
+0.02 -- 0.0398   & -21.85 & 0 \\
+0.0398 -- 0.0794 & -31.0 & 2 \\
+0.0794 -- 0.251  & -21.2 & 0  \\
+0.251 -- 0.562   & -10.4 & -2 \\
+0.562 -- 1.995   & -21.94 & 0 \\
+1.995 -- 10      & -17.73 & -2/3   \\[1ex]
 \hline
 \end{tabular}
 \label{table:rtv}
 \end{table}
-
-With this notation the radiative losses can be written as $L_r=L_r^* \rho^2\chi_* T_{MK}^*$, where in this formula $\rho$ is the normalised mass density used in {\it LareXd}. The constant $L_r^*$ is defined in {\tt normalise.f90} and is
-\[
-L_r^*=a\left(\frac{\rho_0}{\bar{m}\ 5\times10^{15}} \right)^2
-\]
-Note that this $L_r$ is still in S.I. units and to convert to a normalised term used in the energy equation in {\tt LareXd} needs to be multiplied by  $h_*$ which is also defined in  {\tt normalise.f90}. With all of this defined in the {\tt rad\_losses} routine inside {\tt conduct.f90} it is then a simple mater to linearise the radiative losses for small changes in temperature and include in the implicit update of temperature used for conduction.
-
+The user can change the radiative loss to any loss function which is a piece-wise polynomial of
+temperature. This is documented in the routine {\tt setup\_loss\_function} in {\tt radiative.f90} 
 
 \subsection*{User specified heating function}
 {\tt conduct.f90} also contains a user specified routine for inputing heat anywhere in the simulation domain. The example given finds the radiative losses as a function of mass density and temperature first in S.I. and then converts to {\tt LareXd} units. This can be replaced with any user specified prescription.
@@ -926,6 +923,8 @@ Note that this $L_r$ is still in S.I. units and to convert to a normalised term 
 \bibitem{nrl} NRL Plasma Formulary, J. D. Huba (2002)
 
 \bibitem{Meyer:2012eb} C. Meyer, D. Balsara and T. Aslam, \textit{MNRAS} \textbf{422} 2101 (2012)
+
+\bibitem{townsend:2009} R.H.D. Townsend, \textit{ApJS} \textbf{181} 391-397 (2009)
 
 \end{thebibliography}
 
