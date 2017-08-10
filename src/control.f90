@@ -57,14 +57,14 @@ CONTAINS
 
     ! Set the number of gridpoints in x and y directions
     nx_global = 100
-    ny_global = 4
+    ny_global = 100
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
     nsteps = -1
 
     ! The maximum runtime of the code
-    t_end = 1.0_num
+    t_end = 5.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.2_num
@@ -77,14 +77,14 @@ CONTAINS
     nprocy = 0
 
     ! The length of the domain in the x direction
-    x_min = -0.5_num
-    x_max = 0.5_num
+    x_min = -1.0_num
+    x_max = 1.0_num
     ! Should the x grid be stretched or uniform
     x_stretch = .FALSE.
 
     ! The length of the domain in the y direction
-    y_min = 0.0_num
-    y_max = 15.0_num
+    y_min = -1.0_num
+    y_max = 1.0_num
     ! Should the y grid be stretched or uniform
     y_stretch = .FALSE.
 
@@ -118,7 +118,7 @@ CONTAINS
 
     ! Use radiation as specified in SUBROUTINE rad_losses
     ! in src/core/radiative.f90
-    radiation = .TRUE.
+    radiation = .FALSE.
     ! Use coronal heating as specified in SUBROUTINE heating
     ! in src/core/conduct.f90
     coronal_heating = .FALSE.
@@ -148,10 +148,10 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Reimann far-field characteristic boundary conditions
     ! BC_USER    - User boundary conditions specified in "boundary.f90"
-    xbc_min = BC_PERIODIC
-    xbc_max = BC_PERIODIC
-    ybc_min = BC_PERIODIC
-    ybc_max = BC_PERIODIC
+    xbc_min = BC_OPEN
+    xbc_max = BC_OPEN
+    ybc_min = BC_OPEN
+    ybc_max = BC_OPEN
 
     ! Set to true to turn on routine for damped boundaries.
     ! These routines are in boundary.f90 and you should check that they
@@ -186,7 +186,7 @@ CONTAINS
     data_dir = 'Data'
 
     ! The interval between output snapshots.
-    dt_snapshots = 0.5_num
+    dt_snapshots = 0.1_num
 
     ! dump_mask is an array which specifies which quantities the code should
     ! output to disk in a data dump.
