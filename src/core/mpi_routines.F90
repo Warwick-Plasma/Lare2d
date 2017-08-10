@@ -167,10 +167,10 @@ CONTAINS
     periods = .TRUE.
     reorder = .TRUE.
 
-    IF (xbc_min == BC_OTHER) periods(c_ndims  ) = .FALSE.
-    IF (xbc_max == BC_OTHER) periods(c_ndims  ) = .FALSE.
-    IF (ybc_min == BC_OTHER) periods(c_ndims-1) = .FALSE.
-    IF (ybc_max == BC_OTHER) periods(c_ndims-1) = .FALSE.
+    IF (xbc_min == BC_USER) periods(c_ndims  ) = .FALSE.
+    IF (xbc_max == BC_USER) periods(c_ndims  ) = .FALSE.
+    IF (ybc_min == BC_USER) periods(c_ndims-1) = .FALSE.
+    IF (ybc_max == BC_USER) periods(c_ndims-1) = .FALSE.
 
     IF (xbc_min == BC_OPEN) periods(c_ndims  ) = .FALSE.
     IF (xbc_max == BC_OPEN) periods(c_ndims  ) = .FALSE.

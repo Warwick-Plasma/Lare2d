@@ -147,11 +147,11 @@ CONTAINS
     ! Valid constants are
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Reimann far-field characteristic boundary conditions
-    ! BC_OTHER    - Other boundary conditions specified in "boundary.f90"
+    ! BC_USER    - User boundary conditions specified in "boundary.f90"
     xbc_min = BC_PERIODIC
     xbc_max = BC_PERIODIC
-    ybc_min = BC_OTHER
-    ybc_max = BC_OTHER
+    ybc_min = BC_USER
+    ybc_max = BC_USER
 
     ! Set to true to turn on routine for damped boundaries.
     ! These routines are in boundary.f90 and you should check that they

@@ -146,7 +146,7 @@ CONTAINS
 
     CALL bfield_mpi
 
-    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_USER) THEN
       bx(-1,:) = bx(1,:)
       bx(-2,:) = bx(2,:)
       by( 0,:) = by(1,:)
@@ -155,7 +155,7 @@ CONTAINS
       bz(-1,:) = bz(2,:)
     END IF
 
-    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_USER) THEN
       bx(nx+1,:) = bx(nx-1,:)
       bx(nx+2,:) = bx(nx-2,:)
       by(nx+1,:) = by(nx  ,:)
@@ -164,7 +164,7 @@ CONTAINS
       bz(nx+2,:) = bz(nx-1,:)
     END IF
 
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       bx(:, 0) = bx(:,1)
       bx(:,-1) = bx(:,2)
       by(:,-1) = by(:,1)
@@ -173,7 +173,7 @@ CONTAINS
       bz(:,-1) = bz(:,2)
     END IF
 
-    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
       bx(:,ny+1) = bx(:,ny  )
       bx(:,ny+2) = bx(:,ny-1)
       by(:,ny+1) = by(:,ny-1)
@@ -190,22 +190,22 @@ CONTAINS
 
     CALL bz_mpi
 
-    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_USER) THEN
       bz( 0,:) = bz(1,:)
       bz(-1,:) = bz(2,:)
     END IF
 
-    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_USER) THEN
       bz(nx+1,:) = bz(nx  ,:)
       bz(nx+2,:) = bz(nx-1,:)
     END IF
 
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       bz(:, 0) = bz(:,1)
       bz(:,-1) = bz(:,2)
     END IF
 
-    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
       bz(:,ny+1) = bz(:,ny  )
       bz(:,ny+2) = bz(:,ny-1)
     END IF
@@ -222,22 +222,22 @@ CONTAINS
 
     CALL energy_mpi
 
-    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_USER) THEN
       energy( 0,:) = energy(1,:)
       energy(-1,:) = energy(2,:)
     END IF
 
-    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_USER) THEN
       energy(nx+1,:) = energy(nx  ,:)
       energy(nx+2,:) = energy(nx-1,:)
     END IF
 
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       energy(:, 0) = energy(:,1)
       energy(:,-1) = energy(:,2)
     END IF
 
-    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
       energy(:,ny+1) = energy(:,ny  )
       energy(:,ny+2) = energy(:,ny-1)
     END IF
@@ -254,22 +254,22 @@ CONTAINS
 
     CALL density_mpi
 
-    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_USER) THEN
       rho( 0,:) = rho(1,:)
       rho(-1,:) = rho(2,:)
     END IF
 
-    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_USER) THEN
       rho(nx+1,:) = rho(nx  ,:)
       rho(nx+2,:) = rho(nx-1,:)
     END IF
 
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       rho(:, 0) = rho(:,1)
       rho(:,-1) = rho(:,2)
     END IF
 
-    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
       rho(:,ny+1) = rho(:,ny  )
       rho(:,ny+2) = rho(:,ny-1)
     END IF
@@ -286,19 +286,19 @@ CONTAINS
 
     CALL velocity_mpi
 
-    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_USER) THEN
       vx(-2:0,:) = 0.0_num
       vy(-2:0,:) = 0.0_num
       vz(-2:0,:) = 0.0_num
     END IF
 
-    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_USER) THEN
       vx(nx:nx+2,:) = 0.0_num
       vy(nx:nx+2,:) = 0.0_num
       vz(nx:nx+2,:) = 0.0_num
     END IF
 
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       vx(:,-2:0) = 0.0_num
       vy(:,-2:0) = 0.0_num
       vz(:,-2:0) = 0.0_num
@@ -308,7 +308,7 @@ CONTAINS
       CALL produce_spectrum(vz(:,-2:0), time, 1.0_num)
     END IF
 
-    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
       vx(:,ny:ny+2) = 0.0_num
       vy(:,ny:ny+2) = 0.0_num
       vz(:,ny:ny+2) = 0.0_num
@@ -326,19 +326,19 @@ CONTAINS
 
     CALL remap_v_mpi
 
-    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_OTHER) THEN
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_USER) THEN
       vx1(-2:0,:) = 0.0_num
       vy1(-2:0,:) = 0.0_num
       vz1(-2:0,:) = 0.0_num
     END IF
 
-    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_OTHER) THEN
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_USER) THEN
       vx1(nx:nx+2,:) = 0.0_num
       vy1(nx:nx+2,:) = 0.0_num
       vz1(nx:nx+2,:) = 0.0_num
     END IF
 
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_OTHER) THEN
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       vx1(:,-2:0) = 0.0_num
       vy1(:,-2:0) = 0.0_num
       vz1(:,-2:0) = 0.0_num
@@ -348,7 +348,7 @@ CONTAINS
       CALL produce_spectrum(vz(:,-2:0), time - 0.5_num * dt, 1.0_num)
     END IF
 
-    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_OTHER) THEN
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
       vx1(:,ny:ny+2) = 0.0_num
       vy1(:,ny:ny+2) = 0.0_num
       vz1(:,ny:ny+2) = 0.0_num
