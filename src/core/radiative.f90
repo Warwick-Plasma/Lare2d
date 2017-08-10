@@ -55,6 +55,7 @@ CONTAINS
     END IF
 
     CALL exact_intergation_method
+    CALL energy_bcs
 
   END SUBROUTINE rad_losses
 
@@ -70,14 +71,14 @@ CONTAINS
 
         temp_si = energy(ix,iy) * (gamma - 1.0_num) * temp_norm
 
+        k = -1
         DO i = 1, kmax
-          IF (temp_si >= t_boundary(i) .AND. temp_si <= t_boundary(i+1)) THEN
+          IF (temp_si > t_boundary(i) .AND. temp_si <= t_boundary(i+1)) THEN
             k = i
-          ELSE
-            k = -1
+            EXIT
           END IF
         END DO
-        IF (k .LT. 0) EXIT
+        IF (k .LT. 0) CYCLE
 
         IF (alpha(k) .NE. 1) THEN
           fac = 1.0_num / (1.0 - pow(k))
@@ -100,7 +101,7 @@ CONTAINS
         energy(ix,iy) = temp_si / (gamma - 1.0_num) / temp_norm
 
       END DO
-    END DO
+    END DO 
 
 
   END SUBROUTINE exact_intergation_method
