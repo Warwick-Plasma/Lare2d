@@ -105,8 +105,6 @@ CONTAINS
     ! Calculate the density profile, starting from the refence density at the
     ! photosphere and calculating up and down from there including beta
     rho_ref = 1.0_num
-    mu_m = 1.0_num
-    IF (eos_number == EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
 
     DO loop = 1, 1000
       maxerr = 0.0_num

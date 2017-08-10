@@ -58,6 +58,9 @@ PROGRAM lare2d
 
   IF (eos_number == EOS_IDEAL .AND. neutral_gas) xi_n = 1.0_num
 
+  mu_m = 1.0_num
+  IF (eos_number == EOS_IDEAL .AND. (.NOT. neutral_gas)) mu_m = 0.5_num
+
   IF (cowling_resistivity) CALL perpendicular_resistivity ! neutral.f90
 
   IF (rank == 0) PRINT*, 'Initial conditions setup OK. Running Code'
