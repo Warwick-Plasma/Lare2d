@@ -37,13 +37,13 @@ CONTAINS
     ! non-ideal MHD terms.
 
     ! Magnetic field normalisation in Tesla
-    B0 = 0.03_num
+    B_norm = 0.03_num
 
     ! Length normalisation in m
-    L0 = 180.e3_num
+    L_norm = 180.e3_num
 
     ! Density normalisation in kg / m^3
-    RHO0 = 1.67e-4_num
+    rho_norm = 1.67e-4_num
 
   END SUBROUTINE user_normalisation
 
@@ -56,8 +56,8 @@ CONTAINS
   SUBROUTINE control_variables
 
     ! Set the number of gridpoints in x and y directions
-    nx_global = 4
-    ny_global = 400
+    nx_global = 100
+    ny_global = 4
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
@@ -110,15 +110,15 @@ CONTAINS
     ! with steep temperature gradients and very hot regions with
     ! large thermal conductivity. For many problems it is however
     ! fine.
-    conduction = .TRUE.
+    conduction = .FALSE.
     ! Apply a flux limiter to stop heat flows exceeding free streaming limit
-    heat_flux_limiter = .TRUE.
+    heat_flux_limiter = .FALSE.
     ! Fraction of free streaming heat flux used if limiter on
     flux_limiter = 0.06_num
 
     ! Use radiation as specified in SUBROUTINE rad_losses
     ! in src/core/radiative.f90
-    radiation = .FALSE.
+    radiation = .TRUE.
     ! Use coronal heating as specified in SUBROUTINE heating
     ! in src/core/conduct.f90
     coronal_heating = .FALSE.
@@ -150,8 +150,8 @@ CONTAINS
     ! BC_USER    - User boundary conditions specified in "boundary.f90"
     xbc_min = BC_PERIODIC
     xbc_max = BC_PERIODIC
-    ybc_min = BC_USER
-    ybc_max = BC_USER
+    ybc_min = BC_PERIODIC
+    ybc_max = BC_PERIODIC
 
     ! Set to true to turn on routine for damped boundaries.
     ! These routines are in boundary.f90 and you should check that they

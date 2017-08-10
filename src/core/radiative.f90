@@ -121,7 +121,7 @@ CONTAINS
 
     DO k = 1, n
       ratio(k) = (qk(n) / t_boundary(n))
-      cool(k) = ratio(k) * (gamma - 1.0_num) * rho0 / (kb_si * mf * mh_si)
+      cool(k) = ratio(k) * (gamma - 1.0_num) * rho_norm / (kb_si * mf * mh_si)
       ratios(k) = ratio(k) * (t_boundary(k) / qk(k))
     END DO
 

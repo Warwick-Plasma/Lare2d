@@ -128,21 +128,21 @@ MODULE shared_data
   LOGICAL :: restart, heat_flux_limiter
 
   ! Normalising constants
-  REAL(num) :: B0, L0, rho0
+  REAL(num) :: B_norm, L_norm, rho_norm
   ! Mass fraction - mass of ions in units of proton mass
   REAL(num) :: mf
   ! Conversion factor to get temperature in K from normalised energy
   REAL(num) :: temp0
-  ! Conversion factor to get temperature in MK from normalised energy
-  REAL(num) :: t2tmk
   ! Normalisation used for radiative losses
   REAL(num) :: lr_star
   ! Normalisation used for coronal heating
   REAL(num) :: h_star
+  ! Dimensionless average particle mass
+  REAL(num) :: mu_m
 
   ! Heat conduction
   LOGICAL :: conduction, radiation, coronal_heating
-  REAL(num) :: kappa_0, flux_limiter, temperature_100mk
+  REAL(num) :: kappa_0, flux_limiter, kappa0_SI
 
   ! Equation of state
   INTEGER :: eos_number = EOS_IDEAL

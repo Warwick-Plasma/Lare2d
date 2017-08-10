@@ -767,7 +767,14 @@ CONTAINS
     WRITE(stat_unit,*) 'j_max = ', j_max
     WRITE(stat_unit,*) 'eta0 = ', eta0
     WRITE(stat_unit,*) 'eta_background = ', eta_background
-    WRITE(stat_unit,*) 'kappa = ', kappa_0
+    WRITE(stat_unit,*)
+    WRITE(stat_unit,*) 'mass_fraction = ', mf
+    WRITE(stat_unit,*) 'normalising B = ', B_norm
+    WRITE(stat_unit,*) 'normalising L = ', L_norm
+    WRITE(stat_unit,*) 'normalising density = ', rho_norm
+    WRITE(stat_unit,*) 'normalising speed = ', B_norm / SQRT(mu0_SI * rho_norm)
+    WRITE(stat_unit,*) 'normalising time = ', L_norm / (B_norm / SQRT(mu0_SI * rho_norm))
+    WRITE(stat_unit,*) 'normalising temperature = ', temp0
     WRITE(stat_unit,*)
     WRITE(stat_unit,*) 't_start, t_end = ', time, t_end
     WRITE(stat_unit,*) 'nsteps =', nsteps
