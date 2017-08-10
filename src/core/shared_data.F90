@@ -132,7 +132,7 @@ MODULE shared_data
   ! Mass fraction - mass of ions in units of proton mass
   REAL(num) :: mf
   ! Conversion factor to get temperature in K from normalised energy
-  REAL(num) :: temp0
+  REAL(num) :: temp_norm
   ! Normalisation used for radiative losses
   REAL(num) :: lr_star
   ! Normalisation used for coronal heating

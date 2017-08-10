@@ -68,7 +68,7 @@ CONTAINS
     DO ix = 1, nx
       DO iy = 1, ny
 
-        temp_si = energy(ix,iy) * (gamma - 1.0_num) * temp0
+        temp_si = energy(ix,iy) * (gamma - 1.0_num) * temp_norm
 
         DO i = 1, kmax
           IF (temp_si >= t_boundary(i) .AND. temp_si <= t_boundary(i+1)) THEN
@@ -97,7 +97,7 @@ CONTAINS
           temp_si = temp_si * EXP((yt - yk(k)) / ratios(k))
         END IF
 
-        energy(ix,iy) = temp_si / (gamma - 1.0_num) / temp0
+        energy(ix,iy) = temp_si / (gamma - 1.0_num) / temp_norm
 
       END DO
     END DO

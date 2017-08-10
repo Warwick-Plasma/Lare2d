@@ -774,7 +774,7 @@ CONTAINS
     WRITE(stat_unit,*) 'normalising density = ', rho_norm
     WRITE(stat_unit,*) 'normalising speed = ', B_norm / SQRT(mu0_SI * rho_norm)
     WRITE(stat_unit,*) 'normalising time = ', L_norm / (B_norm / SQRT(mu0_SI * rho_norm))
-    WRITE(stat_unit,*) 'normalising temperature = ', temp0
+    WRITE(stat_unit,*) 'normalising temperature = ', temp_norm
     WRITE(stat_unit,*)
     WRITE(stat_unit,*) 't_start, t_end = ', time, t_end
     WRITE(stat_unit,*) 'nsteps =', nsteps
