@@ -45,11 +45,22 @@ CONTAINS
 
     DO iy = 0, ny
     DO ix = 0, nx
-      bx(ix,iy) = xb(ix)
-      by(ix,iy) = -yb(iy)
       vy(ix,iy) = 0.01_num * EXP(-(xb(ix)**2+yb(iy)**2)/0.01_num)
     END DO
     END DO
+
+    DO iy = -1, ny+2
+    DO ix = -2, nx+2
+      bx(ix,iy) = xb(ix)
+    END DO
+    END DO
+
+    DO iy = -2, ny+2
+    DO ix = -1, nx+2
+      by(ix,iy) = -yb(iy)
+    END DO
+    END DO
+
 
   END SUBROUTINE set_initial_conditions
 
