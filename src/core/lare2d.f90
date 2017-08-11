@@ -50,7 +50,6 @@ PROGRAM lare2d
   END IF
 
   CALL open_files                ! setup.f90
-  CALL set_boundary_conditions   ! boundary.f90
   CALL boundary_conditions       ! boundary.f90
   CALL eta_calc                  ! lagran.f90
 

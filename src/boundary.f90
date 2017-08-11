@@ -25,39 +25,11 @@ CONTAINS
 
   SUBROUTINE set_boundary_conditions
 
-    ! Must be called twice
-    LOGICAL, SAVE :: first_call = .TRUE.
+    any_open = .FALSE.
+    IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
+        .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
 
-    IF (first_call) THEN
-      any_open = .FALSE.
-      IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
-          .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
-      first_call = .FALSE.
-
-      IF  (ybc_min == BC_DRIVEN) CALL setup_driver_spectrum
-
-    ELSE
-      IF (xbc_min == BC_OPEN) THEN
-        bx(-2,:) = bx(-1,:)
-        by(-1,:) = by( 0,:)
-        bz(-1,:) = bz( 0,:)
-      END IF
-      IF (xbc_max == BC_OPEN) THEN
-        bx(nx+2,:) = bx(nx+1,:)
-        by(nx+2,:) = by(nx+1,:)
-        bz(nx+2,:) = bz(nx+1,:)
-      END IF
-      IF (ybc_min == BC_OPEN) THEN
-        bx(:,-1) = bx(:, 0)
-        by(:,-2) = by(:,-1)
-        bz(:,-1) = bz(:, 0)
-      END IF
-      IF (ybc_max == BC_OPEN) THEN
-        bx(:,ny+2) = bx(:,ny+1)
-        by(:,ny+2) = by(:,ny+1)
-        bz(:,ny+2) = bz(:,ny+1)
-      END IF
-    END IF
+    IF  (ybc_min == BC_DRIVEN) CALL setup_driver_spectrum
 
   END SUBROUTINE set_boundary_conditions
 
