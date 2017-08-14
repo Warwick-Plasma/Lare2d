@@ -254,7 +254,7 @@ initial_conditions.o: initial_conditions.f90 neutral.o diagnostics.o shared_data
 lagran.o: lagran.F90 boundary.o conduct.o radiative.o neutral.o shared_data.o \
   openboundary.o
 lare2d.o: lare2d.f90 boundary.o control.o diagnostics.o initial_conditions.o \
-  lagran.o mpi_routines.o neutral.o normalise.o openboundary.o remap.o setup.o \
+  lagran.o mpi_routines.o neutral.o normalise.o remap.o setup.o \
   shared_data.o welcome.o
 mpi_routines.o: mpi_routines.F90 shared_data.o
 mpiboundary.o: mpiboundary.f90 shared_data.o
