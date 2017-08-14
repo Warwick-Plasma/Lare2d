@@ -73,9 +73,9 @@ PROGRAM lare2d
     CALL lagrangian_step             ! lagran.f90
     CALL eulerian_remap(step)        ! remap.f90
     IF (rke) CALL energy_correction  ! diagnostics.f90
-    IF (any_open) THEN
-      CALL open_bcs                  ! openboundary.f90
-    END IF
+!     IF (any_open) THEN
+!       CALL open_bcs                  ! openboundary.f90
+!     END IF        
     CALL eta_calc                    ! lagran.f90
     CALL output_routines(step)       ! diagnostics.f90
   END DO

@@ -26,11 +26,11 @@ CONTAINS
 
     ! x_min boundary
     IF (xbc_min == BC_OPEN .AND. proc_x_min == MPI_PROC_NULL) THEN
-      DO iy = 1, ny
+      DO iy = 0, ny
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) = -vx(0,iy)
-        vybc(1) =  vy(0,iy)
-        vzbc(1) =  vz(0,iy)
+        vxbc(1) = -vx1(0,iy)
+        vybc(1) =  vy1(0,iy)
+        vzbc(1) =  vz1(0,iy)
         bxbc(1) = -bx(0,iy)
         bybc(1) =  by(1,iy)
         bzbc(1) =  bz(1,iy)
@@ -59,7 +59,7 @@ CONTAINS
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
         ELSE
-          CALL open_bcs_2
+          CALL open_bcs_1
         END IF
 
         vx (-1,iy) = -vxbc(0)
@@ -75,11 +75,11 @@ CONTAINS
 
     ! x_max boundary
     IF (xbc_max == BC_OPEN .AND. proc_x_max == MPI_PROC_NULL) THEN
-      DO iy = 1, ny
+      DO iy = 0, ny
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) =  vx(nx,iy)
-        vybc(1) =  vy(nx,iy)
-        vzbc(1) =  vz(nx,iy)
+        vxbc(1) =  vx1(nx,iy)
+        vybc(1) =  vy1(nx,iy)
+        vzbc(1) =  vz1(nx,iy)
         bxbc(1) =  bx(nx,iy)
         bybc(1) =  by(nx,iy)
         bzbc(1) =  bz(nx,iy)
@@ -108,7 +108,7 @@ CONTAINS
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
         ELSE
-          CALL open_bcs_2
+          CALL open_bcs_1
         END IF
 
         vx (nx+1,iy) = vxbc(0)
@@ -124,11 +124,11 @@ CONTAINS
 
     ! y_min boundary
     IF (ybc_min == BC_OPEN .AND. proc_y_min == MPI_PROC_NULL) THEN
-      DO ix = 1, nx
+      DO ix = 0, nx
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) = -vy(ix,0)
-        vybc(1) =  vx(ix,0)
-        vzbc(1) =  vz(ix,0)
+        vxbc(1) = -vy1(ix,0)
+        vybc(1) =  vx1(ix,0)
+        vzbc(1) =  vz1(ix,0)
         bxbc(1) = -by(ix,0)
         bybc(1) =  bx(ix,1)
         bzbc(1) =  bz(ix,1)
@@ -157,7 +157,7 @@ CONTAINS
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
         ELSE
-          CALL open_bcs_2
+          CALL open_bcs_1
         END IF
 
         vx (ix,-1) =  vybc(0)
@@ -173,11 +173,11 @@ CONTAINS
 
     ! y_max boundary
     IF (ybc_max == BC_OPEN .AND. proc_y_max == MPI_PROC_NULL) THEN
-      DO ix = 1, nx
+      DO ix = 0, nx
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) =  vy(ix,ny)
-        vybc(1) =  vx(ix,ny)
-        vzbc(1) =  vz(ix,ny)
+        vxbc(1) =  vy1(ix,ny)
+        vybc(1) =  vx1(ix,ny)
+        vzbc(1) =  vz1(ix,ny)
         bxbc(1) =  by(ix,ny)
         bybc(1) =  bx(ix,ny)
         bzbc(1) =  bz(ix,ny)
@@ -206,7 +206,7 @@ CONTAINS
         IF (ABS(bxfar) <= fraction * bperp) THEN
           CALL open_bcs_1
         ELSE
-          CALL open_bcs_2
+          CALL open_bcs_1
         END IF
 
         vx (ix,ny+1) = vybc(0)
@@ -272,20 +272,20 @@ CONTAINS
     bybc(0) = 0.5_num * (bystar(1) + bystar(2))
     bzbc(0) = 0.5_num * (bzstar(1) + bzstar(2))
 
-    IF (beta >= 0.9_num) THEN
-      pg = 0.5_num &
-          * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
-      pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
+!    IF (beta >= 0.9_num) THEN
+!       pg = 0.5_num &
+!           * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
+!       pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
 
-      rhog = rhostar(3) + ((pg - pmagg) - (pstar(3) - pmagstar(3))) / c0far**2
-      rbc(0) = MAX(rhog, none_zero)
+!       rhog = rhostar(3) + ((pg - pmagg) - (pstar(3) - pmagstar(3))) / c0far**2
+!       rbc(0) = MAX(rhog, none_zero)
 
-      ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+!       ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
 
-      vxbc(0) = 0.5_num * (vstar(1) + vstar(2))
-      vybc(0) = vybc(1)
-      vzbc(0) = vzbc(1)
-    ELSE
+!       vxbc(0) = 0.5_num * (vstar(1) + vstar(2))
+!       vybc(0) = vybc(1)
+!       vzbc(0) = vzbc(1)
+!     ELSE
       pg = 0.5_num &
           * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
       pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
@@ -299,7 +299,7 @@ CONTAINS
           * (vstar(1) + vstar(2)  + (pstar(1) - pstar(2)) / (rhofar * cffar))
       vybc(0) = vybc(1)
       vzbc(0) = vzbc(1)
-    END IF
+!     END IF
 
   END SUBROUTINE open_bcs_1
 
