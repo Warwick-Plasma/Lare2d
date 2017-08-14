@@ -256,8 +256,6 @@ CONTAINS
         vz(ix,iy) = 2.0_num * vz1(ix,iy) - vz(ix,iy) 
       END DO
     END DO
-    
-    CALL velocity_bcs
 
     ! Finally correct density and energy to final values
     DO iy = 1, ny
