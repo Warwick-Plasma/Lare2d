@@ -5,7 +5,7 @@ MODULE openboundary
   IMPLICIT NONE
 
   REAL(num) :: pfar, rhofar, efar, uxfar, uyfar, uzfar
-  REAL(num) :: bxfar, byfar, bzfar, pbc, vnorm, fraction
+  REAL(num) :: bxfar, byfar, bzfar, pbc, vnorm
 
   REAL(num), DIMENSION(0:1) :: vxbc, vybc, vzbc
   REAL(num), DIMENSION(0:1) :: bxbc, bybc, bzbc
@@ -21,8 +21,6 @@ CONTAINS
     ! Only expected to work perfectly for problems with straight B field
     ! through boundaries which do not drastically change shape during the
     ! simulation.
-
-    fraction = 0.9_num
 
     ! x_min boundary
     IF (xbc_min == BC_OPEN .AND. proc_x_min == MPI_PROC_NULL) THEN
@@ -51,15 +49,17 @@ CONTAINS
         rhofar = rho(-1,iy)
         efar = energy(-1,iy)
 
-        vnorm = -vx(0,iy)
+        vnorm = -vx1(0,iy)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-        IF (ABS(bxfar) <= fraction * bperp) THEN
+        IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_1
+        ELSE IF(bperp <= none_zero) THEN
+          CALL open_bcs_2
         ELSE
-          CALL open_bcs_1
+          CALL open_bcs_3
         END IF
 
         vx (-1,iy) = -vxbc(0)
@@ -100,15 +100,17 @@ CONTAINS
         rhofar = rho(nx+2,iy)
         efar = energy(nx+2,iy)
 
-        vnorm = vx(nx,iy)
+        vnorm = vx1(nx,iy)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-        IF (ABS(bxfar) <= fraction * bperp) THEN
+        IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_1
+        ELSE IF(bperp <= none_zero) THEN
+          CALL open_bcs_2
         ELSE
-          CALL open_bcs_1
+          CALL open_bcs_3
         END IF
 
         vx (nx+1,iy) = vxbc(0)
@@ -124,7 +126,7 @@ CONTAINS
 
     ! y_min boundary
     IF (ybc_min == BC_OPEN .AND. proc_y_min == MPI_PROC_NULL) THEN
-      DO ix = 0, nx
+      DO ix = 1, nx-1
         ! Variables carried out of domain by Riemann invariants
         vxbc(1) = -vy1(ix,0)
         vybc(1) =  vx1(ix,0)
@@ -149,15 +151,17 @@ CONTAINS
         rhofar = rho(ix,-1)
         efar = energy(ix,-1)
 
-        vnorm = -vy(ix,0)
+        vnorm = -vy1(ix,0)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-        IF (ABS(bxfar) <= fraction * bperp) THEN
+        IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_1
+        ELSE IF(bperp <= none_zero) THEN
+          CALL open_bcs_2
         ELSE
-          CALL open_bcs_1
+          CALL open_bcs_3
         END IF
 
         vx (ix,-1) =  vybc(0)
@@ -173,7 +177,7 @@ CONTAINS
 
     ! y_max boundary
     IF (ybc_max == BC_OPEN .AND. proc_y_max == MPI_PROC_NULL) THEN
-      DO ix = 0, nx
+      DO ix = 1, nx-1
         ! Variables carried out of domain by Riemann invariants
         vxbc(1) =  vy1(ix,ny)
         vybc(1) =  vx1(ix,ny)
@@ -198,15 +202,17 @@ CONTAINS
         rhofar = rho(ix,ny+2)
         efar = energy(ix,ny+2)
 
-        vnorm = vy(ix,ny)
+        vnorm = vy1(ix,ny)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-        IF (ABS(bxfar) <= fraction * bperp) THEN
+        IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_1
+        ELSE IF(bperp <= none_zero) THEN
+          CALL open_bcs_2
         ELSE
-          CALL open_bcs_1
+          CALL open_bcs_3
         END IF
 
         vx (ix,ny+1) = vybc(0)
@@ -299,7 +305,7 @@ CONTAINS
           * (vstar(1) + vstar(2)  + (pstar(1) - pstar(2)) / (rhofar * cffar))
       vybc(0) = vybc(1)
       vzbc(0) = vzbc(1)
-!     END IF
+!      END IF
 
   END SUBROUTINE open_bcs_1
 
@@ -357,30 +363,30 @@ CONTAINS
 
     bxbc(0) = bxbc(1)
 
-    IF (beta > 0.1_num) THEN
-      lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4) &
-          + rhofar * cxfar * (uystar(3) - uystar(4)))
-      bybc(0) = -lambdag / bxbc(0)
+!     IF (beta > 0.1_num) THEN
+!       lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4) &
+!           + rhofar * cxfar * (uystar(3) - uystar(4)))
+!       bybc(0) = -lambdag / bxbc(0)
 
-      lambdag = 0.5_num * (lambdazstar(3) + lambdazstar(4) &
-          + rhofar * cxfar * (uzstar(3) - uzstar(4)))
-      bzbc(0) = -lambdag  / bxbc(0)
+!       lambdag = 0.5_num * (lambdazstar(3) + lambdazstar(4) &
+!           + rhofar * cxfar * (uzstar(3) - uzstar(4)))
+!       bzbc(0) = -lambdag  / bxbc(0)
 
-      pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
-      pg = 0.5_num &
-          * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
-      rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0far**2 &
-          + rhostar(5)
-      rbc(0) = MAX(rhog, none_zero)
-      ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+!       pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
+!       pg = 0.5_num &
+!           * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
+!       rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0far**2 &
+!           + rhostar(5)
+!       rbc(0) = MAX(rhog, none_zero)
+!       ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
 
-      vxbc(0) = 0.5_num &
-          * (uxstar(1) + uxstar(2) + (pstar(1) - pstar(2)) / (rhofar * c0far))
-      vybc(0) = 0.5_num * (uystar(3) + uystar(4) &
-          + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
-      vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
-          + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
-    ELSE
+!       vxbc(0) = 0.5_num &
+!           * (uxstar(1) + uxstar(2) + (pstar(1) - pstar(2)) / (rhofar * c0far))
+!       vybc(0) = 0.5_num * (uystar(3) + uystar(4) &
+!           + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
+!       vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
+!           + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
+!     ELSE
       lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4) &
           + rhofar * cxfar * (uystar(3) - uystar(4)))
       bybc(0) = -lambdag / bxbc(0)
@@ -400,14 +406,11 @@ CONTAINS
           + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
       vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
           + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
-    END IF
+!      END IF
 
   END SUBROUTINE open_bcs_2
 
 
-
-  ! This routine is currently not used and is here for later extensions and
-  ! improvements to the open boundary conditions if they are needed.
 
   SUBROUTINE open_bcs_3
 
@@ -509,72 +512,27 @@ CONTAINS
     bxg = bxbc(1)
     byg = -lambdag / bxg
 
-    IF (beta > 0.01_num) THEN
-      pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
+!     IF (beta > 0.01_num) THEN
+!       pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
 
-      rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 &
-          + rhostar(5)
-      rhog = MAX(rhog, none_zero)
-      rbc(0) = rhog
-      ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
-      vxbc(0) = uxg
-      vybc(0) = uyg
-    ELSE
+!       rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 &
+!           + rhostar(5)
+!       rhog = MAX(rhog, none_zero)
+!       rbc(0) = rhog
+!       ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
+!       vxbc(0) = uxg
+!       vybc(0) = uyg
+!     ELSE
       rbc(0) = rhostar(5)
       ebc(0) = ebc(1)
       vxbc(0) = 0.5_num * (uxstar(1) + uxstar(2))
       vybc(0) = 0.5_num * (uystar(1) + uystar(2))
-    END IF
+!     END IF
 
     ! Rotate back to grid coordinate system
     bxbc(0) = bxg
     bybc(0) = byg
     bzbc(0) = bzg
-
-    !var_min = min(efar, ebc(1))
-    !var_max = max(efar, ebc(1))
-    !ebc(0) = min(ebc(0), var_max)
-    !ebc(0) = max(ebc(0), var_min)
-
-    !var_min = min(rhofar, rbc(1))
-    !var_max = max(rhofar, rbc(1))
-    !rbc(0) = min(rbc(0), var_max)
-    !rbc(0) = max(rbc(0), var_min)
-
-    !var_min = min(rhofar, rbc(1))
-    !var_max = max(rhofar, rbc(1))
-    !rbc(0) = min(rbc(0), var_max)
-    !rbc(0) = max(rbc(0), var_min)
-
-    !var_min = min(bxfar, bxbc(1))
-    !var_max = max(bxfar, bxbc(1))
-    !bxbc(0) = min(bxbc(0), var_max)
-    !bxbc(0) = max(bxbc(0), var_min)
-
-    !var_min = min(byfar, bybc(1))
-    !var_max = max(byfar, bybc(1))
-    !bybc(0) = min(bybc(0), var_max)
-    !bybc(0) = max(bybc(0), var_min)
-
-    !var_min = min(bzfar, bzbc(1))
-    !var_max = max(bzfar, bzbc(1))
-    !bzbc(0) = min(bzbc(0), var_max)
-    !bzbc(0) = max(bzbc(0), var_min)
-
-    !var_min = min(uxfar, vxbc(1))
-    !var_max = max(uxfar, vxbc(1))
-    !vxbc(0) = min(vxbc(0), var_max)
-    !vxbc(0) = max(vxbc(0), var_min)
-
-    !var_min = min(uyfar, vybc(1))
-    !var_max = max(uyfar, vybc(1))
-    !vybc(0) = min(vybc(0), var_max)
-    !vybc(0) = max(vybc(0), var_min)
-
-    !var_min = min(uzfar, vzbc(1))
-    !var_max = max(uzfar, vzbc(1))
-    !vzbc(0) = min(vzbc(0), var_max)
-    !vzbc(0) = max(vzbc(0), var_min)
 
   END SUBROUTINE open_bcs_3
 
