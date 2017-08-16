@@ -34,8 +34,8 @@ CONTAINS
     vx = 0.0_num
     vy = 0.0_num
     vz = 0.0_num
-    bx = 0.0_num
-    by = 0.0_num
+    bx = 1.0_num
+    by = 0.5_num
     bz = 0.0_num
 
     grav = 0.0_num
@@ -45,21 +45,23 @@ CONTAINS
 
     DO iy = 0, ny
     DO ix = 0, nx
-      vy(ix,iy) = 0.01_num * EXP(-(xb(ix)**2+yb(iy)**2)/0.01_num)
+!      energy(ix,iy) = 1.0_num * (1.0_num + 0.01_num * EXP(-(xc(ix)**2)/0.01_num))
+!      energy(ix,iy) = 1.0_num * (1.0_num + 0.01_num * EXP(-(xc(ix)**2+yc(iy)**2)/0.01_num))
+      vy(ix,iy) = 0.01_num * EXP(-(xb(ix)**2)/0.01_num)
     END DO
     END DO
 
-    DO iy = -1, ny+2
-    DO ix = -2, nx+2
-      bx(ix,iy) = xb(ix)
-    END DO
-    END DO
+!     DO iy = -1, ny+2
+!     DO ix = -2, nx+2
+!       bx(ix,iy) = xb(ix)
+!     END DO
+!     END DO
 
-    DO iy = -2, ny+2
-    DO ix = -1, nx+2
-      by(ix,iy) = -yb(iy)
-    END DO
-    END DO
+!     DO iy = -2, ny+2
+!     DO ix = -1, nx+2
+!       by(ix,iy) = -yb(iy)
+!     END DO
+!     END DO
 
 
   END SUBROUTINE set_initial_conditions

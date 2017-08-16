@@ -67,8 +67,8 @@ CONTAINS
     t_end = 5.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
-    visc1 = 0.2_num
-    visc2 = 1.0_num
+    visc1 = 0.0_num
+    visc2 = 0.0_num
 
     ! Set these constants to manually override the domain decomposition.
     ! If either constant is set to zero then the code will try to automatically
@@ -150,8 +150,8 @@ CONTAINS
     ! BC_USER    - User boundary conditions specified in "boundary.f90"
     xbc_min = BC_OPEN
     xbc_max = BC_OPEN
-    ybc_min = BC_OPEN
-    ybc_max = BC_OPEN
+    ybc_min = BC_PERIODIC
+    ybc_max = BC_PERIODIC
 
     ! Set to true to turn on routine for damped boundaries.
     ! These routines are in boundary.f90 and you should check that they
