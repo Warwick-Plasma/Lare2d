@@ -242,9 +242,6 @@ CONTAINS
     bz1 = bz1 / cv1
     
     CALL remap_v_bcs
-    IF (any_open) THEN
-      CALL open_bcs         
-    END IF 
 
     CALL shock_heating
 
@@ -256,6 +253,11 @@ CONTAINS
         vz(ix,iy) = 2.0_num * vz1(ix,iy) - vz(ix,iy) 
       END DO
     END DO
+
+    CALL velocity_bcs
+    IF (any_open) THEN
+      CALL open_bcs         
+    END IF 
 
     ! Finally correct density and energy to final values
     DO iy = 1, ny

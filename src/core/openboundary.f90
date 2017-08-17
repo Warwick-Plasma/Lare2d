@@ -26,9 +26,9 @@ CONTAINS
     IF (xbc_min == BC_OPEN .AND. proc_x_min == MPI_PROC_NULL) THEN
       DO iy = 0, ny
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) = -vx1(0,iy)
-        vybc(1) =  vy1(0,iy)
-        vzbc(1) =  vz1(0,iy)
+        vxbc(1) = -vx(0,iy)
+        vybc(1) =  vy(0,iy)
+        vzbc(1) =  vz(0,iy)
         bxbc(1) = -bx(0,iy)
         bybc(1) =  by(1,iy)
         bzbc(1) =  bz(1,iy)
@@ -83,9 +83,9 @@ CONTAINS
     IF (xbc_max == BC_OPEN .AND. proc_x_max == MPI_PROC_NULL) THEN
       DO iy = 0, ny
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) =  vx1(nx,iy)
-        vybc(1) =  vy1(nx,iy)
-        vzbc(1) =  vz1(nx,iy)
+        vxbc(1) =  vx(nx,iy)
+        vybc(1) =  vy(nx,iy)
+        vzbc(1) =  vz(nx,iy)
         bxbc(1) =  bx(nx,iy)
         bybc(1) =  by(nx,iy)
         bzbc(1) =  bz(nx,iy)
@@ -106,24 +106,24 @@ CONTAINS
         rhofar = rho(nx+2,iy)
         efar = energy(nx+2,iy)
 
-        vnorm = vx1(nx,iy)
+        vnorm = vx(nx,iy)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
- IF (ABS(bxfar) <= none_zero) THEN
-   IF (bc1 .EQ. 1) CALL open_bcs_1
-   IF (bc1 .EQ. 2) CALL open_bcs_2
-   IF (bc1 .EQ. 3) CALL open_bcs_3
- ELSE IF(bperp <= none_zero) THEN
-   IF (bc2 .EQ. 1) CALL open_bcs_1
-   IF (bc2 .EQ. 2) CALL open_bcs_2
-   IF (bc2 .EQ. 3) CALL open_bcs_3
- ELSE
-   IF (bc3 .EQ. 1) CALL open_bcs_1
-   IF (bc3 .EQ. 2) CALL open_bcs_2
-   IF (bc3 .EQ. 3) CALL open_bcs_3
- END IF
+       IF (ABS(bxfar) <= none_zero) THEN
+         IF (bc1 .EQ. 1) CALL open_bcs_1
+         IF (bc1 .EQ. 2) CALL open_bcs_2
+         IF (bc1 .EQ. 3) CALL open_bcs_3
+       ELSE IF(bperp <= none_zero) THEN
+         IF (bc2 .EQ. 1) CALL open_bcs_1
+         IF (bc2 .EQ. 2) CALL open_bcs_2
+         IF (bc2 .EQ. 3) CALL open_bcs_3
+       ELSE
+         IF (bc3 .EQ. 1) CALL open_bcs_1
+         IF (bc3 .EQ. 2) CALL open_bcs_2
+         IF (bc3 .EQ. 3) CALL open_bcs_3
+       END IF
 
         vx (nx+1,iy) = vxbc(0)
         vy (nx+1,iy) = vybc(0)
@@ -138,11 +138,11 @@ CONTAINS
 
     ! y_min boundary
     IF (ybc_min == BC_OPEN .AND. proc_y_min == MPI_PROC_NULL) THEN
-      DO ix = 1, nx-1
+      DO ix = 0, nx
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) = -vy1(ix,0)
-        vybc(1) =  vx1(ix,0)
-        vzbc(1) =  vz1(ix,0)
+        vxbc(1) = -vy(ix,0)
+        vybc(1) =  vx(ix,0)
+        vzbc(1) =  vz(ix,0)
         bxbc(1) = -by(ix,0)
         bybc(1) =  bx(ix,1)
         bzbc(1) =  bz(ix,1)
@@ -163,24 +163,24 @@ CONTAINS
         rhofar = rho(ix,-1)
         efar = energy(ix,-1)
 
-        vnorm = -vy1(ix,0)
+        vnorm = -vy(ix,0)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
- IF (ABS(bxfar) <= none_zero) THEN
-   IF (bc1 .EQ. 1) CALL open_bcs_1
-   IF (bc1 .EQ. 2) CALL open_bcs_2
-   IF (bc1 .EQ. 3) CALL open_bcs_3
- ELSE IF(bperp <= none_zero) THEN
-   IF (bc2 .EQ. 1) CALL open_bcs_1
-   IF (bc2 .EQ. 2) CALL open_bcs_2
-   IF (bc2 .EQ. 3) CALL open_bcs_3
- ELSE
-   IF (bc3 .EQ. 1) CALL open_bcs_1
-   IF (bc3 .EQ. 2) CALL open_bcs_2
-   IF (bc3 .EQ. 3) CALL open_bcs_3
- END IF
+         IF (ABS(bxfar) <= none_zero) THEN
+           IF (bc1 .EQ. 1) CALL open_bcs_1
+           IF (bc1 .EQ. 2) CALL open_bcs_2
+           IF (bc1 .EQ. 3) CALL open_bcs_3
+         ELSE IF(bperp <= none_zero) THEN
+           IF (bc2 .EQ. 1) CALL open_bcs_1
+           IF (bc2 .EQ. 2) CALL open_bcs_2
+           IF (bc2 .EQ. 3) CALL open_bcs_3
+         ELSE
+           IF (bc3 .EQ. 1) CALL open_bcs_1
+           IF (bc3 .EQ. 2) CALL open_bcs_2
+           IF (bc3 .EQ. 3) CALL open_bcs_3
+         END IF
 
         vx (ix,-1) =  vybc(0)
         vy (ix,-1) = -vxbc(0)
@@ -195,11 +195,11 @@ CONTAINS
 
     ! y_max boundary
     IF (ybc_max == BC_OPEN .AND. proc_y_max == MPI_PROC_NULL) THEN
-      DO ix = 1, nx-1
+      DO ix = 0, nx
         ! Variables carried out of domain by Riemann invariants
-        vxbc(1) =  vy1(ix,ny)
-        vybc(1) =  vx1(ix,ny)
-        vzbc(1) =  vz1(ix,ny)
+        vxbc(1) =  vy(ix,ny)
+        vybc(1) =  vx(ix,ny)
+        vzbc(1) =  vz(ix,ny)
         bxbc(1) =  by(ix,ny)
         bybc(1) =  bx(ix,ny)
         bzbc(1) =  bz(ix,ny)
@@ -220,24 +220,24 @@ CONTAINS
         rhofar = rho(ix,ny+2)
         efar = energy(ix,ny+2)
 
-        vnorm = vy1(ix,ny)
+        vnorm = vy(ix,ny)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
- IF (ABS(bxfar) <= none_zero) THEN
-   IF (bc1 .EQ. 1) CALL open_bcs_1
-   IF (bc1 .EQ. 2) CALL open_bcs_2
-   IF (bc1 .EQ. 3) CALL open_bcs_3
- ELSE IF(bperp <= none_zero) THEN
-   IF (bc2 .EQ. 1) CALL open_bcs_1
-   IF (bc2 .EQ. 2) CALL open_bcs_2
-   IF (bc2 .EQ. 3) CALL open_bcs_3
- ELSE
-   IF (bc3 .EQ. 1) CALL open_bcs_1
-   IF (bc3 .EQ. 2) CALL open_bcs_2
-   IF (bc3 .EQ. 3) CALL open_bcs_3
- END IF
+        IF (ABS(bxfar) <= none_zero) THEN
+            IF (bc1 .EQ. 1) CALL open_bcs_1
+            IF (bc1 .EQ. 2) CALL open_bcs_2
+            IF (bc1 .EQ. 3) CALL open_bcs_3
+        ELSE IF(bperp <= none_zero) THEN
+            IF (bc2 .EQ. 1) CALL open_bcs_1
+            IF (bc2 .EQ. 2) CALL open_bcs_2
+            IF (bc2 .EQ. 3) CALL open_bcs_3
+        ELSE
+            IF (bc3 .EQ. 1) CALL open_bcs_1
+            IF (bc3 .EQ. 2) CALL open_bcs_2
+            IF (bc3 .EQ. 3) CALL open_bcs_3
+        END IF
 
         vx (ix,ny+1) = vybc(0)
         vy (ix,ny+1) = vxbc(0)
@@ -302,34 +302,19 @@ CONTAINS
     bybc(0) = 0.5_num * (bystar(1) + bystar(2))
     bzbc(0) = 0.5_num * (bzstar(1) + bzstar(2))
 
-!    IF (beta >= 0.9_num) THEN
-!       pg = 0.5_num &
-!           * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
-!       pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
+    pg = 0.5_num &
+        * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
+    pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
 
-!       rhog = rhostar(3) + ((pg - pmagg) - (pstar(3) - pmagstar(3))) / c0far**2
-!       rbc(0) = MAX(rhog, none_zero)
+    rhog = rhostar(3)
+    rbc(0) = MAX(rhog, none_zero)
 
-!       ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+    ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
 
-!       vxbc(0) = 0.5_num * (vstar(1) + vstar(2))
-!       vybc(0) = vybc(1)
-!       vzbc(0) = vzbc(1)
-!     ELSE
-      pg = 0.5_num &
-          * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
-      pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
-
-      rhog = rhostar(3)
-      rbc(0) = MAX(rhog, none_zero)
-
-      ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
-
-      vxbc(0) = 0.5_num &
-          * (vstar(1) + vstar(2)  + (pstar(1) - pstar(2)) / (rhofar * cffar))
-      vybc(0) = vybc(1)
-      vzbc(0) = vzbc(1)
-!      END IF
+    vxbc(0) = 0.5_num &
+        * (vstar(1) + vstar(2)  + (pstar(1) - pstar(2)) / (rhofar * cffar))
+    vybc(0) = vybc(1)
+    vzbc(0) = vzbc(1)
 
   END SUBROUTINE open_bcs_1
 
@@ -350,11 +335,13 @@ CONTAINS
     lambdayfar = -bxfar * byfar
     lambdazfar = -bxfar * bzfar
     c0far = SQRT(gamma * pfar / rhofar)
-    cxfar = SQRT(bxfar**2 / rhofar)
+    cxfar = SQRT((bxfar**2)/ rhofar)
+!    cxfar = SQRT((bxfar**2 + byfar**2 + bzfar**2)/ rhofar)
     beta = (c0far / cxfar)**2
 
     c0 = SQRT(gamma * (gamma - 1.0_num) * ebc(1))
-    cx = SQRT(bxbc(1)**2 / rbc(1))
+    cx = SQRT((bxbc(1)**2)/ rbc(1))
+!    cx = SQRT((bxbc(1)**2 + bybc(1)**2 + bzbc(1)**2)/ rbc(1))
 
     ! Define the speeds of the characteristics to be checked along
     vtest(1) = vnorm + c0
@@ -387,52 +374,31 @@ CONTAINS
 
     bxbc(0) = bxbc(1)
 
-!     IF (beta > 0.1_num) THEN
-      lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4) &
-          + rhofar * cxfar * (uystar(3) - uystar(4)))
-      bybc(0) = -lambdag / bxbc(0)
+    lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4) &
+        + rhofar * cxfar * (uystar(3) - uystar(4)))
+    bybc(0) = -lambdag / bxbc(0)
 
-      lambdag = 0.5_num * (lambdazstar(3) + lambdazstar(4) &
-          + rhofar * cxfar * (uzstar(3) - uzstar(4)))
-      bzbc(0) = -lambdag  / bxbc(0)
+    lambdag = 0.5_num * (lambdazstar(3) + lambdazstar(4) &
+        + rhofar * cxfar * (uzstar(3) - uzstar(4)))
+    bzbc(0) = -lambdag  / bxbc(0)
 
-      pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
-      pg = 0.5_num &
-          * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
-      rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0far**2 &
-          + rhostar(5)
-      rbc(0) = MAX(rhog, none_zero)
-      ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+    pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
+    pg = 0.5_num &
+        * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
+    rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0far**2 &
+        + rhostar(5)
+    rbc(0) = MAX(rhog, none_zero)
+    ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
 
-      vxbc(0) = 0.5_num &
-          * (uxstar(1) + uxstar(2) + (pstar(1) - pstar(2)) / (rhofar * c0far))
-      vybc(0) = 0.5_num * (uystar(3) + uystar(4) &
-          + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
-      vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
-          + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
-!     ELSE
-!       lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4) &
-!           + rhofar * cxfar * (uystar(3) - uystar(4)))
-!       bybc(0) = -lambdag / bxbc(0)
-
-!       lambdag = 0.5_num * (lambdazstar(3) + lambdazstar(4) &
-!           + rhofar * cxfar * (uzstar(3) - uzstar(4)))
-!       bzbc(0) = -lambdag  / bxbc(0)
-
-!       pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
-!       pg = 0.5_num * (pstar(1) + pstar(2))
-!       rhog = rhostar(5)
-!       rbc(0) = MAX(rhog, none_zero)
-!       ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
-
-!       vxbc(0) = 0.5_num * (uxstar(1) + uxstar(2))
-!       vybc(0) = 0.5_num * (uystar(3) + uystar(4) &
-!           + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
-!       vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
-!           + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
-!      END IF
+    vxbc(0) = 0.5_num &
+        * (uxstar(1) + uxstar(2) + (pstar(1) - pstar(2)) / (rhofar * c0far))
+    vybc(0) = 0.5_num * (uystar(3) + uystar(4) &
+        + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
+    vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
+        + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
 
   END SUBROUTINE open_bcs_2
+
 
 
 
@@ -539,11 +505,10 @@ CONTAINS
 !     IF (beta > 0.01_num) THEN
       pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
 
-      rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 &
-          + rhostar(5)
+      rhog = rhostar(5) !+ (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 
       rhog = MAX(rhog, none_zero)
       rbc(0) = rhog
-      ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
+      ebc(0) = ebc(1) !MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
       vxbc(0) = uxg
       vybc(0) = uyg
 !     ELSE

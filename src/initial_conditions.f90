@@ -45,17 +45,17 @@ CONTAINS
       energy = 0.1_num
     END IF
 
-    test = 1
+    test = 3
 
     SELECT CASE(test)
 
 !--------------------------------------------------------
-      CASE(20) !2D X-point, beta_max ~ 1
+     CASE(4) !2D X-point, beta_max ~ 1
 
-        bc1 = 2
-        bc2 = 2
-        bc3 = 2
-        visc1 = 0.0_num
+        bc1 = 3
+        bc2 = 3
+        bc3 = 3
+        visc1 = 0.1_num
         visc2 = 0.0_num    
         xbc_min = BC_OPEN
         xbc_max = BC_OPEN
@@ -82,14 +82,36 @@ CONTAINS
             END DO
           END DO
         END IF
+!--------------------------------------------------------
+     CASE (3) !2D acoustic test
 
+        bc1 = 3
+        bc2 = 3
+        bc3 = 3
+        visc1 = 0.1_num
+        visc2 = 0.0_num    
+        xbc_min = BC_OPEN
+        xbc_max = BC_OPEN
+        ybc_min = BC_OPEN
+        ybc_max = BC_OPEN
+        IF (second_call) THEN
+          bx = 1.0_num
+          by = 1.0_num
+          energy = 1.0_num      
+          DO iy = 0, ny
+            DO ix = 0, nx
+              energy(ix,iy) = energy(ix,iy)  &
+                * (1.0_num + 0.1_num * EXP(-(xc(ix)**2+yc(iy)**2)/0.01_num))
+            END DO
+          END DO
+         END IF
 !--------------------------------------------------------
       CASE (2) !1D Alfven wave test, beta ~1
 
-        bc1 = 2
+        bc1 = 1
         bc2 = 2
         bc3 = 2
-        visc1 = 0.0_num
+        visc1 = 0.1_num
         visc2 = 0.0_num    
         xbc_min = BC_OPEN
         xbc_max = BC_OPEN
@@ -97,10 +119,11 @@ CONTAINS
         ybc_max = BC_PERIODIC
         IF (second_call) THEN
          bx = 1.0_num
-         energy = 1.0_num      
+         by = 1.0_num
+         energy = 0.1_num      
          DO iy = 0, ny
            DO ix = 0, nx
-             vy(ix,iy) = 0.01_num * EXP(-(xb(ix)**2)/0.01_num)
+             vx(ix,iy) = 0.01_num * EXP(-(xb(ix)**2)/0.01_num)
            END DO
          END DO
         END IF
@@ -118,13 +141,15 @@ CONTAINS
         ybc_min = BC_PERIODIC
         ybc_max = BC_PERIODIC
         IF (second_call) THEN
-         energy = 1.0_num      
-         DO iy = 0, ny
-           DO ix = 0, nx
-             vx(ix,iy) = 0.01_num * EXP(-(xb(ix)**2)/0.01_num)
-           END DO
-         END DO
-        END IF
+          bx = 1.0_num
+          energy = 0.01_num      
+          DO iy = 0, ny
+            DO ix = 0, nx
+              energy(ix,iy) = energy(ix,iy)  &
+                * (1.0_num + 0.1_num * EXP(-(xb(ix)**2)/0.01_num))
+            END DO
+          END DO
+         END IF
 
     END SELECT
 
