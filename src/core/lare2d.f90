@@ -27,6 +27,7 @@ PROGRAM lare2d
   CALL user_normalisation  ! control.f90
   CALL control_variables   ! control.f90
   CALL set_output_dumps    ! control.f90
+  CALL set_initial_conditions
   CALL mpi_initialise      ! mpi_routines.f90
   CALL after_control       ! setup.f90
 

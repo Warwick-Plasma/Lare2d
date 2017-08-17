@@ -146,7 +146,7 @@ CONTAINS
     ! Set the boundary conditions on the four edges of the simulation domain
     ! Valid constants are
     ! BC_PERIODIC - Periodic boundary conditions
-    ! BC_OPEN     - Reimann far-field characteristic boundary conditions
+    ! BC_OPEN     - Riemann far-field characteristic boundary conditions
     ! BC_USER    - User boundary conditions specified in "boundary.f90"
     xbc_min = BC_OPEN
     xbc_max = BC_OPEN
@@ -186,7 +186,7 @@ CONTAINS
     data_dir = 'Data'
 
     ! The interval between output snapshots.
-    dt_snapshots = 0.1_num
+    dt_snapshots = t_end / 50.0_num
 
     ! dump_mask is an array which specifies which quantities the code should
     ! output to disk in a data dump.

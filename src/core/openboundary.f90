@@ -55,11 +55,17 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
-          CALL open_bcs_1
+          IF (bc1 .EQ. 1) CALL open_bcs_1
+          IF (bc1 .EQ. 2) CALL open_bcs_2
+          IF (bc1 .EQ. 3) CALL open_bcs_3
         ELSE IF(bperp <= none_zero) THEN
-          CALL open_bcs_2
+          IF (bc2 .EQ. 1) CALL open_bcs_1
+          IF (bc2 .EQ. 2) CALL open_bcs_2
+          IF (bc2 .EQ. 3) CALL open_bcs_3
         ELSE
-          CALL open_bcs_3
+          IF (bc3 .EQ. 1) CALL open_bcs_1
+          IF (bc3 .EQ. 2) CALL open_bcs_2
+          IF (bc3 .EQ. 3) CALL open_bcs_3
         END IF
 
         vx (-1,iy) = -vxbc(0)
@@ -105,13 +111,19 @@ CONTAINS
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-        IF (ABS(bxfar) <= none_zero) THEN
-          CALL open_bcs_1
-        ELSE IF(bperp <= none_zero) THEN
-          CALL open_bcs_2
-        ELSE
-          CALL open_bcs_3
-        END IF
+ IF (ABS(bxfar) <= none_zero) THEN
+   IF (bc1 .EQ. 1) CALL open_bcs_1
+   IF (bc1 .EQ. 2) CALL open_bcs_2
+   IF (bc1 .EQ. 3) CALL open_bcs_3
+ ELSE IF(bperp <= none_zero) THEN
+   IF (bc2 .EQ. 1) CALL open_bcs_1
+   IF (bc2 .EQ. 2) CALL open_bcs_2
+   IF (bc2 .EQ. 3) CALL open_bcs_3
+ ELSE
+   IF (bc3 .EQ. 1) CALL open_bcs_1
+   IF (bc3 .EQ. 2) CALL open_bcs_2
+   IF (bc3 .EQ. 3) CALL open_bcs_3
+ END IF
 
         vx (nx+1,iy) = vxbc(0)
         vy (nx+1,iy) = vybc(0)
@@ -156,13 +168,19 @@ CONTAINS
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-        IF (ABS(bxfar) <= none_zero) THEN
-          CALL open_bcs_1
-        ELSE IF(bperp <= none_zero) THEN
-          CALL open_bcs_2
-        ELSE
-          CALL open_bcs_3
-        END IF
+ IF (ABS(bxfar) <= none_zero) THEN
+   IF (bc1 .EQ. 1) CALL open_bcs_1
+   IF (bc1 .EQ. 2) CALL open_bcs_2
+   IF (bc1 .EQ. 3) CALL open_bcs_3
+ ELSE IF(bperp <= none_zero) THEN
+   IF (bc2 .EQ. 1) CALL open_bcs_1
+   IF (bc2 .EQ. 2) CALL open_bcs_2
+   IF (bc2 .EQ. 3) CALL open_bcs_3
+ ELSE
+   IF (bc3 .EQ. 1) CALL open_bcs_1
+   IF (bc3 .EQ. 2) CALL open_bcs_2
+   IF (bc3 .EQ. 3) CALL open_bcs_3
+ END IF
 
         vx (ix,-1) =  vybc(0)
         vy (ix,-1) = -vxbc(0)
@@ -207,13 +225,19 @@ CONTAINS
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-        IF (ABS(bxfar) <= none_zero) THEN
-          CALL open_bcs_1
-        ELSE IF(bperp <= none_zero) THEN
-          CALL open_bcs_2
-        ELSE
-          CALL open_bcs_3
-        END IF
+ IF (ABS(bxfar) <= none_zero) THEN
+   IF (bc1 .EQ. 1) CALL open_bcs_1
+   IF (bc1 .EQ. 2) CALL open_bcs_2
+   IF (bc1 .EQ. 3) CALL open_bcs_3
+ ELSE IF(bperp <= none_zero) THEN
+   IF (bc2 .EQ. 1) CALL open_bcs_1
+   IF (bc2 .EQ. 2) CALL open_bcs_2
+   IF (bc2 .EQ. 3) CALL open_bcs_3
+ ELSE
+   IF (bc3 .EQ. 1) CALL open_bcs_1
+   IF (bc3 .EQ. 2) CALL open_bcs_2
+   IF (bc3 .EQ. 3) CALL open_bcs_3
+ END IF
 
         vx (ix,ny+1) = vybc(0)
         vy (ix,ny+1) = vxbc(0)
@@ -513,20 +537,20 @@ CONTAINS
     byg = -lambdag / bxg
 
 !     IF (beta > 0.01_num) THEN
-!       pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
+      pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
 
-!       rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 &
-!           + rhostar(5)
-!       rhog = MAX(rhog, none_zero)
-!       rbc(0) = rhog
-!       ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
-!       vxbc(0) = uxg
-!       vybc(0) = uyg
+      rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 &
+          + rhostar(5)
+      rhog = MAX(rhog, none_zero)
+      rbc(0) = rhog
+      ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
+      vxbc(0) = uxg
+      vybc(0) = uyg
 !     ELSE
-      rbc(0) = rhostar(5)
-      ebc(0) = ebc(1)
-      vxbc(0) = 0.5_num * (uxstar(1) + uxstar(2))
-      vybc(0) = 0.5_num * (uystar(1) + uystar(2))
+!       rbc(0) = rhostar(5)
+!       ebc(0) = ebc(1)
+!       vxbc(0) = 0.5_num * (uxstar(1) + uxstar(2))
+!       vybc(0) = 0.5_num * (uystar(1) + uystar(2))
 !     END IF
 
     ! Rotate back to grid coordinate system
