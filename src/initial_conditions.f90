@@ -45,7 +45,7 @@ CONTAINS
       energy = 0.1_num
     END IF
 
-    test = 4
+    test = 3
 
     SELECT CASE(test)
 
@@ -118,9 +118,9 @@ CONTAINS
         ybc_min = BC_PERIODIC
         ybc_max = BC_PERIODIC
         IF (second_call) THEN
-         bx = 0.0_num
+         bx = 1.0_num
          by = 1.0_num
-         energy = 1.0_num      
+         energy = 0.1_num      
          DO iy = 0, ny
            DO ix = 0, nx
              vx(ix,iy) = 0.01_num * EXP(-(xb(ix)**2)/0.01_num)
@@ -141,8 +141,8 @@ CONTAINS
         ybc_min = BC_PERIODIC
         ybc_max = BC_PERIODIC
         IF (second_call) THEN
-          by = 1.0_num
-          energy = 1.0_num      
+          bx = 1.0_num
+          energy = 0.01_num      
           DO iy = 0, ny
             DO ix = 0, nx
               energy(ix,iy) = energy(ix,iy)  &
