@@ -55,17 +55,17 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
-          IF (bc1 .EQ. 1) CALL open_bcs_1
-          IF (bc1 .EQ. 2) CALL open_bcs_2
-          IF (bc1 .EQ. 3) CALL open_bcs_3
+          IF (bc1 .EQ. 1) CALL open_bcs_fast
+          IF (bc1 .EQ. 2) CALL open_bcs_alfven
+          IF (bc1 .EQ. 3) CALL open_bcs_mixed
         ELSE IF(bperp <= none_zero) THEN
-          IF (bc2 .EQ. 1) CALL open_bcs_1
-          IF (bc2 .EQ. 2) CALL open_bcs_2
-          IF (bc2 .EQ. 3) CALL open_bcs_3
+          IF (bc2 .EQ. 1) CALL open_bcs_fast
+          IF (bc2 .EQ. 2) CALL open_bcs_alfven
+          IF (bc2 .EQ. 3) CALL open_bcs_mixed
         ELSE
-          IF (bc3 .EQ. 1) CALL open_bcs_1
-          IF (bc3 .EQ. 2) CALL open_bcs_2
-          IF (bc3 .EQ. 3) CALL open_bcs_3
+          IF (bc3 .EQ. 1) CALL open_bcs_fast
+          IF (bc3 .EQ. 2) CALL open_bcs_alfven
+          IF (bc3 .EQ. 3) CALL open_bcs_mixed
         END IF
 
         vx (-1,iy) = -vxbc(0)
@@ -112,17 +112,17 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
 
        IF (ABS(bxfar) <= none_zero) THEN
-         IF (bc1 .EQ. 1) CALL open_bcs_1
-         IF (bc1 .EQ. 2) CALL open_bcs_2
-         IF (bc1 .EQ. 3) CALL open_bcs_3
+         IF (bc1 .EQ. 1) CALL open_bcs_fast
+         IF (bc1 .EQ. 2) CALL open_bcs_alfven
+         IF (bc1 .EQ. 3) CALL open_bcs_mixed
        ELSE IF(bperp <= none_zero) THEN
-         IF (bc2 .EQ. 1) CALL open_bcs_1
-         IF (bc2 .EQ. 2) CALL open_bcs_2
-         IF (bc2 .EQ. 3) CALL open_bcs_3
+         IF (bc2 .EQ. 1) CALL open_bcs_fast
+         IF (bc2 .EQ. 2) CALL open_bcs_alfven
+         IF (bc2 .EQ. 3) CALL open_bcs_mixed
        ELSE
-         IF (bc3 .EQ. 1) CALL open_bcs_1
-         IF (bc3 .EQ. 2) CALL open_bcs_2
-         IF (bc3 .EQ. 3) CALL open_bcs_3
+         IF (bc3 .EQ. 1) CALL open_bcs_fast
+         IF (bc3 .EQ. 2) CALL open_bcs_alfven
+         IF (bc3 .EQ. 3) CALL open_bcs_mixed
        END IF
 
         vx (nx+1,iy) = vxbc(0)
@@ -169,17 +169,17 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
 
          IF (ABS(bxfar) <= none_zero) THEN
-           IF (bc1 .EQ. 1) CALL open_bcs_1
-           IF (bc1 .EQ. 2) CALL open_bcs_2
-           IF (bc1 .EQ. 3) CALL open_bcs_3
+           IF (bc1 .EQ. 1) CALL open_bcs_fast
+           IF (bc1 .EQ. 2) CALL open_bcs_alfven
+           IF (bc1 .EQ. 3) CALL open_bcs_mixed
          ELSE IF(bperp <= none_zero) THEN
-           IF (bc2 .EQ. 1) CALL open_bcs_1
-           IF (bc2 .EQ. 2) CALL open_bcs_2
-           IF (bc2 .EQ. 3) CALL open_bcs_3
+           IF (bc2 .EQ. 1) CALL open_bcs_fast
+           IF (bc2 .EQ. 2) CALL open_bcs_alfven
+           IF (bc2 .EQ. 3) CALL open_bcs_mixed
          ELSE
-           IF (bc3 .EQ. 1) CALL open_bcs_1
-           IF (bc3 .EQ. 2) CALL open_bcs_2
-           IF (bc3 .EQ. 3) CALL open_bcs_3
+           IF (bc3 .EQ. 1) CALL open_bcs_fast
+           IF (bc3 .EQ. 2) CALL open_bcs_alfven
+           IF (bc3 .EQ. 3) CALL open_bcs_mixed
          END IF
 
         vx (ix,-1) =  vybc(0)
@@ -226,17 +226,17 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
-            IF (bc1 .EQ. 1) CALL open_bcs_1
-            IF (bc1 .EQ. 2) CALL open_bcs_2
-            IF (bc1 .EQ. 3) CALL open_bcs_3
+            IF (bc1 .EQ. 1) CALL open_bcs_fast
+            IF (bc1 .EQ. 2) CALL open_bcs_alfven
+            IF (bc1 .EQ. 3) CALL open_bcs_mixed
         ELSE IF(bperp <= none_zero) THEN
-            IF (bc2 .EQ. 1) CALL open_bcs_1
-            IF (bc2 .EQ. 2) CALL open_bcs_2
-            IF (bc2 .EQ. 3) CALL open_bcs_3
+            IF (bc2 .EQ. 1) CALL open_bcs_fast
+            IF (bc2 .EQ. 2) CALL open_bcs_alfven
+            IF (bc2 .EQ. 3) CALL open_bcs_mixed
         ELSE
-            IF (bc3 .EQ. 1) CALL open_bcs_1
-            IF (bc3 .EQ. 2) CALL open_bcs_2
-            IF (bc3 .EQ. 3) CALL open_bcs_3
+            IF (bc3 .EQ. 1) CALL open_bcs_fast
+            IF (bc3 .EQ. 2) CALL open_bcs_alfven
+            IF (bc3 .EQ. 3) CALL open_bcs_mixed
         END IF
 
         vx (ix,ny+1) = vybc(0)
@@ -254,7 +254,7 @@ CONTAINS
 
 
 
-  SUBROUTINE open_bcs_1
+  SUBROUTINE open_bcs_fast
 
     ! Open bc when bx = 0
 
@@ -298,7 +298,7 @@ CONTAINS
       END IF
     END DO
 
-    bxbc(0) = bxbc(1)
+    bxbc(0) = 0.5_num * (bxbc(1) + bxfar)
     bybc(0) = 0.5_num * (bystar(1) + bystar(2))
     bzbc(0) = 0.5_num * (bzstar(1) + bzstar(2))
 
@@ -316,18 +316,18 @@ CONTAINS
     vybc(0) = vybc(1)
     vzbc(0) = vzbc(1)
 
-  END SUBROUTINE open_bcs_1
+  END SUBROUTINE open_bcs_fast
 
 
 
-  SUBROUTINE open_bcs_2
+  SUBROUTINE open_bcs_alfven
 
     ! Open bc when bperp = 0
 
     REAL(num) :: lambdayfar, lambdazfar
     REAL(num) :: c0, cx
     REAL(num) :: pg, rhog, c0far, cxfar
-    REAL(num) :: pmagg, lambdag, beta
+    REAL(num) :: pmagg, lambdag
     REAL(num), DIMENSION(5) :: vtest, pstar, uxstar, rhostar, pmagstar
     REAL(num), DIMENSION(5) :: uystar, lambdaystar, lambdazstar, uzstar
     INTEGER :: i
@@ -336,12 +336,9 @@ CONTAINS
     lambdazfar = -bxfar * bzfar
     c0far = SQRT(gamma * pfar / rhofar)
     cxfar = SQRT((bxfar**2)/ rhofar)
-!    cxfar = SQRT((bxfar**2 + byfar**2 + bzfar**2)/ rhofar)
-    beta = (c0far / cxfar)**2
 
     c0 = SQRT(gamma * (gamma - 1.0_num) * ebc(1))
     cx = SQRT((bxbc(1)**2)/ rbc(1))
-!    cx = SQRT((bxbc(1)**2 + bybc(1)**2 + bzbc(1)**2)/ rbc(1))
 
     ! Define the speeds of the characteristics to be checked along
     vtest(1) = vnorm + c0
@@ -372,14 +369,16 @@ CONTAINS
       END IF
     END DO
 
-    bxbc(0) = bxbc(1)
+    bxbc(0) = 0.5_num * (bxbc(1) + bxfar)
 
     lambdag = 0.5_num * (lambdaystar(3) + lambdaystar(4) &
         + rhofar * cxfar * (uystar(3) - uystar(4)))
+    IF (ABS(bxbc(0)) <= none_zero) bxbc(0) = none_zero
     bybc(0) = -lambdag / bxbc(0)
 
     lambdag = 0.5_num * (lambdazstar(3) + lambdazstar(4) &
         + rhofar * cxfar * (uzstar(3) - uzstar(4)))
+    IF (ABS(bxbc(0)) <= none_zero) bxbc(0) = none_zero
     bzbc(0) = -lambdag  / bxbc(0)
 
     pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
@@ -393,16 +392,16 @@ CONTAINS
     vxbc(0) = 0.5_num &
         * (uxstar(1) + uxstar(2) + (pstar(1) - pstar(2)) / (rhofar * c0far))
     vybc(0) = 0.5_num * (uystar(3) + uystar(4) &
-        + (lambdaystar(3) - lambdaystar(4)) / (rhofar * cxfar))
+        + (lambdaystar(3) - lambdaystar(4)) / (rhofar * MAX(cxfar, none_zero)))
     vzbc(0) = 0.5_num * (uzstar(3) + uzstar(4) &
-        + (lambdazstar(3) - lambdazstar(4)) / (rhofar * cxfar))
+        + (lambdazstar(3) - lambdazstar(4)) / (rhofar * MAX(cxfar, none_zero)))
 
-  END SUBROUTINE open_bcs_2
-
-
+  END SUBROUTINE open_bcs_alfven
 
 
-  SUBROUTINE open_bcs_3
+
+
+  SUBROUTINE open_bcs_mixed
 
     ! Solve for when bx and bperp are non zero. Solves in the coordinate system
     ! such that y-axis points along by_farfield
@@ -499,16 +498,16 @@ CONTAINS
     bzg = 0.0_num
     uzg = 0.0_num
 
-    bxg = bxbc(1)
+    bxg = 0.5_num * (bxbc(1) + bxfar)
     byg = -lambdag / bxg
 
 !     IF (beta > 0.01_num) THEN
       pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
 
-      rhog = rhostar(5) !+ (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 
+      rhog = rhostar(5) + (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 
       rhog = MAX(rhog, none_zero)
       rbc(0) = rhog
-      ebc(0) = ebc(1) !MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
+      ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
       vxbc(0) = uxg
       vybc(0) = uyg
 !     ELSE
@@ -523,6 +522,6 @@ CONTAINS
     bybc(0) = byg
     bzbc(0) = bzg
 
-  END SUBROUTINE open_bcs_3
+  END SUBROUTINE open_bcs_mixed
 
 END MODULE openboundary
