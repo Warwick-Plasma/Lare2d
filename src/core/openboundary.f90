@@ -55,17 +55,11 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
-          IF (bc1 .EQ. 1) CALL open_bcs_fast
-          IF (bc1 .EQ. 2) CALL open_bcs_alfven
-          IF (bc1 .EQ. 3) CALL open_bcs_mixed
+          CALL open_bcs_fast
         ELSE IF(bperp <= none_zero) THEN
-          IF (bc2 .EQ. 1) CALL open_bcs_fast
-          IF (bc2 .EQ. 2) CALL open_bcs_alfven
-          IF (bc2 .EQ. 3) CALL open_bcs_mixed
+          CALL open_bcs_alfven
         ELSE
-          IF (bc3 .EQ. 1) CALL open_bcs_fast
-          IF (bc3 .EQ. 2) CALL open_bcs_alfven
-          IF (bc3 .EQ. 3) CALL open_bcs_mixed
+          CALL open_bcs_mixed
         END IF
 
         vx (-1,iy) = -vxbc(0)
@@ -111,19 +105,13 @@ CONTAINS
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-       IF (ABS(bxfar) <= none_zero) THEN
-         IF (bc1 .EQ. 1) CALL open_bcs_fast
-         IF (bc1 .EQ. 2) CALL open_bcs_alfven
-         IF (bc1 .EQ. 3) CALL open_bcs_mixed
-       ELSE IF(bperp <= none_zero) THEN
-         IF (bc2 .EQ. 1) CALL open_bcs_fast
-         IF (bc2 .EQ. 2) CALL open_bcs_alfven
-         IF (bc2 .EQ. 3) CALL open_bcs_mixed
-       ELSE
-         IF (bc3 .EQ. 1) CALL open_bcs_fast
-         IF (bc3 .EQ. 2) CALL open_bcs_alfven
-         IF (bc3 .EQ. 3) CALL open_bcs_mixed
-       END IF
+        IF (ABS(bxfar) <= none_zero) THEN
+          CALL open_bcs_fast
+        ELSE IF(bperp <= none_zero) THEN
+          CALL open_bcs_alfven
+        ELSE
+          CALL open_bcs_mixed
+        END IF
 
         vx (nx+1,iy) = vxbc(0)
         vy (nx+1,iy) = vybc(0)
@@ -168,19 +156,13 @@ CONTAINS
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-         IF (ABS(bxfar) <= none_zero) THEN
-           IF (bc1 .EQ. 1) CALL open_bcs_fast
-           IF (bc1 .EQ. 2) CALL open_bcs_alfven
-           IF (bc1 .EQ. 3) CALL open_bcs_mixed
-         ELSE IF(bperp <= none_zero) THEN
-           IF (bc2 .EQ. 1) CALL open_bcs_fast
-           IF (bc2 .EQ. 2) CALL open_bcs_alfven
-           IF (bc2 .EQ. 3) CALL open_bcs_mixed
-         ELSE
-           IF (bc3 .EQ. 1) CALL open_bcs_fast
-           IF (bc3 .EQ. 2) CALL open_bcs_alfven
-           IF (bc3 .EQ. 3) CALL open_bcs_mixed
-         END IF
+       IF (ABS(bxfar) <= none_zero) THEN
+          CALL open_bcs_fast
+        ELSE IF(bperp <= none_zero) THEN
+          CALL open_bcs_alfven
+        ELSE
+          CALL open_bcs_mixed
+        END IF
 
         vx (ix,-1) =  vybc(0)
         vy (ix,-1) = -vxbc(0)
@@ -226,17 +208,11 @@ CONTAINS
         bperp = SQRT(byfar**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
-            IF (bc1 .EQ. 1) CALL open_bcs_fast
-            IF (bc1 .EQ. 2) CALL open_bcs_alfven
-            IF (bc1 .EQ. 3) CALL open_bcs_mixed
+          CALL open_bcs_fast
         ELSE IF(bperp <= none_zero) THEN
-            IF (bc2 .EQ. 1) CALL open_bcs_fast
-            IF (bc2 .EQ. 2) CALL open_bcs_alfven
-            IF (bc2 .EQ. 3) CALL open_bcs_mixed
+          CALL open_bcs_alfven
         ELSE
-            IF (bc3 .EQ. 1) CALL open_bcs_fast
-            IF (bc3 .EQ. 2) CALL open_bcs_alfven
-            IF (bc3 .EQ. 3) CALL open_bcs_mixed
+          CALL open_bcs_mixed
         END IF
 
         vx (ix,ny+1) = vybc(0)
