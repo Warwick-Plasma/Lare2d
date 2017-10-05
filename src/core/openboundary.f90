@@ -301,7 +301,7 @@ CONTAINS
     REAL(num) :: lambdayfar, lambdazfar
     REAL(num) :: c0, cx
     REAL(num) :: pg, rhog, c0far, cxfar
-    REAL(num) :: pmagg, lambdag
+    REAL(num) :: lambdag
     REAL(num), DIMENSION(5) :: vtest, pstar, uxstar, rhostar, pmagstar
     REAL(num), DIMENSION(5) :: uystar, lambdaystar, lambdazstar, uzstar
     INTEGER :: i
@@ -355,13 +355,14 @@ CONTAINS
     IF (ABS(bxbc(0)) <= none_zero) bxbc(0) = none_zero
     bzbc(0) = -lambdag  / bxbc(0)
 
-    pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
     pg = 0.5_num &
-        * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2)))
-    rhog = (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0far**2 &
-        + rhostar(5)
+        * (pstar(1) + pstar(2) + rhofar * c0far * (uxstar(1) - uxstar(2))) &
+        - 0.5_num * (bybc(0)**2 + bzbc(0)**2 - bxbc(0)**2)
+    pg = MAX(pg, none_zero)
+
+    rhog = rhostar(5) + (pg - (pstar(5) - pmagstar(5))) / c0far**2 
     rbc(0) = MAX(rhog, none_zero)
-    ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+    ebc(0) = pg / (gamma - 1.0_num) / rbc(0)
 
     vxbc(0) = 0.5_num &
         * (uxstar(1) + uxstar(2) + (pstar(1) - pstar(2)) / (rhofar * c0far))
