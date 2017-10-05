@@ -236,8 +236,6 @@ CONTAINS
 
     REAL(num) :: c0, ct, cf
     REAL(num) :: pg, rhog, cffar, c0far, ctfar
-    REAL(num) :: pmagg
-    REAL(num) :: beta
     REAL(num), DIMENSION(3) :: vtest, pstar, vstar, rhostar, pmagstar
     REAL(num), DIMENSION(3) :: bystar, bzstar
     INTEGER :: i
@@ -245,7 +243,6 @@ CONTAINS
     c0far = SQRT(gamma * pfar / rhofar)
     ctfar = SQRT((byfar**2 + bzfar**2) / rhofar)
     cffar = SQRT(c0far**2 + ctfar**2)
-    beta = (c0far / cffar)**2
 
     c0 = SQRT(gamma * (gamma - 1.0_num) * ebc(1))
     ct = SQRT((bybc(1)**2 + bzbc(1)**2) / rbc(1))
@@ -279,13 +276,14 @@ CONTAINS
     bzbc(0) = 0.5_num * (bzstar(1) + bzstar(2))
 
     pg = 0.5_num &
-        * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2)))
-    pmagg = 0.5_num * (pmagstar(1) + pmagstar(2))
+        * (pstar(1) + pstar(2) + rhofar * cffar * (vstar(1) - vstar(2))) &
+        - 0.5_num * (bybc(0)**2 + bzbc(0)**2)
+    pg = MAX(pg, none_zero)
 
-    rhog = rhostar(3)
+    rhog = rhostar(3) + (pg - (pstar(3) - pmagstar(3))) / c0far**2
     rbc(0) = MAX(rhog, none_zero)
 
-    ebc(0) = MAX(pg - pmagg, none_zero) / (gamma - 1.0_num) / rbc(0)
+    ebc(0) = pg / (gamma - 1.0_num) / rbc(0)
 
     vxbc(0) = 0.5_num &
         * (vstar(1) + vstar(2)  + (pstar(1) - pstar(2)) / (rhofar * cffar))
