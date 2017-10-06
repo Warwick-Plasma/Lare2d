@@ -31,6 +31,12 @@ CONTAINS
 
     IF  (ybc_min == BC_DRIVEN) CALL setup_driver_spectrum
 
+    IF (any_open) THEN
+      bxi = bx
+      byi = by
+      bzi = bz
+    END IF
+
   END SUBROUTINE set_boundary_conditions
 
 

@@ -89,6 +89,7 @@ INTEGER :: bc1, bc2, bc3
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx, vx, vx1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: by, vy, vy1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bz, vz, vz1
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: bxi, byi, bzi
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx1, by1, bz1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx_r, jy_r, jz_r
 
