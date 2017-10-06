@@ -49,7 +49,7 @@ CONTAINS
         rhofar = rho(-1,iy)
         efar = energy(-1,iy)
 
-        vnorm = -vx1(0,iy)
+        vnorm = -vx(0,iy)
 
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
@@ -156,7 +156,7 @@ CONTAINS
         ! Select correct open bc solver
         bperp = SQRT(byfar**2 + bzfar**2)
 
-       IF (ABS(bxfar) <= none_zero) THEN
+        IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_fast
         ELSE IF(bperp <= none_zero) THEN
           CALL open_bcs_alfven
@@ -388,8 +388,6 @@ CONTAINS
     REAL(num) :: c0, cx, ct, cf, cs
     REAL(num) :: c0far, cxfar, ctfar, cffar, csfar
     REAL(num) :: pg, rhog, uxg, uyg, uzg, lambdag, byg, bxg, bzg
-    REAL(num) :: beta
-    !REAL(num) :: var_min, var_max
     REAL(num), DIMENSION(7) :: pstar, uxstar, uystar, uzstar, rhostar
     REAL(num), DIMENSION(7) :: lambdastar, pmagstar, bzstar
 
@@ -404,7 +402,6 @@ CONTAINS
     b = 4.0_num * c0far**2 * cxfar**2
     cffar = SQRT(0.5_num * (a + SQRT(a**2 - b)))
     csfar = SQRT(0.5_num * (a - SQRT(a**2 - b)))
-    beta = c0far**2 / (cxfar**2 + ctfar**2)
 
     ! Setup the speeds
     c0 = SQRT(gamma * (gamma - 1.0_num) * ebc(1))
@@ -447,7 +444,6 @@ CONTAINS
       END IF
     END DO
 
-    ! Now setup the constants that are defined in the solution
     a = cffar**2 - cxfar**2
     b = lambdafar / rhofar
     c = csfar**2 - cxfar**2
@@ -476,23 +472,15 @@ CONTAINS
     bxg = 0.5_num * (bxbc(1) + bxfar)
     byg = -lambdag / bxg
 
-!     IF (beta > 0.01_num) THEN
-      pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
+    pmagg = 0.5_num * (byg**2 + bzg**2 - bxg**2)
 
-      rhog = rhostar(5) + (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 
-      rhog = MAX(rhog, none_zero)
-      rbc(0) = rhog
-      ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
-      vxbc(0) = uxg
-      vybc(0) = uyg
-!     ELSE
-!       rbc(0) = rhostar(5)
-!       ebc(0) = ebc(1)
-!       vxbc(0) = 0.5_num * (uxstar(1) + uxstar(2))
-!       vybc(0) = 0.5_num * (uystar(1) + uystar(2))
-!     END IF
+    rhog = rhostar(5) + (ABS(pg - pmagg) - ABS(pstar(5) - pmagstar(5))) / c0**2 
+    rhog = MAX(rhog, none_zero)
+    rbc(0) = rhog
+    ebc(0) = MAX(pg - pmagg, none_zero) / ((gamma - 1.0_num) * rhog)
+    vxbc(0) = uxg
+    vybc(0) = uyg
 
-    ! Rotate back to grid coordinate system
     bxbc(0) = bxg
     bybc(0) = byg
     bzbc(0) = bzg
