@@ -88,7 +88,7 @@ CONTAINS
         END IF
 
         qt = psi(k) * temp_si**pow(k)
-        inverse_t_cool = cool(k) * (xi_n(iy,iy) - 1.0_num) * rho(ix,iy)
+        inverse_t_cool = cool(k) * (xi_n(ix,iy) - 1.0_num) * rho(ix,iy)
         yt = yt + ratio(k) * (temp_si / qt) * dt * inverse_t_cool
 
         IF (alpha(k) .NE. 1) THEN
