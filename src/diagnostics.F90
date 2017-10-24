@@ -206,8 +206,7 @@ CONTAINS
         END IF
         WRITE(55) current%array(:,1:probe_data_point-1)
         ! Seek back to start of output file
-        CALL FSEEK(55, 0, 0, ierr)
-        WRITE(55) probe_dumps
+        WRITE(55, POS = 0) probe_dumps
         CLOSE(UNIT=55)
         current => current%next
       END DO
