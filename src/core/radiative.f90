@@ -39,8 +39,11 @@ CONTAINS
     alpha = (/0, 2, 0, -2, 0, 0/)
     pow = REAL(alpha, num) + (/0.0_num, 0.0_num, 0.0_num, 0.0_num, 0.0_num, frac/)
 
+    !Usually specify RTV in cgs
     psi = (/-21.85_num, -31.0_num, -21.2_num, -10.4_num, -21.94_num, -17.73_num/)
     psi = 10**(psi)
+    !Convert to SI
+    psi = 1.e-13_num * psi
 
   END SUBROUTINE setup_loss_function
 
