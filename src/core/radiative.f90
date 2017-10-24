@@ -24,13 +24,17 @@ CONTAINS
     ! This must be piecewise polynomial with kmax=n-1 regions
     ! bounded by n temperatures. 
     ! Q(T) must be in S.I.
+    ! In the energy equation this would appear as a pressure cooling through
+    ! dp/dt = -(gamma-1) n_e n_H Q(T)
 
     REAL(num) :: frac
 
     t_boundary = (/0.02_num, 0.0398_num, 0.0794_num, 0.251_num, 0.562_num, 1.995_num, 10.0_num/) * 1e6_num
 
-    !Define power for polynomial fit. alpha is defined as integer but RTV has one none
-    !integer power so have integer alpha array and real pow array defined below
+    !Define power for polynomial fit.
+    !Alpha is defined as integer but RTV has one none
+    !integer power so have integer alpha array and real pow array defined below.
+    !The interger array is needed as alpha=1 is a special case.
     frac = 2.0_num / 3.0_num
     alpha = (/0, 2, 0, -2, 0, 0/)
     pow = REAL(alpha, num) + (/0.0_num, 0.0_num, 0.0_num, 0.0_num, 0.0_num, frac/)
@@ -98,7 +102,7 @@ CONTAINS
           temp_si = temp_si * EXP((yt - yk(k)) / ratios(k))
         END IF
 
-        energy(ix,iy) = temp_si / (gamma - 1.0_num) / temp_norm
+        energy(ix,iy) = temp_si / (gamma - 1.0_num) / temp_norm 
 
       END DO
     END DO 
