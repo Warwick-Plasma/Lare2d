@@ -35,7 +35,7 @@ CONTAINS
     !Alpha is defined as integer but RTV has one none
     !integer power so have integer alpha array and real pow array defined below.
     !The interger array is needed as alpha=1 is a special case.
-    frac = 2.0_num / 3.0_num
+    frac = -2.0_num / 3.0_num
     alpha = (/0, 2, 0, -2, 0, 0/)
     pow = REAL(alpha, num) + (/0.0_num, 0.0_num, 0.0_num, 0.0_num, 0.0_num, frac/)
 
