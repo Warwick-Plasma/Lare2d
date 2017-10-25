@@ -72,8 +72,9 @@ CONTAINS
 
   SUBROUTINE exact_intergation_method
 
-    REAL(num) :: temp_si, temp, qt, inverse_t_cool, yt, fac
+    REAL(num) :: temp_si, temp, inverse_t_cool, yt, fac
     INTEGER :: i, k
+    REAL(num) :: time_norm
 
     DO ix = 1, nx
       DO iy = 1, ny
@@ -96,9 +97,21 @@ CONTAINS
           yt = yk(k) + ratios(k) * LOG((t_boundary(k)/temp_si))
         END IF
 
-        qt = psi(k) * temp_si**pow(k)
+! move to shared_data after testing
+        time_norm = L_norm / SQRT(B_norm**2 / mu0_si / rho_norm)
+!
+
         inverse_t_cool = cool * rho(ix,iy)
         yt = yt +  dt * inverse_t_cool *  time_norm
+
+        k = -1
+        DO i = 1, kmax
+          IF (yt > yk(i) .AND. yt <= yk(i+1)) THEN
+            k = i
+            EXIT
+          END IF
+        END DO
+        IF (k .LT. 0) CYCLE
 
         IF (alpha(k) .NE. 1) THEN
           fac = 1.0_num / (1.0 - pow(k))
