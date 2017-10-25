@@ -128,7 +128,7 @@ MODULE shared_data
   LOGICAL :: restart, heat_flux_limiter
 
   ! Normalising constants
-  REAL(num) :: B_norm, L_norm, rho_norm
+  REAL(num) :: B_norm, L_norm, rho_norm, time_norm
   ! Mass fraction - mass of ions in units of proton mass
   REAL(num) :: mf
   ! Conversion factor to get temperature in K from normalised energy

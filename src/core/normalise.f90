@@ -20,6 +20,7 @@ CONTAINS
     v0 = SQRT(energy0)
     mbar = mf * mh_si
     temp_norm = (mbar / kb_si) * energy0
+    time_norm = L_norm / v0
 
     ! Normalise tbar, r_bar and eta_bar for including Cowling resistivity and
     ! neutrals
