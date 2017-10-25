@@ -74,7 +74,6 @@ CONTAINS
 
     REAL(num) :: temp_si, temp, inverse_t_cool, yt, fac
     INTEGER :: i, k
-    REAL(num) :: time_norm
 
     DO ix = 1, nx
       DO iy = 1, ny
@@ -96,10 +95,6 @@ CONTAINS
         ELSE
           yt = yk(k) + ratios(k) * LOG((t_boundary(k)/temp_si))
         END IF
-
-! move to shared_data after testing
-        time_norm = L_norm / SQRT(B_norm**2 / mu0_si / rho_norm)
-!
 
         inverse_t_cool = cool * rho(ix,iy)
         yt = yt +  dt * inverse_t_cool *  time_norm
