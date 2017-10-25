@@ -42,7 +42,7 @@ CONTAINS
 
     !Usually specify RTV in cgs
     psi = (/-21.85_num, -31.0_num, -21.2_num, -10.4_num, -21.94_num, -17.73_num/)
-    psi = 10**(psi)
+    psi = 10**psi
     !Convert to SI
     psi = 1.e-13_num * psi
 
@@ -90,7 +90,7 @@ CONTAINS
 
         IF (alpha(k) .NE. 1) THEN
           fac = 1.0_num / (1.0 - pow(k))
-          yt = yk(k) + fac * ratios(k) * (1.0_num - (t_boundary(k)/temp_si))
+          yt = yk(k) + fac * ratios(k) * (1.0_num - (t_boundary(k)/temp_si)**(pow(k)-1.0_num))
         ELSE
           yt = yk(k) + ratios(k) * LOG((t_boundary(k)/temp_si))
         END IF
@@ -101,9 +101,9 @@ CONTAINS
 
         IF (alpha(k) .NE. 1) THEN
           fac = 1.0_num / (1.0 - pow(k))
-          temp_si = temp_si * (1.0_num - (1.0_num - pow(k)) / ratios(k) * (yt - yk(k)))
+          temp_si = t_boundary(k) * (1.0_num - (1.0_num - pow(k)) / ratios(k) * (yt - yk(k)))**fac
         ELSE
-          temp_si = temp_si * EXP((yt - yk(k)) / ratios(k))
+          temp_si = t_boundary(k) * EXP((yt - yk(k)) / ratios(k))
         END IF
 
         energy(ix,iy) = temp_si * 2.0_num / (gamma - 1.0_num) / temp_norm
@@ -119,6 +119,7 @@ CONTAINS
 
   SUBROUTINE set_exact_integration_arrays
     ! Define arrays used in Townsend exact integration method
+    ! Here qk = Lambda_k from Townsend
 
     REAL(num) :: fac, power
     INTEGER :: k
@@ -126,7 +127,7 @@ CONTAINS
     DO k = 1, kmax
       qk(k) = psi(k) * t_boundary(k)**pow(k)
     END DO
-    qk(n) = qk(n-1) * (t_boundary(n)/t_boundary(n-1))
+    qk(n) = qk(n-1) * (t_boundary(n)/t_boundary(n-1))**pow(n-1)
 
     DO k = 1, n
       ratio(k) = (qk(n) / t_boundary(n))
@@ -138,7 +139,7 @@ CONTAINS
     DO k = kmax, 1, -1
       IF (alpha(k) .NE. 1) THEN
         fac = 1.0_num / (1.0 - pow(k))
-        yk(k) = yk(k+1) - fac * ratios(k) * (1.0_num - (t_boundary(k)/t_boundary(k+1)))
+        yk(k) = yk(k+1) - fac * ratios(k) * (1.0_num - (t_boundary(k)/t_boundary(k+1))**(pow(k)-1.0_num))
       ELSE
         yk(k) = yk(k+1) - ratios(k) * LOG((t_boundary(k)/t_boundary(k+1)))
       END IF
