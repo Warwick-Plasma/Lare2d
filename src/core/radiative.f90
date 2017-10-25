@@ -26,6 +26,7 @@ CONTAINS
     ! Q(T) must be in S.I.
     ! In the energy equation this would appear as a pressure cooling through
     ! dp/dt = -(gamma-1) n_e n_H Q(T)
+    ! Only in this form for T~>10^k so fully ionised and n_H=n_e
 
     REAL(num) :: frac
 
@@ -76,8 +77,8 @@ CONTAINS
     DO ix = 1, nx
       DO iy = 1, ny
 
-        temp_si = energy(ix,iy) * (gamma - 1.0_num) * temp_norm
-
+        temp_si = 0.5_num * temp_norm * energy(ix,iy) * (gamma - 1.0_num) 
+              
         k = -1
         DO i = 1, kmax
           IF (temp_si > t_boundary(i) .AND. temp_si <= t_boundary(i+1)) THEN
@@ -105,7 +106,7 @@ CONTAINS
           temp_si = temp_si * EXP((yt - yk(k)) / ratios(k))
         END IF
 
-        energy(ix,iy) = temp_si / (gamma - 1.0_num) / temp_norm 
+        energy(ix,iy) = temp_si * 2.0_num / (gamma - 1.0_num) / temp_norm
 
       END DO
     END DO 
@@ -117,7 +118,7 @@ CONTAINS
 
 
   SUBROUTINE set_exact_integration_arrays
-    ! Define arrays used in Townsend exact integration methos
+    ! Define arrays used in Townsend exact integration method
 
     REAL(num) :: fac, power
     INTEGER :: k
@@ -129,7 +130,7 @@ CONTAINS
 
     DO k = 1, n
       ratio(k) = (qk(n) / t_boundary(n))
-      cool(k) = ratio(k) * (gamma - 1.0_num) * rho_norm / (kb_si * mf * mh_si)
+      cool(k) = 0.5_num * ratio(k) * (gamma - 1.0_num) * rho_norm / (kb_si * mf * mh_si)
       ratios(k) = ratio(k) * (t_boundary(k) / qk(k))
     END DO
 
