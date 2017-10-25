@@ -13,7 +13,8 @@ MODULE radiative
   INTEGER, PARAMETER  :: kmax = n - 1
   REAL(num), DIMENSION(:), ALLOCATABLE :: t_boundary, pow, psi
   INTEGER, DIMENSION(:), ALLOCATABLE :: alpha
-  REAL(num), DIMENSION(:), ALLOCATABLE :: yk, qk, ratio, ratios, cool
+  REAL(num), DIMENSION(:), ALLOCATABLE :: yk, qk, ratios
+  REAL(num) :: cool, ratio
 
 CONTAINS
 
@@ -57,7 +58,7 @@ CONTAINS
     IF (first_call) THEN
       first_call = .FALSE.
       ALLOCATE (t_boundary(1:n), alpha(1:kmax), pow(1:kmax), psi(1:kmax))
-      ALLOCATE (yk(1:n), qk(1:n), ratio(1:n), ratios(1:n), cool(1:n))
+      ALLOCATE (yk(1:n), qk(1:n), ratios(1:n))
       CALL setup_loss_function
       CALL set_exact_integration_arrays
     END IF
@@ -96,8 +97,8 @@ CONTAINS
         END IF
 
         qt = psi(k) * temp_si**pow(k)
-        inverse_t_cool = cool(k) * (xi_n(ix,iy) - 1.0_num) * rho(ix,iy)
-        yt = yt + ratio(k) * (temp_si / qt) * dt * inverse_t_cool
+        inverse_t_cool = cool * rho(ix,iy)
+        yt = yt +  dt * inverse_t_cool *  time_norm
 
         IF (alpha(k) .NE. 1) THEN
           fac = 1.0_num / (1.0 - pow(k))
@@ -129,10 +130,10 @@ CONTAINS
     END DO
     qk(n) = qk(n-1) * (t_boundary(n)/t_boundary(n-1))**pow(n-1)
 
+    ratio = qk(n) / t_boundary(n)
+    cool = 0.5_num * ratio * (gamma - 1.0_num) * rho_norm / (kb_si * mf * mh_si)
     DO k = 1, n
-      ratio(k) = (qk(n) / t_boundary(n))
-      cool(k) = 0.5_num * ratio(k) * (gamma - 1.0_num) * rho_norm / (kb_si * mf * mh_si)
-      ratios(k) = ratio(k) * (t_boundary(k) / qk(k))
+      ratios(k) = ratio * (t_boundary(k) / qk(k))
     END DO
 
     yk(n) = 0.0_num
