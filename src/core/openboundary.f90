@@ -43,8 +43,8 @@ CONTAINS
         uxfar  = -vx(-2,iy)
         uyfar  =  vy(-2,iy)
         uzfar  =  vz(-2,iy)
-        bxfar  = -bx(-2,iy)
-        byfar  =  by(-1,iy)
+        bxfar  =  -bx(-2,iy)
+        byfar  =  by(-1,iy) 
         bzfar  =  bz(-1,iy)
         rhofar = rho(-1,iy)
         efar = energy(-1,iy)
@@ -52,14 +52,14 @@ CONTAINS
         vnorm = -vx(0,iy)
 
         ! Select correct open bc solver
-        bperp = SQRT(byfar**2 + bzfar**2)
+        bperp = SQRT(0.25_num * (by(-1,iy) + by(-1,iy-1))**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_fast
         ELSE IF(bperp <= none_zero) THEN
           CALL open_bcs_alfven
         ELSE
-          CALL open_bcs_mixed
+          CALL open_bcs_fast
         END IF
 
         vx (-1,iy) = -vxbc(0)
@@ -103,14 +103,14 @@ CONTAINS
         vnorm = vx(nx,iy)
 
         ! Select correct open bc solver
-        bperp = SQRT(byfar**2 + bzfar**2)
+        bperp = SQRT(0.25_num * (by(nx+2,iy) + by(nx+2,iy-1))**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_fast
         ELSE IF(bperp <= none_zero) THEN
           CALL open_bcs_alfven
         ELSE
-          CALL open_bcs_mixed
+          CALL open_bcs_fast
         END IF
 
         vx (nx+1,iy) = vxbc(0)
@@ -154,14 +154,14 @@ CONTAINS
         vnorm = -vy(ix,0)
 
         ! Select correct open bc solver
-        bperp = SQRT(byfar**2 + bzfar**2)
+        bperp = SQRT(0.25_num * (bx(ix,-1) + bx(ix-1,-1))**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_fast
         ELSE IF(bperp <= none_zero) THEN
           CALL open_bcs_alfven
         ELSE
-          CALL open_bcs_mixed
+          CALL open_bcs_fast
         END IF
 
         vx (ix,-1) =  vybc(0)
@@ -205,14 +205,14 @@ CONTAINS
         vnorm = vy(ix,ny)
 
         ! Select correct open bc solver
-        bperp = SQRT(byfar**2 + bzfar**2)
+        bperp = SQRT(0.25_num * (bx(ix,ny+2) + bx(ix-1,ny+2))**2 + bzfar**2)
 
         IF (ABS(bxfar) <= none_zero) THEN
           CALL open_bcs_fast
         ELSE IF(bperp <= none_zero) THEN
           CALL open_bcs_alfven
         ELSE
-          CALL open_bcs_mixed
+          CALL open_bcs_fast
         END IF
 
         vx (ix,ny+1) = vybc(0)
@@ -378,8 +378,8 @@ CONTAINS
 
   SUBROUTINE open_bcs_mixed
 
-    ! Solve for when bx and bperp are non zero. Solves in the coordinate system
-    ! such that y-axis points along by_farfield
+    ! Solve for when bx and bperp are non zero. 
+    ! This is only reliable when B-field is straight through boundary
 
     REAL(num), DIMENSION(7) :: vtest
     INTEGER :: i
