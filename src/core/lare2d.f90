@@ -36,7 +36,6 @@ PROGRAM lare2d
   CALL setup_neutral       ! neutral.f90
   CALL normalise_transport ! normalise.f90
 
-  CALL set_boundary_conditions   ! boundary.f90
   CALL grid                      ! setup.f90
 
   IF (IAND(initial, IC_RESTART) /= 0) THEN
@@ -50,6 +49,7 @@ PROGRAM lare2d
   END IF
 
   CALL open_files                ! setup.f90
+  CALL set_boundary_conditions   ! boundary.f90
   CALL boundary_conditions       ! boundary.f90
   CALL eta_calc                  ! lagran.f90
 
