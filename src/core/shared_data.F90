@@ -71,7 +71,7 @@ MODULE shared_data
   IMPLICIT NONE
 
   INCLUDE 'mpif.h'
-INTEGER :: bc1, bc2, bc3
+
 #ifdef SINGLE
   INTEGER, PARAMETER :: mpireal = MPI_REAL
   INTEGER, PARAMETER :: sdf_num = c_datatype_real4

@@ -52,9 +52,6 @@ CONTAINS
 !--------------------------------------------------------
      CASE(4) !2D X-point, beta_max ~ 1
 
-        bc1 = 3
-        bc2 = 3
-        bc3 = 3
         visc1 = 0.1_num
         visc2 = 0.0_num    
         xbc_min = BC_OPEN
@@ -85,9 +82,6 @@ CONTAINS
 !--------------------------------------------------------
      CASE (3) !2D acoustic test
 
-        bc1 = 3
-        bc2 = 3
-        bc3 = 3
         visc1 = 0.1_num
         visc2 = 0.0_num    
         xbc_min = BC_OPEN
@@ -108,9 +102,6 @@ CONTAINS
 !--------------------------------------------------------
       CASE (2) !1D Alfven wave test, beta ~1
 
-        bc1 = 1
-        bc2 = 2
-        bc3 = 2
         visc1 = 0.1_num
         visc2 = 0.0_num    
         xbc_min = BC_OPEN
@@ -131,9 +122,6 @@ CONTAINS
 !--------------------------------------------------------
       CASE (1) !1D acoustic test
 
-        bc1 = 1
-        bc2 = 1
-        bc3 = 1
         visc1 = 0.0_num
         visc2 = 0.0_num    
         xbc_min = BC_OPEN
