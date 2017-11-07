@@ -9,6 +9,7 @@ MODULE lagran
   USE neutral
   USE conduct
   USE radiative
+  USE openboundary
 
   IMPLICIT NONE
 
@@ -21,7 +22,6 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v, cv_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc, fy_visc, fz_visc
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx, fy, fz
 
 CONTAINS
 
@@ -43,9 +43,6 @@ CONTAINS
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(rho_v(-1:nx+1,-1:ny+1))
     ALLOCATE(cv_v(-1:nx+1,-1:ny+1))
-    ALLOCATE(fx(0:nx,0:ny))
-    ALLOCATE(fy(0:nx,0:ny))
-    ALLOCATE(fz(0:nx,0:ny))
     ALLOCATE(fx_visc(0:nx,0:ny))
     ALLOCATE(fy_visc(0:nx,0:ny))
     ALLOCATE(fz_visc(0:nx,0:ny))
@@ -129,7 +126,6 @@ CONTAINS
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
-    DEALLOCATE(fx, fy, fz)
 
     CALL energy_bcs
     CALL density_bcs
@@ -151,6 +147,7 @@ CONTAINS
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
     REAL(num) :: cvx, cvxp, cvy, cvyp
     REAL(num) :: dv
+    REAL(num) :: fx, fy, fz
 
     CALL b_field_and_cv1_update
 
@@ -187,15 +184,15 @@ CONTAINS
         w1 = (pp + ppy) * 0.5_num
         ! P total at Ex(i+1,j)
         w2 = (ppx + ppxy) * 0.5_num
-        fx(ix,iy) = -(w2 - w1) / dxc(ix)
+        fx = -(w2 - w1) / dxc(ix)
 
         ! P total at Ey(i,j)
         w1 = (pp + ppx) * 0.5_num
         ! P total at Ey(i,j+1)
         w2 = (ppy + ppxy) * 0.5_num
-        fy(ix,iy) = -(w2 - w1) / dyc(iy)
+        fy = -(w2 - w1) / dyc(iy)
 
-        fz(ix,iy) = 0.0_num
+        fz = 0.0_num
 
         cvx  = cv1(ix ,iy ) + cv1(ix ,iyp)
         cvxp = cv1(ixp,iy ) + cv1(ixp,iyp)
@@ -227,36 +224,40 @@ CONTAINS
         bzv = (bz1(ix,iy ) + bz1(ixp,iy ) + bz1(ix,iyp) + bz1(ixp,iyp)) &
             / (cvx + cvxp)
 
-        fx(ix,iy) = fx(ix,iy) + (jy * bzv - jz * byv)
-        fy(ix,iy) = fy(ix,iy) + (jz * bxv - jx * bzv)
-        fz(ix,iy) = fz(ix,iy) + (jx * byv - jy * bxv)
+        fx = fx + (jy * bzv - jz * byv)
+        fy = fy + (jz * bxv - jx * bzv)
+        fz = fz + (jx * byv - jy * bxv)
 
-        fy(ix,iy) = fy(ix,iy) - rho_v(ix,iy) * grav(iy)
+        fy = fy - rho_v(ix,iy) * grav(iy)
 
         ! Find half step velocity needed for remap
-        vx1(ix,iy) = vx(ix,iy) + dt2 * (fx_visc(ix,iy) + fx(ix,iy)) / rho_v(ix,iy)
-        vy1(ix,iy) = vy(ix,iy) + dt2 * (fy_visc(ix,iy) + fy(ix,iy)) / rho_v(ix,iy)
-        vz1(ix,iy) = vz(ix,iy) + dt2 * (fz_visc(ix,iy) + fz(ix,iy)) / rho_v(ix,iy)
+        vx1(ix,iy) = vx(ix,iy) + dt2 * (fx_visc(ix,iy) + fx) / rho_v(ix,iy)
+        vy1(ix,iy) = vy(ix,iy) + dt2 * (fy_visc(ix,iy) + fy) / rho_v(ix,iy)
+        vz1(ix,iy) = vz(ix,iy) + dt2 * (fz_visc(ix,iy) + fz) / rho_v(ix,iy)
       END DO
     END DO
-
-    CALL remap_v_bcs
 
     bx1 = bx1 / cv1
     by1 = by1 / cv1
     bz1 = bz1 / cv1
+    
+    CALL remap_v_bcs
+
     CALL shock_heating
 
     DO iy = 0, ny
       DO ix = 0, nx
         ! Velocity at the end of the Lagrangian step
-        vx(ix,iy) = vx(ix,iy) + dt * (fx_visc(ix,iy) + fx(ix,iy)) / rho_v(ix,iy)
-        vy(ix,iy) = vy(ix,iy) + dt * (fy_visc(ix,iy) + fy(ix,iy)) / rho_v(ix,iy)
-        vz(ix,iy) = vz(ix,iy) + dt * (fz_visc(ix,iy) + fz(ix,iy)) / rho_v(ix,iy)
+        vx(ix,iy) = 2.0_num * vx1(ix,iy) - vx(ix,iy) 
+        vy(ix,iy) = 2.0_num * vy1(ix,iy) - vy(ix,iy) 
+        vz(ix,iy) = 2.0_num * vz1(ix,iy) - vz(ix,iy) 
       END DO
     END DO
-    
+
     CALL velocity_bcs
+    IF (any_open) THEN
+      CALL open_bcs         
+    END IF 
 
     ! Finally correct density and energy to final values
     DO iy = 1, ny

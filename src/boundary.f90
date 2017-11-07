@@ -25,39 +25,11 @@ CONTAINS
 
   SUBROUTINE set_boundary_conditions
 
-    ! Must be called twice
-    LOGICAL, SAVE :: first_call = .TRUE.
+    any_open = .FALSE.
+    IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
+        .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
 
-    IF (first_call) THEN
-      any_open = .FALSE.
-      IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
-          .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
-      first_call = .FALSE.
-
-      IF  (ybc_min == BC_DRIVEN) CALL setup_driver_spectrum
-
-    ELSE
-      IF (xbc_min == BC_OPEN) THEN
-        bx(-2,:) = bx(-1,:)
-        by(-1,:) = by( 0,:)
-        bz(-1,:) = bz( 0,:)
-      END IF
-      IF (xbc_max == BC_OPEN) THEN
-        bx(nx+2,:) = bx(nx+1,:)
-        by(nx+2,:) = by(nx+1,:)
-        bz(nx+2,:) = bz(nx+1,:)
-      END IF
-      IF (ybc_min == BC_OPEN) THEN
-        bx(:,-1) = bx(:, 0)
-        by(:,-2) = by(:,-1)
-        bz(:,-1) = bz(:, 0)
-      END IF
-      IF (ybc_max == BC_OPEN) THEN
-        bx(:,ny+2) = bx(:,ny+1)
-        by(:,ny+2) = by(:,ny+1)
-        bz(:,ny+2) = bz(:,ny+1)
-      END IF
-    END IF
+    IF  (ybc_min == BC_DRIVEN) CALL setup_driver_spectrum
 
   END SUBROUTINE set_boundary_conditions
 
@@ -364,19 +336,24 @@ CONTAINS
 
   SUBROUTINE damp_boundaries
 
-    ! These are not generic, always work damping options.
-    ! Users should change the damping scheme for each problem
+    ! This is an example damping scheme
+    ! Users should experiment on test cases
 
-    REAL(num) :: a, d
+    REAL(num) :: a, d, pos, n_cells, damp_scale
 
     IF (.NOT.damping) RETURN
+    ! number of cells near boundary to apply linearly increasing damping
+    n_cells = 10.0_num 
+    ! increase the damping if needed
+    damp_scale = 1.0_num
 
     IF (proc_x_min == MPI_PROC_NULL) THEN
-      d = 0.7_num * x_min
+      d = n_cells * dxb(1)
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
-          IF (xb(ix) < d) THEN
-            a = dt * (xb(ix) - d) / (x_min - d) + 1.0_num
+          pos = xb(ix) - x_min
+          IF (pos < d) THEN
+            a = dt * damp_scale * pos / d + 1.0_num
             vx(ix,iy) = vx(ix,iy) / a
             vy(ix,iy) = vy(ix,iy) / a
             vz(ix,iy) = vz(ix,iy) / a
@@ -386,11 +363,12 @@ CONTAINS
     END IF
 
     IF (proc_x_max == MPI_PROC_NULL) THEN
-      d = 0.7_num * x_max
+      d = n_cells * dxb(nx)
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
-          IF (xb(ix) > d) THEN
-            a = dt * (xb(ix) - d) / (x_max - d) + 1.0_num
+          pos = x_max - xb(ix) 
+          IF (pos < d) THEN
+            a = dt * damp_scale * pos / d + 1.0_num
             vx(ix,iy) = vx(ix,iy) / a
             vy(ix,iy) = vy(ix,iy) / a
             vz(ix,iy) = vz(ix,iy) / a
@@ -400,11 +378,12 @@ CONTAINS
     END IF
 
     IF (proc_y_min == MPI_PROC_NULL) THEN
-      d = 0.7_num * y_min
+      d = n_cells* dyb(1)
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
-          IF (yb(iy) < d) THEN
-            a = dt * (yb(iy) - d) / (y_min - d) + 1.0_num
+          pos = yb(iy) - y_min
+          IF (pos < d) THEN
+            a = dt * damp_scale * pos / d + 1.0_num
             vx(ix,iy) = vx(ix,iy) / a
             vy(ix,iy) = vy(ix,iy) / a
             vz(ix,iy) = vz(ix,iy) / a
@@ -414,11 +393,12 @@ CONTAINS
     END IF
 
     IF (proc_y_max == MPI_PROC_NULL) THEN
-      d = 0.7_num * y_max
+      d = n_cells* dyb(ny)
       DO iy = -1, ny + 1
         DO ix = -1, nx + 1
-          IF (yb(iy) > d) THEN
-            a = dt * (yb(iy) - d) / (y_max - d) + 1.0_num
+          pos = y_max - yb(iy) 
+          IF (pos < d) THEN
+            a = dt * damp_scale * pos / d + 1.0_num
             vx(ix,iy) = vx(ix,iy) / a
             vy(ix,iy) = vy(ix,iy) / a
             vz(ix,iy) = vz(ix,iy) / a

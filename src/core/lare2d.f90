@@ -8,7 +8,6 @@ PROGRAM lare2d
   USE initial_conditions
   USE setup
   USE boundary
-  USE openboundary
   USE diagnostics
   USE lagran
   USE remap
@@ -28,6 +27,7 @@ PROGRAM lare2d
   CALL user_normalisation  ! control.f90
   CALL control_variables   ! control.f90
   CALL set_output_dumps    ! control.f90
+  CALL set_initial_conditions
   CALL mpi_initialise      ! mpi_routines.f90
   CALL after_control       ! setup.f90
 
@@ -36,7 +36,6 @@ PROGRAM lare2d
   CALL setup_neutral       ! neutral.f90
   CALL normalise_transport ! normalise.f90
 
-  CALL set_boundary_conditions   ! boundary.f90
   CALL grid                      ! setup.f90
 
   IF (IAND(initial, IC_RESTART) /= 0) THEN
@@ -74,9 +73,6 @@ PROGRAM lare2d
     CALL lagrangian_step             ! lagran.f90
     CALL eulerian_remap(step)        ! remap.f90
     IF (rke) CALL energy_correction  ! diagnostics.f90
-    IF (any_open) THEN
-      CALL open_bcs                  ! openboundary.f90
-    END IF
     CALL eta_calc                    ! lagran.f90
     CALL output_routines(step)       ! diagnostics.f90
   END DO
