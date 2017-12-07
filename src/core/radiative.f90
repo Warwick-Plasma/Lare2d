@@ -101,12 +101,16 @@ CONTAINS
 
         k = -1
         DO i = 1, kmax
-          IF (yt > yk(i) .AND. yt <= yk(i+1)) THEN
+          IF (yt > yk(i) .AND. yt <= yk(i+1)) .OR. (yt < yk(i) .AND. yt >= yk(i+1))) THEN
             k = i
             EXIT
           END IF
         END DO
-        IF (k .LT. 0) CYCLE
+        IF (k .LT. 0) THEN
+          temp_si = t_boundary(1)
+          energy(ix,iy) = temp_si * 2.0_num / (gamma - 1.0_num) / temp_norm
+          CYCLE
+        ENDIF
 
         IF (alpha(k) .NE. 1) THEN
           fac = 1.0_num / (1.0 - pow(k))
