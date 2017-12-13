@@ -101,7 +101,7 @@ CONTAINS
 
         k = -1
         DO i = 1, kmax
-          IF (yt > yk(i) .AND. yt <= yk(i+1)) .OR. (yt < yk(i) .AND. yt >= yk(i+1))) THEN
+          IF ((yt > yk(i) .AND. yt <= yk(i+1)) .OR. (yt < yk(i) .AND. yt >= yk(i+1))) THEN
             k = i
             EXIT
           END IF
