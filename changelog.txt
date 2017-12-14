@@ -1,0 +1,5 @@
+Version 3.2 - December 2017
+---------------------------
+1. Replaced the optically thin radiative losses with a treatement based on Townsend exact integration. 
+How to use this is documented in the source code radiative.f90 and background added to the manual.
+2. 
