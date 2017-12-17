@@ -25,14 +25,14 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{Version 3.2}
+\date{Version 3}
 \maketitle
 
 \thispagestyle{empty}
 
 \section*{Abstract}
 {\it LareXd} are Lagrangian remap codes for solving the MHD equations in 2 or 3D. The code uses a staggered grid and is second order accurate in space and time. The use of shock viscosity and gradient limiters make the code ideally suited to shock calculations. This document describes how to obtain, make and run the {\it LareXd}  codes. The instructions are aimed at code users, not developers, although some references to more detailed numerics are included. The manual will only be
-updated when there are new physics packages added. Internal code changes and optimisations will be documented in the source code itself and through a {\it changelog.txt} file which will be updated with each new version and included with the source code distribution of {\it Lare2d}. The {\it Lare3d} will always track the changes in {\it Lare2d} so if you only use {\it Lare3d} you still need to check the manual and changelog in the {\it Lare2d} distribution.
+updated when there are new physics packages added. Hence this manual applies to all {\it LareXd} versions starting with a major version number of 3. Internal code changes and optimisations will be documented in the source code itself and through a {\it changelog.txt} file which will be updated with each new version and included with the source code distribution of {\it Lare2d}. The {\it Lare3d} will always track the changes in {\it Lare2d} so if you only use {\it Lare3d} you still need to check the manual and changelog in the {\it Lare2d} distribution.
 
 
 %---------------------------------------------------------------------------------------------------------------
@@ -45,7 +45,7 @@ Without going into detail, see \cite{jcp} for complete algorithm, the main featu
  \item Splits each timestep into a Lagragrian step followed by a remap onto the original grid. This allows all of the physics to be included into a simple Lagrangian step making it easy to add additional physics. The remap step includes gradient limiters to ensure the correct shock solution.
  \item Uses a staggered grid to prevent the checkerboard instability and to build conservation laws into the finite difference scheme, i.e. it is a compatible difference scheme in Lagrangian numerical jargon.
  \item Parallelised via MPI and known to scale linearly.
- \item Comes with packages for visualisation by IDL and VisIt. \cite{visit}
+ \item Comes with packages for visualisation by IDL, MATLAB, Python and VisIt. \cite{visit}
 \end{itemize}
 
 This manual should be sufficient to set up {\it LareXd} for any initial conditions, run the code and begin analysing the results. In order to do this you must know the core equations that are solved. It is also essential that you know something about the code structure and once the code has run how to load the data into IDL or VisIt. For the more ambitious you will need a good understanding of the Lagrangian step as this is what you will need to change to include additional physics. It is unlikely you will ever need to know how to change the remap step. If editing the core code note that this is always in normalised form so you must understand how this is applied. For examples of the uses of the {\it LareXd} codes just check out papers that reference \cite{jcp}. In order that this manual does not get stuck in the fine details of shock theory etc. it has been written in an informal style which deliberately oversimplifies some theoretical points. It's a user manual, not a theoretical treatise. References to grown up theory are at the end.
@@ -134,6 +134,16 @@ where $\hat{g}=L_0 g / v_0^2$. In {\it LareXd} $\hat{g}$ is only a function of $
 
 
 \subsection{Shock viscosity}
+The shock viscosity used in {\it LareXd} is different to that in Reference [1] and is sketched below along
+with a reference to the core material. From the user point of view the viscosity is controlled by two parameters.
+These are \texttt{visc1} and \texttt{visc2} with the first controlling linear viscosity and hence active on all shock, the
+second acts mostly at strong shocks. For strong shocks these should both be set to one. However for most solar physics,
+which only have very weak shocks, it is better to run with smaller values. Typically \texttt{visc1=0.1} and \texttt{visc2=0}
+are good starting points. It is best to try these values and then either increase or decrease based on the problem studied.
+These initial tests can be done on a low-resolution grid while still 'playing' with the problem. For some idealised wave
+problems it is best to set both to zero for example to avoid wave damping. Experimenting with these parameters is the
+only way to determine what is best.
+
 The shock viscosity in {\it LareXd} is based on the edge viscosity formulation in Reference \cite{caramana}.
 This is presented first for Euler's equation only and MHD added later.
 First find the area weighted nodal density and sound speed $\rho_v$ and $cs_v$. Then for 
@@ -274,9 +284,7 @@ Thermal conduction in LARE is based on the Braginskii thermal conduction in the 
 \frac{\partial \epsilon}{\partial t} = \nabla . \left(\left(\kappa \frac{\vec{B}}{B^2+b_{min}^2}. \nabla T\right) \vec{B} \right) +  \nabla . \left(\kappa  \frac{b_{min}^2}{B^2+b_{min}^2}  \nabla T \right)
 \]
 where $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal conductivity. Finite $b_{min}$ is used to make the conductivity isotropic when $B=0$.  How this is implemented is described in the Appendix. Note that $\kappa_0$ in S.I. units is hard coded to $10^{-11}$ and then made dimensionless using 
-{\tt B0, L0, RHO0} in {\tt control.f90}. If you want to just pick the thermal conductivity, i.e. make it up and generate unphysical results, then you can do this by changing $\kappa_0$ which is set in {\tt SUBROUTINE normalise\_transport} in {\tt src/core/normalise.f90}.
-
-Depending on your problem you may need to change $b_{min}$ which is set as a constant (parameter) in {\tt src/core/conduct.f90}. It is also possible to control the fractional accuracy of the SOR Gauss-Seidel scheme that is used to update the temperature, this is also in {\tt src/core/conduct.f90} and a value of $10^{-5}$ is known to reproduce analytic results well. If runtime becomes an issue this can be reduced but then you will need to test more carefully.
+{\tt B0, L0, RHO0} in {\tt control.f90}. If you want to just pick the thermal conductivity, i.e. make it up and generate unphysical results, then you can do this by changing $\kappa_0$ which is set in {\tt SUBROUTINE normalise\_transport} in {\tt src/core/normalise.f90}. Depending on your problem you may need to change $b_{min}$ which is set as a constant (parameter) in {\tt src/core/conduct.f90}. Thermal conduction is handled via super-stepping \cite{Meyer:2012eb}. If the number of sub-steps becomes prohibitively large then you may need to either reduce the thermal conductivity or use a code with an implicit solver.
 
 % section thermal_conduction (end)
 
@@ -284,9 +292,12 @@ Depending on your problem you may need to change $b_{min}$ which is set as a con
 \label{sec:open_bcs}
 Open boundaries are now implemented via far-field Riemann characteristics. This calculates the slow, fast, Alfven etc. speeds and then projects 1D Riemann invariants into ghost cells. If the wave is outgoing values are propagated from the inside the domain into the ghost cells. If the waves are inward propagating then values are carried in from the far-field. This requires a fixed far-field, i.e. specified values of $\rho, \epsilon, v_x, v_y, B_x, B_y, B_z$. So that the open boundary conditions doesn't affect the initial equilibrium these are set to the ghost cell values as defined in the initial conditions. As a result these open boundaries are only accurate if the magnetic field does not change a lot from the initial field. More accurately the far-field specified at $t=0$ must be a valid far-field later in the simulation. Otherwise the far-field problem for MHD is not well posed.
 
-{\it Notes:} In this version these routines have been tested with simple straight fields and x-point fields and they seem robust. Reflection is typically a few percent but can be as large as 10\% in extreme cases. It is best to just try for your problem and see if they work. If not let me know so I can either look to fix the problem or list the initial conditions here as one's which are known not to work. If the open boundaries do fail then the best option is to use a stretched grid with a damping layer. Sometimes simply commenting out the line {\tt CALL open\_bcs} can help! Most of these problems are to do with the open boundary problem for MHD not being well posed so in all these cases you will be conditioning the solution so caution is needed.
+{\it Notes:} In this version these routines have been tested with simple straight fields and x-point fields and they seem robust. Reflection is typically a few percent but can be as large as 10\% in extreme cases. It is best to just try for your problem and see if they work. If the open boundaries do fail then the best option is to use a stretched grid with a damping layer. Most of these problems are to do with the open boundary problem for MHD not being well posed so in all these cases you will be conditioning the solution so caution is needed.
 
-The open boundaries have not been tested with resistivity or thermal conductivity. If this causes problems be sure that resistivity is zero at the boundary. Also the open boundaries do not work with gravity. Open boundaries with gravity should be OK on surfaces of constant potential gravitational potential but not always otherwise. At the lower boundary care must be taken to not let the solution fall through the bottom. Experiment to find the best approach. If all fails use damping regions or contact me directly.
+The open boundaries have not been tested with resistivity or thermal conductivity. If this causes problems be sure that resistivity is zero at the boundary. Also the open boundaries do not work with gravity. Open boundaries with gravity should be OK on surfaces of constant potential gravitational potential but not always otherwise. At the lower boundary care must be taken to not let the solution fall through the bottom. Experiment to find the best approach. If all fails use damping regions.
+
+Improvements to the open boundary, if possible, will be released through minor revisions and documented in the
+open boundary routine source code.
 
 % section open_bcs (end)
 
@@ -497,54 +508,9 @@ the following two URLs:\linebreak
 The easiest method of downloading the code is to grab a copy of the latest
 release package, located in the ``Releases'' section of the CCPForge site.
 
-For more advanced users, the code is also hosted on a git repository. Details
-can be found in the ``Git'' section on the CCPForge site. There is quite a
-steep learning curve for using git, so using this repository is only
-recommended for more advanced users who are comfortable that they can deal with
-a ``git conflict''.
-
-One other added complication, is that the LareXd repositories also use git
-submodules for tracking the SDF file format. This adds an extra source of
-possible issues. However, once a workflow is established it can all be quite
-straightforward to work with.
-
-To perform an initial checkout of the code using git, you should issue the
-following command:
-
-\begin{verbatim}
-git clone --recursive ssh://<name>@ccpforge.cse.rl.ac.uk/gitroot/lare3d
-\end{verbatim}
-
-The \texttt{--recursive} flag ensures that not only the \texttt{lare3d}
-repository is checked out, but also the \texttt{SDF} submodules.
-
-It is recommended that after checking out a copy of the git repository, users
-immediately create a new working branch and leave the default ``master'' branch
-untouched. A new branch can be created and switched to with the command
-\texttt{git checkout -b work}.
-
-When you wish to update to the latest version, do the following sequence of
-actions. First, commit or stash any changes you have made in your ``work''
-branch. Next, switch to the ``master'' branch with
-\texttt{git checkout master}. Now pull the changes with \texttt{git pull},
-followed by \texttt{git submodule update --recursive}.
-At this stage your ``master'' branch should be fully up to date.
-
-Merging the new version in with your ``work'' branch is prone to error, so it
-is recommended that you create a temporary copy of this branch just in case
-everything goes wrong. The command \texttt{git branch workold work} will
-create a branch named ``workold'' which is just a copy of ``work''. This branch
-can be deleted once the merge is completed successfully. If everything goes
-wrong in the ``work'' branch, you can reset it back to the original using the
-command \texttt{git reset --hard workold}.
-
-In order to update your work branch, switch back to it with
-\texttt{git checkout work} and merge in the changes with
-\texttt{git merge master}.
-After issuing this last command, there is a fair chance that you will encounter
-conflicts. You must now resolve those conflicts and commit the changes.
-After successfully merging in the changes, you can now delete the temporary
-copy of your work branch with \texttt{git branch -D workold}.
+For more advanced users, the code is also hosted on a git repository. If you want to track the very
+latest versions and watch the whole development project contact me for access to this repository.
+Access will only be allowed for developers of {\it LareXd}.
 
 \section{Makefile}
 
