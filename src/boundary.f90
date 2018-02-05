@@ -338,12 +338,14 @@ CONTAINS
 
     ! This is an example damping scheme
     ! Users should experiment on test cases
+    ! In this example damping is applied to all boundaries. If there is a boundary
+    ! that shouldn't be damped then simply comment out that boundary.
 
     REAL(num) :: a, d, pos, n_cells, damp_scale
 
     IF (.NOT.damping) RETURN
     ! number of cells near boundary to apply linearly increasing damping
-    n_cells = 10.0_num 
+    n_cells = 20.0_num 
     ! increase the damping if needed
     damp_scale = 1.0_num
 
