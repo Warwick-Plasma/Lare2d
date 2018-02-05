@@ -72,7 +72,7 @@ CONTAINS
 
   SUBROUTINE exact_intergation_method
 
-    REAL(num) :: temp_si, temp, inverse_t_cool, yt, fac
+    REAL(num) :: temp_si, inverse_t_cool, yt, fac
     INTEGER :: i, k
 
     DO ix = 1, nx
@@ -134,7 +134,7 @@ CONTAINS
     ! Define arrays used in Townsend exact integration method
     ! Here qk = Lambda_k from Townsend
 
-    REAL(num) :: fac, power
+    REAL(num) :: fac
     INTEGER :: k
 
     DO k = 1, kmax
@@ -177,7 +177,7 @@ CONTAINS
     heating = 0.0_num
 
     ! Convert to LareXd normalised units
-    heating = heating * h_star
+    heating = heating * h_star * temperature / density
 
   END FUNCTION heating
 
