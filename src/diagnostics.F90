@@ -165,7 +165,7 @@ CONTAINS
     TYPE(probe), POINTER :: current
     LOGICAL, INTENT(IN) :: last_call
     CHARACTER(LEN=9+data_dir_max_length+n_zeros) :: filename
-    INTEGER :: ierr, cx, cy
+    INTEGER :: cx, cy
     LOGICAL, SAVE :: first_write = .TRUE.
 
     current => probe_head
@@ -206,7 +206,7 @@ CONTAINS
         END IF
         WRITE(55) current%array(:,1:probe_data_point-1)
         ! Seek back to start of output file
-        WRITE(55, POS = 0) probe_dumps
+        WRITE(55, POS = 1) probe_dumps
         CLOSE(UNIT=55)
         current => current%next
       END DO
