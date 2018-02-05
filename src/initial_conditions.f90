@@ -19,129 +19,56 @@ CONTAINS
   !   v{x,y,z} - Velocities in x, y, z
   !   b{x,y,z} - Magnetic fields in x, y, z
   !   energy - Specific internal energy
+  !   grav - Gravity
   !
   ! You may also need the neutral fraction. This can be calculated by a
-  ! function call to get_neutral(temperature, rho, z). This routine is in
+  ! function call to get_neutral(temperature, rho). This routine is in
   ! core/neutral.f90 and requires the local temperature and mass density.
   ! For example to set xi_n to the neutral fraction use:
-  !   xi_n = get_neutral(temperature, rho, z)
+  !   xi_n = get_neutral(temperature, rho)
   !****************************************************************************
 
 
   SUBROUTINE set_initial_conditions
 
-    INTEGER :: test
-    LOGICAL :: second_call = .FALSE.
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: temperature
 
-    IF (second_call) THEN
-      vx = 0.0_num
-      vy = 0.0_num
-      vz = 0.0_num
-      bx = 0.0_num
-      by = 0.0_num
-      bz = 0.0_num
-      grav = 0.0_num
-      rho = 1.0_num
-      energy = 0.1_num
+    ! Below are all the variables which must be defined and their sizes
+
+    vx(-2:nx+2, -2:ny+2) = 0.0_num
+    vy(-2:nx+2, -2:ny+2) = 0.0_num
+    vz(-2:nx+2, -2:ny+2) = 0.0_num
+
+    bx(-2:nx+2, -1:ny+2) = 0.0_num
+    by(-1:nx+2, -2:ny+2) = 0.0_num
+    bz(-1:nx+2, -1:ny+2) = 0.0_num
+
+    rho(-1:nx+2, -1:ny+2) = 1.0_num
+    energy(-1:nx+2, -1:ny+2) = 0.1_num
+
+    grav(-1:ny+2) = 0.0_num
+
+    ! If defining the initial conditions using temperature then use
+    ALLOCATE(temperature(-1:nx+2, -1:ny+2))
+    temperature(-1:nx+2, -1:ny+2) = 0.5_num
+    ! Then fix the energy, for a fully ionised plasma, from
+    energy = 2.0_num * temperature / (gamma - 1.0_num) 
+
+    ! If neutrals included xi_n is a function of temperature so iteration required
+    ! Iteration not shown in this example - see examples in Old directory
+    ! Set the neutral fraction if needed
+    IF (eos_number /= EOS_IDEAL) THEN
+      DO iy = -1, ny+2
+        DO ix = -1, nx+2
+          xi_n(ix,iy) = get_neutral(temperature(ix,iy), rho(ix,iy))
+        END DO
+      END DO
     END IF
 
-    test = 3
+    ! If probe points needed add them here
+    CALL add_probe(0.0_num, 0.0_num)
 
-    SELECT CASE(test)
-
-!--------------------------------------------------------
-     CASE(4) !2D X-point, beta_max ~ 1
-
-        visc1 = 0.1_num
-        visc2 = 0.0_num    
-        xbc_min = BC_OPEN
-        xbc_max = BC_OPEN
-        ybc_min = BC_OPEN
-        ybc_max = BC_OPEN
-
-        IF (second_call) THEN
-          energy = 1.0_num
-          DO iy = 0, ny
-            DO ix = 0, nx
-              energy(ix,iy) = energy(ix,iy)  &
-                 * (1.0_num + 0.01_num * EXP(-(xc(ix)**2+yc(iy)**2)/0.01_num))
-            END DO
-          END DO
-          DO iy = -1, ny+2
-            DO ix = -2, nx+2
-              bx(ix,iy) = xb(ix)
-            END DO
-          END DO
-
-          DO iy = -2, ny+2
-            DO ix = -1, nx+2
-              by(ix,iy) = -yb(iy)
-            END DO
-          END DO
-        END IF
-!--------------------------------------------------------
-     CASE (3) !2D acoustic test
-
-        visc1 = 0.1_num
-        visc2 = 0.0_num    
-        xbc_min = BC_OPEN
-        xbc_max = BC_OPEN
-        ybc_min = BC_OPEN
-        ybc_max = BC_OPEN
-        IF (second_call) THEN
-          bx = 1.0_num
-          by = 1.0_num
-          energy = 1.0_num      
-          DO iy = 0, ny
-            DO ix = 0, nx
-              energy(ix,iy) = energy(ix,iy)  &
-                * (1.0_num + 0.1_num * EXP(-(xc(ix)**2+yc(iy)**2)/0.01_num))
-            END DO
-          END DO
-         END IF
-!--------------------------------------------------------
-      CASE (2) !1D Alfven wave test, beta ~1
-
-        visc1 = 0.1_num
-        visc2 = 0.0_num    
-        xbc_min = BC_OPEN
-        xbc_max = BC_OPEN
-        ybc_min = BC_PERIODIC
-        ybc_max = BC_PERIODIC
-        IF (second_call) THEN
-         bx = 1.0_num
-         by = 1.0_num
-         energy = 0.1_num      
-         DO iy = 0, ny
-           DO ix = 0, nx
-             vx(ix,iy) = 0.01_num * EXP(-(xb(ix)**2)/0.01_num)
-           END DO
-         END DO
-        END IF
-
-!--------------------------------------------------------
-      CASE (1) !1D acoustic test
-
-        visc1 = 0.0_num
-        visc2 = 0.0_num    
-        xbc_min = BC_OPEN
-        xbc_max = BC_OPEN
-        ybc_min = BC_PERIODIC
-        ybc_max = BC_PERIODIC
-        IF (second_call) THEN
-          bx = 1.0_num
-          energy = 0.01_num      
-          DO iy = 0, ny
-            DO ix = 0, nx
-              energy(ix,iy) = energy(ix,iy)  &
-                * (1.0_num + 0.1_num * EXP(-(xb(ix)**2)/0.01_num))
-            END DO
-          END DO
-         END IF
-
-    END SELECT
-
-    second_call = .TRUE.
+    DEALLOCATE(temperature)
 
   END SUBROUTINE set_initial_conditions
 
