@@ -137,8 +137,6 @@ MODULE shared_data
   REAL(num) :: lr_star
   ! Normalisation used for coronal heating
   REAL(num) :: h_star
-  ! Dimensionless average particle mass
-  REAL(num) :: mu_m
 
   ! Heat conduction
   LOGICAL :: conduction, radiation, coronal_heating
