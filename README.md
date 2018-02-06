@@ -124,22 +124,23 @@ such plugins.
 WORKING WITH THE GIT REPOSITORY
 -------------------------------
 
-For more advanced users, the code is also hosted on a git repository. Details
-can be found in the "Git" section on the CCPForge site. There is quite a
-steep learning curve for using git, so using this repository is only
-recommended for more advanced users who are comfortable that they can deal with
+For more advanced users, the code is also hosted on a git repository. There is 
+quite a steep learning curve for using git, so using this repository is only
+recommended for more developers who are comfortable that they can deal with
 a "git conflict".
 
 One other added complication, is that the Lare2d repository also uses git
 submodules for tracking the SDF file format. This adds an extra source of
 possible issues. However, once a workflow is established it can all be quite
-straightforward to work with.
+straightforward to work with. If you want access to the development branch
+then contact Tony Arber by email. Once you have an account on cfsa-pmw the 
+following may be helpful.
 
 To perform an initial checkout of the code using git, you should issue the
 following command:
 
 ```
-  git clone --recursive ssh://<name>@ccpforge.cse.rl.ac.uk/gitroot/lare2d
+  git clone --recursive ssh://<name>@cfsa-pmw.warwick.ac.uk:Lare/Lare2d.git
 ```
 
 The "--recursive" flag ensures that not only the "lare2d"
