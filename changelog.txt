@@ -1,7 +1,6 @@
-Version 3.2 - December 2017
+Version 3.2 - February 2018
 ---------------------------
-1. Replaced the optically thin radiative losses with a treatement based on Townsend exact integration. 
-How to use this is documented in the source code radiative.f90 and background added to the manual.
-2. Renamed the boundary condition BC_OTHER BC_USER to match the expectation that this is supplied by the use not a default
-in the code.
-3. Renamed the options for open boundaries ready for planned changes.
+1. Replaced the optically thin radiative losses with a treatement based on Townsend exact integration. How to use this is documented in the source code radiative.f90 and background added to the manual.
+2. Renamed the boundary condition BC_OTHER to BC_USER to match the expectation that this is supplied by the use not a default in the code.
+3. Renamed the options for open boundaries inside openboundary.f90.
+4  Tidied the code to make maintenance easier.
