@@ -252,7 +252,7 @@ CONTAINS
     ALLOCATE(bz (-1:nx+2, -1:ny+2))
     ALLOCATE(eta(-1:nx+2, -1:ny+2))
     IF (rke) ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
-    ALLOCATE(lambda_i(0:nx, 0:ny))
+    IF (hall_mhd) ALLOCATE(lambda_i(0:nx, 0:ny))
 
     ! Shocked and resistive need to be larger to allow offset = 4 in shock_test
     ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1(-1:nx+2, -1:ny+2))
@@ -317,8 +317,8 @@ CONTAINS
     DEALLOCATE(xb_global, yb_global)
     DEALLOCATE(cell_nx_mins, cell_nx_maxs)
     DEALLOCATE(cell_ny_mins, cell_ny_maxs)
-    DEALLOCATE(lambda_i)
 
+    IF (ALLOCATED(lambda_i)) DEALLOCATE(lambda_i)
     IF (ALLOCATED(xi_n)) DEALLOCATE(xi_n)
     IF (ALLOCATED(delta_ke)) DEALLOCATE(delta_ke)
     IF (ALLOCATED(eta_perp)) DEALLOCATE(eta_perp)

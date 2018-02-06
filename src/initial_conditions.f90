@@ -26,6 +26,8 @@ CONTAINS
   ! core/neutral.f90 and requires the local temperature and mass density.
   ! For example to set xi_n to the neutral fraction use:
   !   xi_n = get_neutral(temperature, rho)
+  ! 
+  ! If using Hall_MHD then you must specific lambda_i in this routine
   !****************************************************************************
 
 
@@ -63,6 +65,10 @@ CONTAINS
           xi_n(ix,iy) = get_neutral(temperature(ix,iy), rho(ix,iy))
         END DO
       END DO
+    END IF
+
+    IF (hall_mhd) THEN
+      lambda_i(0:nx, 0:ny) = 1.0_num
     END IF
 
     ! If probe points needed add them here
