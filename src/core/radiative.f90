@@ -163,23 +163,5 @@ CONTAINS
 
 
 
-  FUNCTION heating(density, temperature)
-
-    ! For a given density and temperature returns a user specific
-    ! heating function.
-    ! Input density is the mass density. 
-    ! Both density and temperature are in Lare2d normalised units
-
-    REAL(num), INTENT(IN) :: density, temperature
-    REAL(num) :: heating
-
-    ! First specify the heating in S.I. units
-    heating = 0.0_num
-
-    ! Convert to LareXd normalised units
-    heating = heating * h_star * temperature / density
-
-  END FUNCTION heating
-
 
 END MODULE radiative

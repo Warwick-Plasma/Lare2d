@@ -67,7 +67,7 @@ CONTAINS
     t_end = 5.0_num
 
     ! Shock viscosities as detailed in manual - they are dimensionless
-    visc1 = 0.0_num
+    visc1 = 0.1_num
     visc2 = 0.0_num
 
     ! Set these constants to manually override the domain decomposition.
@@ -119,9 +119,6 @@ CONTAINS
     ! Use radiation as specified in SUBROUTINE rad_losses
     ! in src/core/radiative.f90
     radiation = .FALSE.
-    ! Use coronal heating as specified in SUBROUTINE heating
-    ! in src/core/conduct.f90
-    coronal_heating = .FALSE.
 
     ! Remap kinetic energy correction. LARE does not perfectly conserve kinetic
     ! energy during the remap step. This missing energy can be added back into
