@@ -53,7 +53,7 @@ CONTAINS
     p_visc = 0.0_num
     eta = 0.0_num
     grav = 0.0_num
-    lambda_i = 0.0_num
+    IF (hall_mhd) lambda_i = 0.0_num
 
     rho = 0.0_num
     energy = 0.0_num

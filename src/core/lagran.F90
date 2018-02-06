@@ -722,10 +722,12 @@ CONTAINS
         dtr_local = MIN(dtr_local, dt1)
 
         ! Hall MHD CFL limit
-        dt1 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
+        IF (hall_mhd) THEN
+          dt1 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
             / MAX(lambda_i(ix,iy) * SQRT(w1), none_zero)
-
-        dth_local = MIN(dth_local, dt1)
+          dth_local = MIN(dth_local, dt1)
+        END IF
+        
       END DO
     END DO
 
