@@ -151,9 +151,9 @@ CONTAINS
 
     CALL b_field_and_cv1_update
 
-    bx1 = bx1 * cv1
-    by1 = by1 * cv1
-    bz1 = bz1 * cv1
+    bx1(:,:) = bx1(:,:) * cv1(:,:)
+    by1(:,:) = by1(:,:) * cv1(:,:)
+    bz1(:,:) = bz1(:,:) * cv1(:,:)
 
     DO iy = 0, ny + 1
       DO ix = 0, nx + 1
@@ -237,9 +237,9 @@ CONTAINS
       END DO
     END DO
 
-    bx1 = bx1 / cv1
-    by1 = by1 / cv1
-    bz1 = bz1 / cv1
+    bx1(:,:) = bx1(:,:) / cv1(:,:)
+    by1(:,:) = by1(:,:) / cv1(:,:)
+    bz1(:,:) = bz1(:,:) / cv1(:,:)
     
     CALL remap_v_bcs
 
@@ -875,9 +875,9 @@ CONTAINS
     ALLOCATE( c3(0:nx,0:ny),  c4(0:nx,0:ny))
 #endif
 
-    bx1 = bx(-1:nx+2,-1:ny+2)
-    by1 = by(-1:nx+2,-1:ny+2)
-    bz1 = bz(-1:nx+2,-1:ny+2)
+    bx1(:,:) = bx(:,:)
+    by1(:,:) = by(:,:)
+    bz1(:,:) = bz(:,:)
 
     ! Step 1
     CALL rkstep
@@ -1155,48 +1155,48 @@ CONTAINS
     half_dt = dt * 0.5_num
     dt6 = dt * sixth
 
-    bx1 = bx(0:nx+1,0:ny+1)
-    by1 = by(0:nx+1,0:ny+1)
-    bz1 = bz(0:nx+1,0:ny+1)
+    bx1(0:nx+1,0:ny+1) = bx(0:nx+1,0:ny+1)
+    by1(0:nx+1,0:ny+1) = by(0:nx+1,0:ny+1)
+    bz1(0:nx+1,0:ny+1) = bz(0:nx+1,0:ny+1)
 
     ! Step 1
     CALL rkstep1(half_dt)
 
-    k1x = flux_x
-    k1y = flux_y
-    k1z = flux_z
+    k1x(:,:) = flux_x(:,:)
+    k1y(:,:) = flux_y(:,:)
+    k1z(:,:) = flux_z(:,:)
 
     ! Step 2
     CALL bstep(k1x, k1y, k1z, half_dt)
 
     CALL rkstep1(half_dt)
 
-    k2x = flux_x
-    k2y = flux_y
-    k2z = flux_z
+    k2x(:,:) = flux_x(:,:)
+    k2y(:,:) = flux_y(:,:)
+    k2z (:,:)= flux_z(:,:)
 
     ! Step 3
     CALL bstep(k2x, k2y, k2z, half_dt)
 
     CALL rkstep1(half_dt)
 
-    k3x = flux_x
-    k3y = flux_y
-    k3z = flux_z
+    k3x(:,:) = flux_x(:,:)
+    k3y(:,:) = flux_y(:,:)
+    k3z(:,:) = flux_z(:,:)
 
     ! Step 4
     CALL bstep(k3x, k3y, k3z, dt)
 
     CALL rkstep1(dt)
 
-    k4x = flux_x
-    k4y = flux_y
-    k4z = flux_z
+    k4x(:,:) = flux_x(:,:)
+    k4y(:,:) = flux_y(:,:)
+    k4z(:,:) = flux_z(:,:)
 
     ! Full update
-    k1x = k1x + 2.0_num * k2x + 2.0_num * k3x + k4x
-    k1y = k1y + 2.0_num * k2y + 2.0_num * k3y + k4y
-    k1z = k1z + 2.0_num * k2z + 2.0_num * k3z + k4z
+    k1x(:,:) = k1x(:,:) + 2.0_num * k2x(:,:) + 2.0_num * k3x(:,:) + k4x(:,:)
+    k1y(:,:) = k1y(:,:) + 2.0_num * k2y(:,:) + 2.0_num * k3y(:,:) + k4y(:,:)
+    k1z(:,:) = k1z(:,:) + 2.0_num * k2z(:,:) + 2.0_num * k3z(:,:) + k4z(:,:)
 
     CALL bstep(k1x, k1y, k1z, dt6)
 

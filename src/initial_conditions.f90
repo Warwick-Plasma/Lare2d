@@ -54,7 +54,7 @@ CONTAINS
     ALLOCATE(temperature(-1:nx+2, -1:ny+2))
     temperature(-1:nx+2, -1:ny+2) = 0.5_num
     ! Then fix the energy, for a fully ionised plasma, from
-    energy = 2.0_num * temperature / (gamma - 1.0_num) 
+    energy(:,:) = 2.0_num * temperature(:,:) / (gamma - 1.0_num) 
 
     ! If neutrals included xi_n is a function of temperature so iteration required
     ! Iteration not shown in this example - see examples in Old directory
