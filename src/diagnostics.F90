@@ -245,12 +245,12 @@ CONTAINS
       work(-2:nx_global+2) = xb_global
       DEALLOCATE(xb_global)
       ALLOCATE(xb_global(0:nx_global))
-      xb_global = work(0:nx_global)
+      xb_global(0:nx_global)= work(0:nx_global)
 
       work(-2:ny_global+2) = yb_global
       DEALLOCATE(yb_global)
       ALLOCATE(yb_global(0:ny_global))
-      yb_global = work(0:ny_global)
+      yb_global(0:nx_global) = work(0:ny_global)
 
       DEALLOCATE(work)
       first = .FALSE.
@@ -458,7 +458,7 @@ CONTAINS
 
       IF (.NOT.ALLOCATED(array)) ALLOCATE(array(nx,ny))
 
-      array = SQRT(gamma * (gamma - 1.0_num) * energy(1:nx,1:ny))
+      array(1:nx,1:ny) = SQRT(gamma * (gamma - 1.0_num) * energy(1:nx,1:ny))
 
       CALL sdf_write_plain_variable(sdf_handle, TRIM(varname), &
           'Fluid/' // TRIM(varname), TRIM(units), dims, &
@@ -686,7 +686,7 @@ CONTAINS
 
     delta_ke = -delta_ke
     WHERE (delta_ke < 0.0_num) delta_ke = 0.0_num
-    delta_ke = delta_ke / (rho * cv)
+    delta_ke(:,:) = delta_ke(:,:) / (rho(:,:) * cv(:,:))
 
     DO iy = 1, ny
       DO ix = 1, nx

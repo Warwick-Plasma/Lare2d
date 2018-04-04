@@ -223,10 +223,8 @@ CONTAINS
 
 
     !! First STS stage
-    temperature = (gamma-1.0_num) / &
-        (2.0_num - xi_n) &
-      *(Y(0,:,:)-(1.0_num - xi_n)&
-      *ionise_pot)
+    temperature(:,:) = (gamma-1.0_num) / (2.0_num - xi_n) &
+        *(Y(0,:,:)-(1.0_num - xi_n(:,:)) * ionise_pot)
 
     CALL heat_flux(temperature, flux)
 
@@ -243,8 +241,8 @@ CONTAINS
     Y(1,1:nx,1:ny) = Y(0,1:nx,1:ny)
 
     DO j = 2, n_s_stages
-      temperature = (gamma-1.0_num) / (2.0_num - xi_n) &
-         * (Y(2,:,:)-(1.0_num - xi_n) * ionise_pot)
+      temperature(:,:) = (gamma-1.0_num) / (2.0_num - xi_n) &
+         * (Y(2,:,:)-(1.0_num - xi_n(:,:)) * ionise_pot)
 		  
       CALL heat_flux(temperature, flux)
 
@@ -265,7 +263,7 @@ CONTAINS
         Y(1,:,:) = Y(2,:,:)
         ! This is not ideal, but it allows you to not have special boundary
         ! conditions
-        energy = Y(3,:,:)
+        energy(:,:) = Y(3,:,:)
         CALL energy_bcs
         IF (eos_number /= EOS_IDEAL) CALL neutral_fraction
         Y(2,:,:) = energy
