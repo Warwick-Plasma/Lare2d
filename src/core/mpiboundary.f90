@@ -130,6 +130,29 @@ CONTAINS
 
 
 
+  SUBROUTINE temperature_mpi
+
+    CALL MPI_SENDRECV( &
+        temperature(   1,-1), 1, cell_xface, proc_x_min, tag, &
+        temperature(nx+1,-1), 1, cell_xface, proc_x_max, tag, &
+        comm, status, errcode)
+    CALL MPI_SENDRECV( &
+        temperature(nx-1,-1), 1, cell_xface, proc_x_max, tag, &
+        temperature(  -1,-1), 1, cell_xface, proc_x_min, tag, &
+        comm, status, errcode)
+
+    CALL MPI_SENDRECV( &
+        temperature(-1,   1), 1, cell_yface, proc_y_min, tag, &
+        temperature(-1,ny+1), 1, cell_yface, proc_y_max, tag, &
+        comm, status, errcode)
+    CALL MPI_SENDRECV( &
+        temperature(-1,ny-1), 1, cell_yface, proc_y_max, tag, &
+        temperature(-1,  -1), 1, cell_yface, proc_y_min, tag, &
+        comm, status, errcode)
+
+  END SUBROUTINE temperature_mpi
+
+
   !****************************************************************************
   ! Boundary exchange for density
   !****************************************************************************

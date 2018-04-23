@@ -218,6 +218,34 @@ CONTAINS
 
 
 
+  SUBROUTINE temperature_bcs
+
+    CALL temperature_mpi
+
+    IF (proc_x_min == MPI_PROC_NULL .AND. xbc_min == BC_USER) THEN
+      temperature( 0,:) = temperature(1,:)
+      temperature(-1,:) = temperature(2,:)
+    END IF
+
+    IF (proc_x_max == MPI_PROC_NULL .AND. xbc_max == BC_USER) THEN
+      temperature(nx+1,:) = temperature(nx  ,:)
+      temperature(nx+2,:) = temperature(nx-1,:)
+    END IF
+
+    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
+      temperature(:, 0) = temperature(:,1)
+      temperature(:,-1) = temperature(:,2)
+    END IF
+
+    IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
+      temperature(:,ny+1) = temperature(:,ny  )
+      temperature(:,ny+2) = temperature(:,ny-1)
+    END IF
+
+  END SUBROUTINE temperature_bcs
+
+
+
   !****************************************************************************
   ! Boundary conditions for density
   !****************************************************************************

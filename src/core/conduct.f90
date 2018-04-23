@@ -176,7 +176,7 @@ CONTAINS
     ! 2nd order Runge-Kutta-Lagrange (RKL2) scheme
     ! Based on Meyer at al. 2012 variables named as in that paper
 
-    REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux, Lc_Y0, temperature
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux, Lc_Y0
     REAL(num) :: omega_1
     REAL(num), DIMENSION(0:n_s_stages) :: a, b
     REAL(num), DIMENSION(1:n_s_stages) :: mu_tilde
@@ -188,7 +188,6 @@ CONTAINS
     INTEGER :: j
 
     ALLOCATE(flux(-1:nx+2,-1:ny+2))
-    ALLOCATE(temperature(-1:nx+2,-1:ny+2))
     ALLOCATE(Lc_Y0(1:nx,1:ny))
     ALLOCATE(Y(0:3,-1:nx+2,-1:ny+2))
     flux = 0.0_num
@@ -223,9 +222,10 @@ CONTAINS
 
 
     !! First STS stage
-    temperature(:,:) = (gamma-1.0_num) / (2.0_num - xi_n) &
+    temperature(:,:) = (gamma-1.0_num) / (2.0_num - xi_n(:,:)) &
         *(Y(0,:,:)-(1.0_num - xi_n(:,:)) * ionise_pot)
 
+    CALL temperature_bcs
     CALL heat_flux(temperature, flux)
 
     DO iy = 1, ny
@@ -241,9 +241,10 @@ CONTAINS
     Y(1,1:nx,1:ny) = Y(0,1:nx,1:ny)
 
     DO j = 2, n_s_stages
-      temperature(:,:) = (gamma-1.0_num) / (2.0_num - xi_n) &
+      temperature(:,:) = (gamma-1.0_num) / (2.0_num - xi_n(:,:)) &
          * (Y(2,:,:)-(1.0_num - xi_n(:,:)) * ionise_pot)
 		  
+      CALL temperature_bcs
       CALL heat_flux(temperature, flux)
 
       DO iy = 1, ny
@@ -277,7 +278,6 @@ CONTAINS
     DEALLOCATE(flux)
     DEALLOCATE(Y)
     DEALLOCATE(Lc_Y0)
-    DEALLOCATE(temperature)
 
   END SUBROUTINE heat_conduct_sts2
 

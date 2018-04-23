@@ -251,6 +251,7 @@ CONTAINS
     ALLOCATE(by (-1:nx+2, -2:ny+2))
     ALLOCATE(bz (-1:nx+2, -1:ny+2))
     ALLOCATE(eta(-1:nx+2, -1:ny+2))
+    ALLOCATE(temperature(-1:nx+2, -1:ny+2))
     IF (rke) ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
     IF (hall_mhd) ALLOCATE(lambda_i(0:nx, 0:ny))
 
@@ -317,6 +318,7 @@ CONTAINS
     DEALLOCATE(xb_global, yb_global)
     DEALLOCATE(cell_nx_mins, cell_nx_maxs)
     DEALLOCATE(cell_ny_mins, cell_ny_maxs)
+    DEALLOCATE(temperature)
 
     IF (ALLOCATED(lambda_i)) DEALLOCATE(lambda_i)
     IF (ALLOCATED(xi_n)) DEALLOCATE(xi_n)
