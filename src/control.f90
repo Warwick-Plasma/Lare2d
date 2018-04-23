@@ -185,6 +185,9 @@ CONTAINS
     ! The interval between output snapshots.
     dt_snapshots = t_end / 50.0_num
 
+    ! Force dt to adjust to output exactly at times set by dt_snapshot
+    force_exact_time_outputs = .FALSE.
+
     ! dump_mask is an array which specifies which quantities the code should
     ! output to disk in a data dump.
     ! The codes are

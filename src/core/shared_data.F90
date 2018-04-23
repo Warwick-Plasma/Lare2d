@@ -126,7 +126,7 @@ MODULE shared_data
   INTEGER :: peak_substeps = 0
   LOGICAL :: x_stretch, y_stretch
   LOGICAL :: resistive_mhd, any_open, rke, hall_mhd
-  LOGICAL :: restart, heat_flux_limiter
+  LOGICAL :: restart, heat_flux_limiter, force_exact_time_outputs
 
   ! Normalising constants
   REAL(num) :: B_norm, L_norm, rho_norm, time_norm
