@@ -108,7 +108,7 @@ CONTAINS
 
         ! Saturated Conductive Flux
         rho_b = 0.5_num * (rho(ix,iy) + rho(ixp,iy))
-        b_component = ABS(bx(ix,iy)) / SQRT(modb)
+        b_component = SQRT((bx(ix,iy)**2 + min_b) / modb)
         fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  
 
         ! Conductive Flux Limiter. 
@@ -140,8 +140,8 @@ CONTAINS
 
         ! Saturated Conductive Flux
         rho_b = 0.5_num * (rho(ix,iy) + rho(ix,iyp))
-        b_component = ABS(by(ix,iym)) / SQRT(modb)
-        fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
+        b_component = SQRT((by(ix,iym)**2 + min_b) / modb)
+        fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  
 
         ! Conductive Flux Limiter
         fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
