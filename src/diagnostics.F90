@@ -250,7 +250,7 @@ CONTAINS
       work(-2:ny_global+2) = yb_global
       DEALLOCATE(yb_global)
       ALLOCATE(yb_global(0:ny_global))
-      yb_global(0:nx_global) = work(0:ny_global)
+      yb_global(0:ny_global) = work(0:ny_global)
 
       DEALLOCATE(work)
       first = .FALSE.
