@@ -875,9 +875,9 @@ CONTAINS
     ALLOCATE( c3(0:nx,0:ny),  c4(0:nx,0:ny))
 #endif
 
-    bx1 = bx(-1:nx+2,-1:ny+2)
-    by1 = by(-1:nx+2,-1:ny+2)
-    bz1 = bz(-1:nx+2,-1:ny+2)
+    bx1(-1:nx+2,-1:ny+2) = bx(-1:nx+2,-1:ny+2)
+    by1(-1:nx+2,-1:ny+2) = by(-1:nx+2,-1:ny+2)
+    bz1(-1:nx+2,-1:ny+2) = bz(-1:nx+2,-1:ny+2)
 
     ! Step 1
     CALL rkstep
