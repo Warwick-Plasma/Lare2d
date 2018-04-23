@@ -70,7 +70,7 @@ CONTAINS
     REAL(num) :: tb, tg, fc_sp, rho_b
     REAL(num) :: tg_a, tb_p, tb_m
     REAL(num) :: fc_sa, fc, modb, hfl
-    REAL(num) :: byf, bxf, bzf
+    REAL(num) :: byf, bxf, bzf, b_component
 
     hfl = 0.0_num
     IF (heat_flux_limiter) hfl = 1.0_num
@@ -87,7 +87,7 @@ CONTAINS
         byf = 0.25_num * (by(ix,iy) + by(ix,iym) + by(ixp,iy) + by(ixp,iym))
         bzf = 0.5_num * (bz(ix,iy) + bz(ixp,iy))
 
-        modb = SQRT(bx(ix ,iy)**2 + byf**2 + bzf**2)
+        modb = bx(ix ,iy)**2 + byf**2 + bzf**2 + min_b
 
         ! Braginskii Conductive Flux
         ! Temperature at the x boundaries in the current cell
@@ -103,12 +103,13 @@ CONTAINS
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dyc(iy) + dyc(iym))
 
-        fc_sp = - kappa_0 * tb**pow / (modb**2 + min_b) &
+        fc_sp = - kappa_0 * tb**pow / modb &
             * (bx(ix ,iy) * (tg * bx(ix ,iy) + tg_a * byf) + tg * min_b)
 
         ! Saturated Conductive Flux
         rho_b = 0.5_num * (rho(ix,iy) + rho(ixp,iy))
-        fc_sa = 42.85_num * flux_limiter * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
+        b_component = ABS(bx(ix,iy)) / SQRT(modb)
+        fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  
 
         ! Conductive Flux Limiter. 
         fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
@@ -119,7 +120,7 @@ CONTAINS
         ! Y flux
         bxf = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iym) + bx(ixm,iym))
         bzf = 0.5_num * (bz(ix,iy) + bz(ix,iyp))
-        modb = SQRT(by(ix,iym)**2 + bxf**2 + bzf**2)
+        modb = by(ix,iym)**2 + bxf**2 + bzf**2 + min_b
 
         ! Braginskii Conductive Flux
         tb = 0.5_num * (temperature(ix,iy) + temperature(ix,iyp))
@@ -134,12 +135,13 @@ CONTAINS
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dxc(ix) + dxc(ixm))
 
-        fc_sp = - kappa_0 * tb**pow / (modb**2 + min_b) &
+        fc_sp = - kappa_0 * tb**pow / modb &
             * (by(ix,iy ) * (tg * by(ix,iy ) + tg_a * bxf) + min_b * tg)
 
         ! Saturated Conductive Flux
         rho_b = 0.5_num * (rho(ix,iy) + rho(ix,iyp))
-        fc_sa = 42.85_num * flux_limiter * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
+        b_component = ABS(by(ix,iym)) / SQRT(modb)
+        fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  ! 42.85 = SRQT(m_p/m_e)
 
         ! Conductive Flux Limiter
         fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
