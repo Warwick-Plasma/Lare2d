@@ -5,5 +5,4 @@ Data*/
 COMMIT
 *.lb
 *.dat
-test
-slurm-456987.out
+sftp-config.json
