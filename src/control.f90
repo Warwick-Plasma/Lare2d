@@ -155,6 +155,13 @@ CONTAINS
     ! actually do what you want.
     damping = .FALSE.
 
+    ! Control Boris scheme for limiting the Alfven speed
+    ! Logical boris to turn on/off
+    ! va_max controls the effective mass density and is
+    ! the reduced light speed in Boris's paper in Lare normalised units
+    boris = .FALSE.
+    va_max = 4.7e3_num
+
     ! Set the equation of state. Valid choices are
     ! EOS_IDEAL - Simple ideal gas for perfectly ionised plasma
     ! EOS_PI    - Simple ideal gas for partially ionised plasma

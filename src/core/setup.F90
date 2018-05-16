@@ -64,6 +64,8 @@ CONTAINS
     vy = 0.0_num
     vz = 0.0_num
 
+    va_max2 = va_max**2
+
   END SUBROUTINE after_control
 
 

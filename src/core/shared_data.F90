@@ -149,6 +149,11 @@ MODULE shared_data
   ! Damping boundary variables
   LOGICAL :: damping
 
+  ! Boris Alfven speed limiter
+  LOGICAL :: boris
+  REAL(num) :: va_max, va_max2
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: gamma_boris
+
   ! Partially ionised plasma
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: eta_perp, xi_n, eta_perp0
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: parallel_current, perp_current

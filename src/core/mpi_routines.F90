@@ -254,6 +254,7 @@ CONTAINS
     ALLOCATE(temperature(-1:nx+2, -1:ny+2))
     IF (rke) ALLOCATE(delta_ke(-1:nx+2, -1:ny+2))
     IF (hall_mhd) ALLOCATE(lambda_i(0:nx, 0:ny))
+    ALLOCATE(gamma_boris(-1:nx+2, -1:ny+2))
 
     ! Shocked and resistive need to be larger to allow offset = 4 in shock_test
     ALLOCATE(cv(-1:nx+2, -1:ny+2), cv1(-1:nx+2, -1:ny+2))
@@ -326,6 +327,7 @@ CONTAINS
     IF (ALLOCATED(eta_perp)) DEALLOCATE(eta_perp)
     IF (ALLOCATED(parallel_current)) DEALLOCATE(parallel_current)
     IF (ALLOCATED(perp_current)) DEALLOCATE(perp_current)
+    DEALLOCATE(gamma_boris)
 
   END SUBROUTINE mpi_close
 

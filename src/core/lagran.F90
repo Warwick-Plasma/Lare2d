@@ -224,9 +224,9 @@ CONTAINS
         bzv = (bz1(ix,iy ) + bz1(ixp,iy ) + bz1(ix,iyp) + bz1(ixp,iyp)) &
             / (cvx + cvxp)
 
-        fx = fx + (jy * bzv - jz * byv)
-        fy = fy + (jz * bxv - jx * bzv)
-        fz = fz + (jx * byv - jy * bxv)
+        fx = gamma_boris(ix,iy) * (fx + jy * bzv - jz * byv)
+        fy = gamma_boris(ix,iy) * (fy + jz * bxv - jx * bzv)
+        fz = gamma_boris(ix,iy) * (fz + jx * byv - jy * bxv)
 
         fy = fy - rho_v(ix,iy) * grav(iy)
 
@@ -664,6 +664,8 @@ CONTAINS
     dtr_local = largest_number
     dth_local = largest_number
 
+    gamma_boris = 1.0_num
+
     DO iy = 0, ny
       iym = iy - 1
       DO ix = 0, nx
@@ -673,7 +675,11 @@ CONTAINS
         w1 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         ! Sound speed squared
         rho0 = MAX(rho(ix,iy), none_zero)
-        cs2 = (gamma * pressure(ix,iy) + w1)/ rho0
+        w2 = w1 / rho0
+        IF (boris .AND. (w2 .GE. va_max2)) THEN
+          gamma_boris(ix,iy) = 1.0_num / (1.0_num + (w2 - va_max2) / va_max2)
+        END IF
+        cs2 = gamma_boris(ix,iy) * (gamma * pressure(ix,iy) + w1) / rho0
 
         !effective speed from viscous pressure
         c_visc2 = p_visc(ix,iy) / rho0
