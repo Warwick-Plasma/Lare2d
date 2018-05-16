@@ -137,7 +137,7 @@ DEFINES := $(DEFINE)
 # Uncomment the following line to run with limiters on shock viscosity
 #DEFINES += $(D)SHOCKLIMITER
 
-# Uncomment the following line to allow shock viscosity in expanding shocks
+# Uncomment the following line to allow shock viscosity only in compressed cells
 #DEFINES += $(D)SHOCKCOMPRESSION
 
 # Uncomment the following line to run in single precision

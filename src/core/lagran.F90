@@ -471,7 +471,7 @@ CONTAINS
 #endif
       REAL(num) :: psi, rho_edge, cs_edge, q_k_bar
 
-#ifdef SHOCKLIMITER 
+#ifdef SHOCKCOMPRESSION 
       ! Turn off shock viscosity if cell edge expanding
       dvdots = MIN(0.0_num, dvdots)
 #else
