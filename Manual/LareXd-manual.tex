@@ -25,7 +25,7 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{Version 3.2}
+\date{Version 3.3}
 \maketitle
 
 \thispagestyle{empty}
@@ -409,7 +409,7 @@ time-step or use a code with an implicit solver.
 
 \section{Open  Boundaries} % (fold)
 \label{sec:open_bcs}
-Open boundaries are now implemented via far-field Riemann characteristics. This calculates the slow, fast, Alfven etc. 
+Open boundaries are now implemented via far-field Riemann characteristics. This calculates the slow, fast, Alfv\'en etc. 
 speeds and then projects 1D Riemann invariants into ghost cells. If the wave is outgoing values are propagated from 
 the inside the domain into the ghost cells. If the waves are inward propagating then values are carried in from the 
 far-field. This requires a fixed far-field, i.e. specified values of $\rho, \epsilon, v_x, v_y, B_x, B_y, B_z$. So 
@@ -436,7 +436,10 @@ in the open boundary routine source code.
 % section open_bcs (end)
 
 
-
+\section{Alfv\'en speed limiter}
+The file \texttt{control.f90} now includes an option to turn on a limiter which reduces the net force used
+in the Lagrangian step if the Alfv\'en speed exceeeds some user specified value \texttt{va\_max}. The background
+to this is most clearly explained in \cite{gombosi:2002}.
 
 
 \section{The Grid}
@@ -791,8 +794,8 @@ file in the \texttt{bin} subdirectory. Normally, there is no need to change this
 # The following are a list of pre-processor defines which can be added to
 # the above line modifying the code behaviour at compile time.
 
-# Uncomment the following line to use Qmono viscosity
-#DEFINES += $(D)QMONO
+# Uncomment the following line to run with limiters on shock viscosity
+#DEFINES += $(D)SHOCKLIMITER
 
 # Uncomment the following line to run in single precision
 #DEFINES += $(D)SINGLE
@@ -1178,6 +1181,8 @@ The same paper was published twice! It's that good!
 \bibitem{Meyer:2012eb} C. Meyer, D. Balsara and T. Aslam, \textit{MNRAS} \textbf{422} 2101 (2012)
 
 \bibitem{townsend:2009} R.H.D. Townsend, \textit{ApJS} \textbf{181} 391-397 (2009)
+
+\bibitem{gombosi:2002} T. Gombosi et al. \textit{J. Comp. Phys.} \textbf{177} 176-205 (2002)
 
 \end{thebibliography}
 
