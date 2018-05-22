@@ -61,9 +61,9 @@ CONTAINS
     ALLOCATE (heat_in(-1:nx+2, -1:ny+2))
 
     ! Specify heating in S.I. units W/m^3
-    DO iy = -1, ny+2
-      DO ix = -1, nx+2
-        heat_in(ix,iy) = 0.1 _num * EXP(-xc(ix)**2 -yc(iy**2))
+    DO iy = 1, ny
+      DO ix = 1, nx
+        heat_in(ix,iy) = 0.1 _num * EXP(-xc(ix)**2 -yc(iy)**2)
       END DO
     END DO
     ! Convert to internal Lare units
