@@ -2,12 +2,12 @@ DOWNLOADING AND BUILDING THE CODE
 ---------------------------------
 
 The easiest method of downloading the code is to grab a copy of the latest
-release package, located in the "Releases" section of the CCPForge site.
+release package, located in the "Releases" section of the LareXd web-site.
 
 For more advanced users, the code is also hosted on a git repository. Further
 details on this are provided below.
 
-The "Releases" section of the CCPForge site contains files in the form
+The "Releases" section of the LareXd site contains files in the form
 "lare2d-3.1.0.tar.gz". These are tarred and gzipped packages of the code
 which can be unpacked with the command `tar xzf lare2d-3.1.0.tar.gz`.
 This will create a directory called "lare2d-3.1.0".

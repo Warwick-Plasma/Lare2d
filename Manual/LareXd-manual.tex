@@ -439,7 +439,9 @@ in the open boundary routine source code.
 \section{Alfv\'en speed limiter}
 The file \texttt{control.f90} now includes an option to turn on a limiter which reduces the net force used
 in the Lagrangian step if the Alfv\'en speed exceeeds some user specified value \texttt{va\_max}. The background
-to this is most clearly explained in \cite{gombosi:2002}.
+to this is most clearly explained in \cite{gombosi:2002}. There is an option to only apply the limiter to the 
+$\mathbf{j}\times \mathbf{B}$ term. The velocity used to trigger this is in {\it LareXd} internal units. If
+you use these flags experiment first to get a feel for how they work and read \cite{gombosi:2002}.
 
 
 \section{The Grid}
@@ -540,8 +542,8 @@ files have either a \texttt{.f90} or \texttt{.F90} extension. The ones with \tex
 pre-compiler directives. These are explained below. A brief description of each of these files is set out below, in 
 alphabetical order, for {\it Lare2d}.
 
-First the files in the highest source code directory \texttt{src}. These are the files you will have to setup for each 
-new simulation.
+First the files in the highest source code directory \texttt{src}. These are the files you may have to setup for each 
+new simulation. For most users you probably won't need need to edit anything else.
 \begin{itemize}
  \item{\texttt{boundary.f90:}} Contains the boundary conditions not set automatically by MPI. If you set any boundary 
  condition to \texttt{BC\_USER} in \texttt{control.f90} (see below) then here is where you must set the boundary 
@@ -553,6 +555,8 @@ new simulation.
  \item{\texttt{diagnostics.F90:}} Controls the code output, sets the timestep and calculates some diagnostics such as 
  kinetic energy etc. as a function of time.
   \item{\texttt{initial\_conditions.f90:}} The initial conditions!
+  \item{\texttt{radiative.f90:}} Contains the setup of the optically thin radiative losses and a user specified
+  heating function. How to change these is documented in the code itself.
 \end{itemize}
 
 All of the core routines for solving the equations are hidden away inside a \texttt{core} sub-directory and in most 

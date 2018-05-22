@@ -1,7 +1,9 @@
 Version 3.3 - May 2018
 ----------------------
-1. Added Boris Alfven speed limiters
-
+1. Added Boris Alfven speed limiters with option to apply to jxB only
+2. Moved radiative.f90 to src directory as now user configurable
+3. Added user defined heating function to radiative.f90
+4. Updated manual
 
 
 Version 3.2 - February 2018
