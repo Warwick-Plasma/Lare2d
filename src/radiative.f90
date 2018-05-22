@@ -53,19 +53,23 @@ CONTAINS
   SUBROUTINE user_defined_heating
     ! Use this to define any heating needed on each timestep
     ! This is a dumb example so change to the heating needed
-    ! The heating is done in internal Lare2d normalised usints, not S.I. or cgs
+    ! This example specifies the heating rate (heat_in) in S.I. then
+    ! converts to Lare units
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: heat_in
 
     ALLOCATE (heat_in(-1:nx+2, -1:ny+2))
 
+    ! Specify heating in S.I. units W/m^3
     DO iy = -1, ny+2
       DO ix = -1, nx+2
         heat_in(ix,iy) = 0.1 _num * EXP(-xc(ix)**2 -yc(iy**2))
       END DO
     END DO
+    ! Convert to internal Lare units
+    heat_in = heat_in * time_norm**3 / (rho_norm * L_norm)
 
-    energy = energy + heat_in * dt
+    energy(:,:) = energy(:,:) + heat_in * dt / rho(:,:)
     CALL energy_bcs
 
   END SUBROUTINE user_defined_heating
