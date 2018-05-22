@@ -49,8 +49,7 @@ in {\it Lare2d} so if you only use {\it Lare3d} you still need to check the manu
 The Lagrangian remap code comes in 2D ({\it Lare2d}) and 3D ({\it Lare3d}). For convenience when referring 
 to either code this is called the {\it LareXd} code. A detailed description of the algorithm has been 
 published \cite{jcp} along with test cases. Note however that the latest version of the code uses a 
-different form of shock viscosity and resistivity to that documented in JCP. The latest version of the 
-code, and of this manual, can be obtained from CCPForge {\tt http://ccpforge.cse.rl.ac.uk/}.
+different form of shock viscosity and resistivity to that documented in JCP. 
 
 Without going into detail, see \cite{jcp} for complete algorithm, the main features of the code are:
 \begin{itemize}
@@ -730,18 +729,6 @@ and magnetic field components ate that point on each timestep. More variables ca
 editing the \texttt{write\_probes} routine in \texttt{diagnostics.F90}. This data can be read in IDL
 using \texttt{getprobe} which has the same syntax as \texttt{getenergy}, see later.
 
-\section{Obtaining the Code}
-The {\it LareXd} codes are currently hosted on the CCPForge site at
-the following two URLs:\linebreak
-{\tt http://ccpforge.cse.rl.ac.uk/gf/project/lare2d}\linebreak and
-{\tt http://ccpforge.cse.rl.ac.uk/gf/project/lare3d}.
-
-The easiest method of downloading the code is to grab a copy of the latest
-release package, located in the ``Releases'' section of the CCPForge site.
-
-For more advanced users, the code is also hosted on a git repository. If you want to track the very
-latest versions and watch the whole development project contact me for access to this repository.
-Access will only be allowed for developers of {\it LareXd}.
 
 \section{Makefile}
 
