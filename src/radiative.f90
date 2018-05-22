@@ -7,7 +7,7 @@ MODULE radiative
 
   PRIVATE
 
-  PUBLIC :: rad_losses
+  PUBLIC :: rad_losses, user_defined_heating
 
   INTEGER, PARAMETER :: n = 7   !set the number of temperature boundaries used in Q(T)
   INTEGER, PARAMETER  :: kmax = n - 1
@@ -19,7 +19,6 @@ MODULE radiative
 CONTAINS
 
 
-
   SUBROUTINE setup_loss_function
     ! In this subroutine specify the radiative loss Q(T) = psi_k * T^alpha_k
     ! This must be piecewise polynomial with kmax=n-1 regions
@@ -27,7 +26,7 @@ CONTAINS
     ! Q(T) must be in S.I.
     ! In the energy equation this would appear as a pressure cooling through
     ! dp/dt = -(gamma-1) n_e n_H Q(T)
-    ! Only in this form for T~>10^k so fully ionised and n_H=n_e
+    ! Only in this form for T~>10^4 so fully ionised and n_H=n_e
 
     REAL(num) :: frac
 
@@ -48,6 +47,28 @@ CONTAINS
     psi = 1.e-13_num * psi
 
   END SUBROUTINE setup_loss_function
+
+
+
+  SUBROUTINE user_defined_heating
+    ! Use this to define any heating needed on each timestep
+    ! This is a dumb example so change to the heating needed
+    ! The heating is done in internal Lare2d normalised usints, not S.I. or cgs
+
+    REAL(num), DIMENSION(:,:), ALLOCATABLE :: heat_in
+
+    ALLOCATE (heat_in(-1:nx+2, -1:ny+2))
+
+    DO iy = -1, ny+2
+      DO ix = -1, nx+2
+        heat_in(ix,iy) = 0.1 _num * EXP(-xc(ix)**2 -yc(iy**2))
+      END DO
+    END DO
+
+    energy = energy + heat_in * dt
+    CALL energy_bcs
+
+  END SUBROUTINE user_defined_heating
 
 
 
@@ -129,7 +150,6 @@ CONTAINS
 
 
 
-
   SUBROUTINE set_exact_integration_arrays
     ! Define arrays used in Townsend exact integration method
     ! Here qk = Lambda_k from Townsend
@@ -158,9 +178,7 @@ CONTAINS
       END IF
     END DO
    
-
   END SUBROUTINE set_exact_integration_arrays
-
 
 
 

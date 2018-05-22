@@ -77,6 +77,7 @@ CONTAINS
       END DO
     END DO
 
+    IF (coronal_heating) CALL user_defined_heating
     CALL shock_viscosity
     CALL set_dt
     dt2 = dt * 0.5_num

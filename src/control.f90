@@ -117,8 +117,12 @@ CONTAINS
     flux_limiter = 0.06_num
 
     ! Use radiation as specified in SUBROUTINE rad_losses
-    ! in src/core/radiative.f90
+    ! in src/radiative.f90
     radiation = .FALSE.
+
+    ! Include user specified heating function as specified in 
+    ! SUBROUTINE rad_losses user_defined_heating in src/radiative.f90
+    coronal_heating = .FALSE.
 
     ! Remap kinetic energy correction. LARE does not perfectly conserve kinetic
     ! energy during the remap step. This missing energy can be added back into
