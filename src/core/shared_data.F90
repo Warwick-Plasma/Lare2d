@@ -123,7 +123,7 @@ MODULE shared_data
   INTEGER :: xbc_min, xbc_max, ix, ixm, ixp, xpass
   INTEGER :: ybc_min, ybc_max, iy, iym, iyp, ypass
   INTEGER :: restart_snapshot
-  INTEGER :: peak_substeps = 0
+  INTEGER :: peak_substeps = 0, n_s_stages
   LOGICAL :: x_stretch, y_stretch
   LOGICAL :: resistive_mhd, any_open, rke, hall_mhd
   LOGICAL :: restart, heat_flux_limiter, force_exact_time_outputs

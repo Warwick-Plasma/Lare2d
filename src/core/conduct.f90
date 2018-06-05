@@ -10,7 +10,6 @@ MODULE conduct
 
   PUBLIC :: conduct_heat
 
-  INTEGER :: n_s_stages
   REAL(num), PARAMETER :: pow = 2.5_num
   REAL(num), PARAMETER :: min_b = 1.0e-6_num
 
