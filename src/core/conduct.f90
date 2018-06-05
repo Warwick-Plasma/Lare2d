@@ -119,7 +119,7 @@ CONTAINS
         ! Y flux
         bxf = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iym) + bx(ixm,iym))
         bzf = 0.5_num * (bz(ix,iy) + bz(ix,iyp))
-        modb = by(ix,iym)**2 + bxf**2 + bzf**2 + min_b
+        modb = by(ix,iy)**2 + bxf**2 + bzf**2 + min_b
 
         ! Braginskii Conductive Flux
         tb = 0.5_num * (temperature(ix,iy) + temperature(ix,iyp))
@@ -139,7 +139,7 @@ CONTAINS
 
         ! Saturated Conductive Flux
         rho_b = 0.5_num * (rho(ix,iy) + rho(ix,iyp))
-        b_component = SQRT((by(ix,iym)**2 + min_b) / modb)
+        b_component = SQRT((by(ix,iy)**2 + min_b) / modb)
         fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  
 
         ! Conductive Flux Limiter
