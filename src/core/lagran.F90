@@ -225,9 +225,9 @@ CONTAINS
         bzv = (bz1(ix,iy ) + bz1(ixp,iy ) + bz1(ix,iyp) + bz1(ixp,iyp)) &
             / (cvx + cvxp)
 
-        fx = fx + gamma_boris(ix,iy) * (jy * bzv - jz * byv)
-        fy = fy + gamma_boris(ix,iy) * (jz * bxv - jx * bzv)
-        fz = fz + gamma_boris(ix,iy) * (jx * byv - jy * bxv)
+        fx = fx + (jy * bzv - jz * byv)
+        fy = fy + (jz * bxv - jx * bzv)
+        fz = fz + (jx * byv - jy * bxv)
 
         fy = fy - rho_v(ix,iy) * grav(iy)
 
