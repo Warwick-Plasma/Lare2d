@@ -1,3 +1,9 @@
+Version 3.4 - June 2018
+-----------------------
+1. Simplified the Boris Lafven wave speed limiters
+2. Bumped the version number so Lare2d and LAre3d have the same version number
+
+
 Version 3.3 - May 2018
 ----------------------
 1. Added Boris Alfven speed limiters with option to apply to jxB only
