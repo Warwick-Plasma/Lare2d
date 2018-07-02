@@ -383,9 +383,9 @@ CONTAINS
         i2 = ix
         j2 = iy
         i0 = i1
-        j0 = j2 - 1
+        j0 = j1 - 1
         i3 = i2
-        j3 = j1 + 1
+        j3 = j2 + 1
         dx = dyb(iy)
         dxp = dyb(iyp)
         dxm = dyb(iym)
