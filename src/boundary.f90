@@ -305,6 +305,8 @@ CONTAINS
     END IF
 
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_DRIVEN) THEN
+      vx(:,-2:0) = 0.0_num
+      vy(:,-2:0) = 0.0_num
       CALL produce_spectrum(vz(:,-2:0), time, 1.0_num)
     END IF
 
@@ -345,7 +347,9 @@ CONTAINS
     END IF
 
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_DRIVEN) THEN
-      CALL produce_spectrum(vz(:,-2:0), time - 0.5_num * dt, 1.0_num)
+      vx1(:,ny:ny+2) = 0.0_num
+      vy1(:,ny:ny+2) = 0.0_num
+      CALL produce_spectrum(vz1(:,-2:0), time - 0.5_num * dt, 1.0_num)
     END IF
 
     IF (proc_y_max == MPI_PROC_NULL .AND. ybc_max == BC_USER) THEN
