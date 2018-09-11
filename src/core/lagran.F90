@@ -358,7 +358,7 @@ CONTAINS
         i0 = i1 - 1
         j0 = j1
         i3 = i2 + 1
-        j3 = j1
+        j3 = j2
         dx = dxb(ix)
         dxp = dxb(ixp)
         dxm = dxb(ixm)
