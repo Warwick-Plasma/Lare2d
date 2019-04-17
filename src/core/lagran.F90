@@ -153,7 +153,9 @@ CONTAINS
     REAL(num) :: e1
     REAL(num) :: vxb, vxbm, vyb, vybm
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
+#ifdef CAUCHY
     REAL(num) :: cvx, cvxp, cvy, cvyp
+#endif
     REAL(num) :: dv
     REAL(num) :: fx, fy, fz
 
@@ -588,10 +590,16 @@ CONTAINS
 
   SUBROUTINE b_field_and_cv1_update
 
+#ifdef CAUCHY
     REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
     REAL(num) :: dvxdx, dvydx, dvzdx
     REAL(num) :: dvxdy, dvydy, dvzdy
     REAL(num) :: dv
+#else
+    REAL(num) :: vxb, vxbm, vyb, vybm
+    REAL(num) :: dvxdx, dvydy
+    REAL(num) :: dv
+#endif
 
     DO iy = -1, ny + 2
       iym = iy - 1
