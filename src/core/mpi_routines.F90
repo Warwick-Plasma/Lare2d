@@ -177,6 +177,11 @@ CONTAINS
     IF (ybc_min == BC_OPEN) periods(c_ndims-1) = .FALSE.
     IF (ybc_max == BC_OPEN) periods(c_ndims-1) = .FALSE.
 
+    IF (xbc_min == BC_DRIVEN) periods(c_ndims  ) = .FALSE.
+    IF (xbc_max == BC_DRIVEN) periods(c_ndims  ) = .FALSE.
+    IF (ybc_min == BC_DRIVEN) periods(c_ndims-1) = .FALSE.
+    IF (ybc_max == BC_DRIVEN) periods(c_ndims-1) = .FALSE.
+
     CALL MPI_CART_CREATE(MPI_COMM_WORLD, c_ndims, dims, periods, reorder, &
         comm, errcode)
 
