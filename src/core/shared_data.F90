@@ -107,7 +107,7 @@ MODULE shared_data
   INTEGER, PARAMETER :: c_max_string_length = 128
 
   REAL(num) :: w1, w2, w3, w4, w5, w6, w7, w8, w9
-  REAL(num) :: dt, dt2, dtr, dth, t_end, time, dt_driver
+  REAL(num) :: dt, dt2, dtr, dth, dt_driver, t_end, time
   REAL(num) :: dt_from_restart, time_prev
   REAL(num) :: visc1, visc2, visc2_norm
   REAL(num) :: x_min, x_max, length_x
@@ -125,6 +125,7 @@ MODULE shared_data
   INTEGER :: restart_snapshot
   INTEGER :: peak_substeps = 0, n_s_stages
   LOGICAL :: x_stretch, y_stretch
+  LOGICAL :: predictor_step
   LOGICAL :: resistive_mhd, any_open, rke, hall_mhd
   LOGICAL :: restart, heat_flux_limiter, force_exact_time_outputs
 
