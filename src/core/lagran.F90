@@ -10,6 +10,7 @@ MODULE lagran
   USE conduct
   USE radiative
   USE openboundary
+  USE remap
 
   IMPLICIT NONE
 
@@ -34,9 +35,15 @@ CONTAINS
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
 
+#ifdef CAUCHY
     ALLOCATE(bx1(-1:nx+2,-1:ny+2))
     ALLOCATE(by1(-1:nx+2,-1:ny+2))
     ALLOCATE(bz1(-1:nx+2,-1:ny+2))
+#else
+    ALLOCATE(bx1(-2:nx+2,-1:ny+2))
+    ALLOCATE(by1(-1:nx+2,-2:ny+2))
+    ALLOCATE(bz1(-1:nx+2,-1:ny+2))
+#endif
     ALLOCATE(alpha1(0:nx+1,0:ny+2))
     ALLOCATE(alpha2(-1:nx+1,0:ny+1))
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
@@ -152,9 +159,15 @@ CONTAINS
 
     CALL b_field_and_cv1_update
 
+#ifdef CAUCHY
     bx1(:,:) = bx1(:,:) * cv1(:,:)
     by1(:,:) = by1(:,:) * cv1(:,:)
     bz1(:,:) = bz1(:,:) * cv1(:,:)
+#else
+    bx1(:,:) = bx1(:,:) 
+    by1(:,:) = by1(:,:) 
+    bz1(:,:) = bz1(:,:) 
+#endif
 
     DO iy = 0, ny + 1
       DO ix = 0, nx + 1
@@ -195,6 +208,7 @@ CONTAINS
 
         fz = 0.0_num
 
+#ifdef CAUCHY
         cvx  = cv1(ix ,iy ) + cv1(ix ,iyp)
         cvxp = cv1(ixp,iy ) + cv1(ixp,iyp)
         cvy  = cv1(ix ,iy ) + cv1(ixp,iy )
@@ -224,7 +238,15 @@ CONTAINS
 
         bzv = (bz1(ix,iy ) + bz1(ixp,iy ) + bz1(ix,iyp) + bz1(ixp,iyp)) &
             / (cvx + cvxp)
-
+#else
+        bxv = 0.5_num * (bx(ix,iy) + bx(ix,iyp))   
+        byv = 0.5_num * (by(ix,iy) + by(ixp,iy))
+        bzv = 0.25_num * (bz(ix,iy ) + bz(ixp,iy ) + bz(ix,iyp) + bz(ixp,iyp)) 
+        
+        jx = (bz(ix,iyp) - bz(ix,iy)) / dyc(iy)
+        jy = -(bz(ixp,iy) - bz(ix,iy)) / dxc(ix)
+        jz = (by(ixp,iy) - by(ix,iy)) / dxc(ix) - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
+#endif
         fx = fx + (jy * bzv - jz * byv)
         fy = fy + (jz * bxv - jx * bzv)
         fz = fz + (jx * byv - jy * bxv)
@@ -237,10 +259,6 @@ CONTAINS
         vz1(ix,iy) = vz(ix,iy) + dt2 * gamma_boris(ix,iy) * (fz_visc(ix,iy) + fz) / rho_v(ix,iy)
       END DO
     END DO
-
-    bx1(:,:) = bx1(:,:) / cv1(:,:)
-    by1(:,:) = by1(:,:) / cv1(:,:)
-    bz1(:,:) = bz1(:,:) / cv1(:,:)
     
     CALL remap_v_bcs
 
@@ -595,6 +613,7 @@ CONTAINS
         dv = (dvxdx + dvydy) * dt2
         cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
 
+#ifdef CAUCHY
         ! vx at By(i,j)
         vxb  = (vx(ix ,iy ) + vx(ixm,iy )) * 0.5_num
         ! vx at By(i,j-1)
@@ -626,8 +645,21 @@ CONTAINS
         bx1(ix,iy) = (bx1(ix,iy) + w3 * dt2) / (1.0_num + dv)
         by1(ix,iy) = (by1(ix,iy) + w4 * dt2) / (1.0_num + dv)
         bz1(ix,iy) = (bz1(ix,iy) + w5 * dt2) / (1.0_num + dv)
+#endif
       END DO
     END DO
+
+#ifndef CAUCHY
+    vx1(:,:) = vx(:,:)
+    vy1(:,:) = vy(:,:)
+    vz1(:,:) = vz(:,:)
+    
+    predictor_step = .TRUE.
+    dt = 0.5_num * dt
+    CALL eulerian_remap(step)
+    dt = 2.0_num * dt
+    predictor_step = .FALSE. 
+#endif
 
   END SUBROUTINE b_field_and_cv1_update
 

@@ -14,8 +14,8 @@ CONTAINS
 
     REAL(num) :: v_advect, flux1, flux2
 
-    DO iy = 1, ny
-      DO ix = 1, nx
+    DO iy = -1, ny + 1
+      DO ix = -1, nx + 1
         ixm = ix - 1
         iym = iy - 1
 
@@ -29,8 +29,8 @@ CONTAINS
       END DO
     END DO
 
-    DO iy = 1, ny
-      DO ix = 1, nx
+    DO iy = -1, ny + 1
+      DO ix = -1, nx + 1
         ixm = ix - 1
         iym = iy - 1
 
