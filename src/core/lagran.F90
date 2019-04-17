@@ -738,6 +738,8 @@ CONTAINS
       END DO
     END DO
 
+    IF ((xbc_min == BC_DRIVEN) .OR. (ybc_min == BC_DRIVEN) &
+        .OR. (xbc_max == BC_DRIVEN) .OR. (ybc_max == BC_DRIVEN)) dt_local = MIN(dt_local, dt_driver)
     dt_locals(1) = dt_local
     dt_locals(2) = dtr_local
     dt_locals(3) = dth_local

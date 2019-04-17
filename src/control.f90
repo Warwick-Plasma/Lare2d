@@ -148,7 +148,8 @@ CONTAINS
     ! Valid constants are
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Riemann far-field characteristic boundary conditions
-    ! BC_USER    - User boundary conditions specified in "boundary.f90"
+    ! BC_USER     - User boundary conditions specified in boundary.f90
+    ! BC_DRIVEN   - USer specific driver routines in boundary.f90
     xbc_min = BC_OPEN
     xbc_max = BC_OPEN
     ybc_min = BC_PERIODIC
