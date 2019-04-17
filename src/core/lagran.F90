@@ -159,16 +159,18 @@ CONTAINS
     REAL(num) :: dv
     REAL(num) :: fx, fy, fz
 
+#ifndef CAUCHY
+    bx1(:,:) = bx(:,:) 
+    by1(:,:) = by(:,:) 
+    bz1(:,:) = bz(:,:) 
+#endif
+
     CALL b_field_and_cv1_update
 
 #ifdef CAUCHY
     bx1(:,:) = bx1(:,:) * cv1(:,:)
     by1(:,:) = by1(:,:) * cv1(:,:)
     bz1(:,:) = bz1(:,:) * cv1(:,:)
-#else
-    bx1(:,:) = bx1(:,:) 
-    by1(:,:) = by1(:,:) 
-    bz1(:,:) = bz1(:,:) 
 #endif
 
     DO iy = 0, ny + 1
@@ -261,6 +263,12 @@ CONTAINS
         vz1(ix,iy) = vz(ix,iy) + dt2 * gamma_boris(ix,iy) * (fz_visc(ix,iy) + fz) / rho_v(ix,iy)
       END DO
     END DO
+
+#ifndef CAUCHY
+    bx(:,:) = bx1(:,:) 
+    by(:,:) = by1(:,:) 
+    bz(:,:) = bz1(:,:) 
+#endif
     
     CALL remap_v_bcs
 
