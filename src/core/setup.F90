@@ -270,6 +270,7 @@ CONTAINS
 
     CHARACTER(LEN=11+data_dir_max_length) :: file2
     CHARACTER(LEN=7+data_dir_max_length) :: file3
+    CHARACTER(LEN=13+data_dir_max_length) :: file4
     CHARACTER(LEN=3) :: magic
     REAL(num) :: time1
     INTEGER :: ios, num_sz_in, en_nvars_in, p1, nrec, recsz
@@ -354,6 +355,9 @@ CONTAINS
       END IF
     END IF
 
+    WRITE(file4, '(a, ''/spectrum.dat'')') TRIM(data_dir)
+    OPEN(UNIT=spec_unit, FILE=file4, FORM='UNFORMATTED')
+
     IF (ios /= 0) THEN
       PRINT*, 'Unable to open file en.dat for writing. This is ', &
               'most commonly caused by the output directory not existing'
@@ -381,6 +385,7 @@ CONTAINS
     IF (rank == 0) THEN
       CLOSE(UNIT=stat_unit)
       CLOSE(UNIT=en_unit)
+      CLOSE(UNIT=spec_unit)
     END IF
 
   END SUBROUTINE close_files
