@@ -149,11 +149,13 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Riemann far-field characteristic boundary conditions
     ! BC_USER     - User boundary conditions specified in boundary.f90
-    ! BC_DRIVEN   - USer specific driver routines in boundary.f90
     xbc_min = BC_OPEN
     xbc_max = BC_OPEN
     ybc_min = BC_PERIODIC
     ybc_max = BC_PERIODIC
+
+    !If any user boundaries are driven set this flag
+    driven_boundary = .TRUE.
 
     ! Set to true to turn on routine for damped boundaries.
     ! These routines are in boundary.f90 and you should check that they

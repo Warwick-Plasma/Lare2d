@@ -49,7 +49,7 @@ MODULE constants
   REAL(num), PARAMETER :: largest_number = HUGE(1.0_num)
   REAL(num), PARAMETER :: third = 1.0_num / 3.0_num, sixth = 1.0_num / 6.0_num
   INTEGER, PARAMETER :: BC_PERIODIC = 1, BC_USER = 2
-  INTEGER, PARAMETER :: BC_OPEN = 3, BC_DRIVEN = 4
+  INTEGER, PARAMETER :: BC_OPEN = 3
 
   ! IC codes
   ! This is a bitmask, remember that
@@ -126,6 +126,7 @@ MODULE shared_data
   INTEGER :: ybc_min, ybc_max, iy, iym, iyp, ypass
   INTEGER :: restart_snapshot
   INTEGER :: peak_substeps = 0, n_s_stages
+  LOGICAL :: driven_boundary = .FALSE.
   LOGICAL :: x_stretch, y_stretch
   LOGICAL :: predictor_step
   LOGICAL :: resistive_mhd, any_open, rke, hall_mhd

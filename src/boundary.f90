@@ -29,7 +29,7 @@ CONTAINS
     IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
         .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
 
-    IF  (ybc_min == BC_DRIVEN) CALL setup_driver_spectrum
+    IF (driven_boundary) CALL setup_driver_spectrum
 
   END SUBROUTINE set_boundary_conditions
 
@@ -303,12 +303,6 @@ CONTAINS
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       vx(:,-2:0) = 0.0_num
       vy(:,-2:0) = 0.0_num
-      vz(:,-2:0) = 0.0_num
-    END IF
-
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_DRIVEN) THEN
-      vx(:,-2:0) = 0.0_num
-      vy(:,-2:0) = 0.0_num
       CALL produce_spectrum(vz(:,-2:0), time, 1.0_num)
     END IF
 
@@ -343,12 +337,6 @@ CONTAINS
     END IF
 
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
-      vx1(:,-2:0) = 0.0_num
-      vy1(:,-2:0) = 0.0_num
-      vz1(:,-2:0) = 0.0_num
-    END IF
-
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_DRIVEN) THEN
       vx1(:,ny:ny+2) = 0.0_num
       vy1(:,ny:ny+2) = 0.0_num
       CALL produce_spectrum(vz1(:,-2:0), time - 0.5_num * dt, 1.0_num)
