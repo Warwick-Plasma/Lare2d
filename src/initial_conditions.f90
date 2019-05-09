@@ -3,6 +3,7 @@ MODULE initial_conditions
   USE shared_data
   USE neutral
   USE diagnostics
+  USE boundary
 
   IMPLICIT NONE
 
