@@ -94,6 +94,8 @@ MODULE shared_data
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx_r, jy_r, jz_r
 
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: delta_ke, p_visc
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: cool_term_b, cool_term_v
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_dep, ohmic_dep
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: eta, cv, cv1
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: lambda_i
 
@@ -149,6 +151,10 @@ MODULE shared_data
 
   ! Damping boundary variables
   LOGICAL :: damping
+
+  ! Include exponentially moving average cooling term
+  LOGICAL :: cooling_term
+  REAL(num) :: alpha_av
 
   ! Boris Alfven speed limiter
   LOGICAL :: boris
@@ -227,6 +233,7 @@ MODULE shared_data
 
   INTEGER, PARAMETER :: stat_unit = 20
   INTEGER, PARAMETER :: en_unit = 30
+  INTEGER, PARAMETER :: spec_unit = 40
 
 END MODULE shared_data
 

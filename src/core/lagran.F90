@@ -312,6 +312,8 @@ CONTAINS
             + (dt * visc_heat(ix,iy) - dv * pressure(ix,iy)) &
             / rho(ix,iy)
 
+        visc_dep(ix,iy) = visc_dep(ix,iy) + dt * visc_heat(ix,iy)
+
         rho(ix,iy) = rho(ix,iy) / (1.0_num + dv)
 
         total_visc_heating = total_visc_heating &
@@ -319,6 +321,18 @@ CONTAINS
 
       END DO
     END DO
+
+    IF (cooling_term) THEN
+      DO iy = 1, ny
+        DO ix = 1, nx
+          cool_term_v(ix,iy) = alpha_av * dt * visc_heat(ix,iy)/rho(ix,iy) + &
+              (1.0_num - alpha_av) * cool_term_v(ix,iy)
+
+          energy(ix,iy) = energy(ix,iy) - cool_term_v(ix,iy)
+        END DO
+      END DO
+      energy = MAX(energy, 0.0_num)
+    END IF
 
   END SUBROUTINE predictor_corrector_step
 
@@ -918,7 +932,7 @@ CONTAINS
 
   SUBROUTINE resistive_effects
 
-    REAL(num) :: jx1, jx2, jy1, jy2, jz1
+    REAL(num) :: jx1, jx2, jy1, jy2, jz1, local_heating
 #ifdef FOURTHORDER
     REAL(num) :: dt6, half_dt
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1x, k2x, k3x, k4x
@@ -951,13 +965,31 @@ CONTAINS
       iym = iy - 1
       DO ix = 1, nx
         ixm = ix - 1
-        energy(ix,iy) = energy(ix,iy) &
-            + (curlb(ix ,iy ) + curlb(ixm,iy )  &
-            +  curlb(ix ,iym) + curlb(ixm,iym)) &
+        local_heating = (curlb(ix ,iy ) + curlb(ixm,iy )  &
+            + curlb(ix ,iym) + curlb(ixm,iym)) &
             * dt / (4.0_num * rho(ix,iy))
+
+        ohmic_dep(ix,iy) = ohmic_dep(ix,iy) + local_heating
+        
+        energy(ix,iy) = energy(ix,iy) + local_heating 
       END DO
     END DO
 
+    IF (cooling_term) THEN 
+      DO iy = 1, ny
+        DO ix = 1, nx
+          local_heating = (curlb(ix ,iy ) + curlb(ixm,iy )  &
+              + curlb(ix ,iym) + curlb(ixm,iym)) &
+              * dt / (4.0_num * rho(ix,iy))
+          cool_term_b(ix,iy) = alpha_av * local_heating  &
+            + (1.0_num - alpha_av) * cool_term_b(ix,iy)
+
+          energy(ix,iy) = energy(ix,iy) - cool_term_b(ix,iy)
+        END DO
+      END DO
+    END IF
+
+    energy = MAX(energy, 0.0_num)
     CALL energy_bcs
 
     DO iy = 0, ny
