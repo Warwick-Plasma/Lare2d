@@ -61,7 +61,7 @@ CONTAINS
 
     ! Set the maximum number of iterations of the core solver before the code
     ! terminates. If nsteps < 0 then the code will run until t = t_end
-    nsteps = -1
+    nsteps = 1
 
     ! The maximum runtime of the code
     t_end = 5.0_num
@@ -181,6 +181,14 @@ CONTAINS
     ! This flag is ignored for all other EOS choices.
     neutral_gas = .TRUE.
 
+    !An exponential moving average 
+    !(https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average)
+    !Tweak this to get a "good" cooling function that doesn't just remove all
+    !heating effects
+    ! Works for viscosity and first order resistive effects
+    cooling_term = .TRUE.
+    alpha_av = 0.05_num
+
   END SUBROUTINE control_variables
 
 
@@ -222,6 +230,7 @@ CONTAINS
     ! 17 - jx
     ! 18 - jy
     ! 19 - jz
+    ! 20 - accumulated viscous and resistive heating
     ! If a given element of dump_mask is true then that field is dumped
     ! If the element is false then the field isn't dumped
     ! N.B. if dump_mask(1:8) not true then the restart will not work
