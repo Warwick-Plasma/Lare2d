@@ -6,3 +6,5 @@ COMMIT
 *.lb
 *.dat
 sftp-config.json
+ExternalFiles
+diagnostics.F90

@@ -12,7 +12,7 @@ MODULE boundary
   IMPLICIT NONE
 
   REAL(num), DIMENSION(:), ALLOCATABLE :: drive_axis
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: drive_phase, drive_amp
+  REAL(num), DIMENSION(:), ALLOCATABLE :: drive_phase, drive_amp
   INTEGER :: drive_nel
 
   SAVE
@@ -29,7 +29,7 @@ CONTAINS
     IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
         .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
 
-    IF  (ybc_min == BC_DRIVEN) CALL setup_driver_spectrum
+    IF  (ybc_min == BC_USER) CALL setup_driver_spectrum
 
   END SUBROUTINE set_boundary_conditions
 
@@ -47,8 +47,8 @@ CONTAINS
     ! Set up a driver with 1000 elements
     drive_nel = 1000
     ALLOCATE(drive_axis(drive_nel))
-    ALLOCATE(drive_amp(nx,drive_nel))
-    ALLOCATE(drive_phase(nx,drive_nel))
+    ALLOCATE(drive_amp(drive_nel))
+    ALLOCATE(drive_phase(drive_nel))
 
     min_omega = 0.01_num
     max_omega = 10.0_num
@@ -62,9 +62,9 @@ CONTAINS
       drive_axis(iel) = REAL(iel - 1, num) / REAL(drive_nel - 1, num) &
           * (max_omega - min_omega) + min_omega
       ! Random phase
-      drive_phase(:,iel) = random() * 2.0_num * pi
+      drive_phase(iel) = random() * 2.0_num * pi
       ! Kolmogorov amplitude
-      drive_amp(:,iel) = 1.0e-4_num * drive_axis(iel)**(-2.5_num / 3.0_num)
+      drive_amp(iel) = 1.0e-4_num * drive_axis(iel)**(-2.5_num / 3.0_num)
     END DO
 
   END SUBROUTINE setup_driver_spectrum
@@ -73,16 +73,16 @@ CONTAINS
 
   SUBROUTINE produce_spectrum(dat, time, rise_time)
 
-    REAL(num), DIMENSION(-2:,:), INTENT(INOUT) :: dat
+    REAL(num), DIMENSION(-2:nx+2,-2:0), INTENT(INOUT) :: dat
     REAL(num), INTENT(IN) :: time, rise_time
     REAL(num) :: val
     INTEGER :: iel, ix
 
-    DO ix = 0, nx + 1
+    DO ix = -2, nx + 2
       val = 0.0_num
       DO iel = 1, drive_nel
-        val = val + drive_amp(ix,iel) &
-            * SIN(drive_axis(iel) * time + drive_phase(ix,iel))
+        val = val + drive_amp(iel) &
+            * SIN(drive_axis(iel) * time + drive_phase(iel))
       END DO
       dat(ix,:) = val
     END DO
@@ -301,12 +301,6 @@ CONTAINS
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
       vx(:,-2:0) = 0.0_num
       vy(:,-2:0) = 0.0_num
-      vz(:,-2:0) = 0.0_num
-    END IF
-
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_DRIVEN) THEN
-      vx(:,-2:0) = 0.0_num
-      vy(:,-2:0) = 0.0_num
       CALL produce_spectrum(vz(:,-2:0), time, 1.0_num)
     END IF
 
@@ -341,12 +335,6 @@ CONTAINS
     END IF
 
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
-      vx1(:,-2:0) = 0.0_num
-      vy1(:,-2:0) = 0.0_num
-      vz1(:,-2:0) = 0.0_num
-    END IF
-
-    IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_DRIVEN) THEN
       vx1(:,ny:ny+2) = 0.0_num
       vy1(:,ny:ny+2) = 0.0_num
       CALL produce_spectrum(vz1(:,-2:0), time - 0.5_num * dt, 1.0_num)
