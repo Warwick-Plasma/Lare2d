@@ -248,8 +248,8 @@ CONTAINS
         byv = 0.5_num * (by(ix,iy) + by(ixp,iy))
         bzv = 0.25_num * (bz(ix,iy ) + bz(ixp,iy ) + bz(ix,iyp) + bz(ixp,iyp)) 
         
-        jx = (bz(ix,iyp) - bz(ix,iy)) / dyc(iy)
-        jy = -(bz(ixp,iy) - bz(ix,iy)) / dxc(ix)
+        jx = 0.5_num * (bz(ix,iyp) + bz(ixp,iyp) - bz(ix,iy) - bz(ixp,iy)) / dyc(iy)
+        jy = - 0.5_num * (bz(ixp,iy) + bz(ixp,iyp)- bz(ix,iy) - bz(ix,iyp)) / dxc(ix)
         jz = (by(ixp,iy) - by(ix,iy)) / dxc(ix) - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
 #endif
         fx = fx + (jy * bzv - jz * byv)
