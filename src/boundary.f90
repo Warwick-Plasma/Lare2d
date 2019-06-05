@@ -53,8 +53,6 @@ CONTAINS
     min_omega = 0.01_num
     max_omega = 10.0_num
 
-    dt_driver = 1.0_num / max_omega
-
     ! Initialize the random number generator. Change the seed to get
     ! different results
     CALL random_init(76783467)

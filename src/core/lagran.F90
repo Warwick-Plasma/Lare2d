@@ -794,7 +794,6 @@ CONTAINS
       END DO
     END DO
 
-!     IF (driven_boundary) dt_local = MIN(dt_local, dt_driver)
     dt_locals(1) = dt_local
     dt_locals(2) = dtr_local
     dt_locals(3) = dth_local
