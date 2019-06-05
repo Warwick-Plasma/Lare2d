@@ -47,8 +47,8 @@ CONTAINS
     ! Set up a driver with 1000 elements
     drive_nel = 1000
     ALLOCATE(drive_axis(drive_nel))
-    ALLOCATE(drive_amp(nx,drive_nel))
-    ALLOCATE(drive_phase(nx,drive_nel))
+    ALLOCATE(drive_amp(-2:nx+2,drive_nel))
+    ALLOCATE(drive_phase(-2:nx+2,drive_nel))
 
     min_omega = 0.01_num
     max_omega = 10.0_num
@@ -78,7 +78,7 @@ CONTAINS
     REAL(num) :: val
     INTEGER :: iel, ix
 
-    DO ix = 0, nx + 1
+    DO ix = -2, nx + 2
       val = 0.0_num
       DO iel = 1, drive_nel
         val = val + drive_amp(ix,iel) &
@@ -335,8 +335,8 @@ CONTAINS
     END IF
 
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
-      vx1(:,ny:ny+2) = 0.0_num
-      vy1(:,ny:ny+2) = 0.0_num
+      vx1(:,-2:0) = 0.0_num
+      vy1(:,-2:0) = 0.0_num
       CALL produce_spectrum(vz1(:,-2:0), time - 0.5_num * dt, 1.0_num)
     END IF
 
