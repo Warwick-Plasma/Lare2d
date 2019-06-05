@@ -108,8 +108,10 @@ CONTAINS
       END DO
     END DO
 
-    IF (predictor_step) DEALLOCATE (cv2, flux, dxb1, dxc1)
-    IF (predictor_step) RETURN
+    IF (predictor_step) THEN
+      DEALLOCATE(cv2, flux, dxb1, dxc1)
+      RETURN
+    END IF
 
     dm = 0.0_num
     ! Store initial density in rho1

@@ -23,6 +23,7 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v, cv_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc, fy_visc, fz_visc
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx0, by0, bz0
 
 CONTAINS
 
@@ -35,15 +36,14 @@ CONTAINS
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
 
-#ifdef CAUCHY
+#ifndef CAUCHY
+    ALLOCATE(bx0(-2:nx+2,-1:ny+2))
+    ALLOCATE(by0(-1:nx+2,-2:ny+2))
+    ALLOCATE(bz0(-1:nx+2,-1:ny+2))
+#endif
     ALLOCATE(bx1(-1:nx+2,-1:ny+2))
     ALLOCATE(by1(-1:nx+2,-1:ny+2))
     ALLOCATE(bz1(-1:nx+2,-1:ny+2))
-#else
-    ALLOCATE(bx1(-2:nx+2,-1:ny+2))
-    ALLOCATE(by1(-1:nx+2,-2:ny+2))
-    ALLOCATE(bz1(-1:nx+2,-1:ny+2))
-#endif
     ALLOCATE(alpha1(0:nx+1,0:ny+2))
     ALLOCATE(alpha2(-1:nx+1,0:ny+1))
     ALLOCATE(visc_heat(0:nx+1,0:ny+1))
@@ -134,6 +134,9 @@ CONTAINS
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
+#ifndef CAUCHY
+    DEALLOCATE(bx0, by0, bz0)
+#endif
 
     CALL energy_bcs
     CALL density_bcs
@@ -153,25 +156,23 @@ CONTAINS
     REAL(num) :: e1
     REAL(num) :: vxb, vxbm, vyb, vybm
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
+    REAL(num) :: dv
+    REAL(num) :: fx, fy, fz
 #ifdef CAUCHY
     REAL(num) :: cvx, cvxp, cvy, cvyp
 #endif
-    REAL(num) :: dv
-    REAL(num) :: fx, fy, fz
 
 #ifndef CAUCHY
-    bx1(:,:) = bx(:,:) 
-    by1(:,:) = by(:,:) 
-    bz1(:,:) = bz(:,:) 
+    bx0(:,:) = bx(:,:) 
+    by0(:,:) = by(:,:) 
+    bz0(:,:) = bz(:,:) 
 #endif
 
     CALL b_field_and_cv1_update
 
-#ifdef CAUCHY
     bx1(:,:) = bx1(:,:) * cv1(:,:)
     by1(:,:) = by1(:,:) * cv1(:,:)
     bz1(:,:) = bz1(:,:) * cv1(:,:)
-#endif
 
     DO iy = 0, ny + 1
       DO ix = 0, nx + 1
@@ -265,9 +266,9 @@ CONTAINS
     END DO
 
 #ifndef CAUCHY
-    bx(:,:) = bx1(:,:) 
-    by(:,:) = by1(:,:) 
-    bz(:,:) = bz1(:,:) 
+    bx(:,:) = bx0(:,:) 
+    by(:,:) = by0(:,:) 
+    bz(:,:) = bz0(:,:) 
 #endif
     
     CALL remap_v_bcs
@@ -612,15 +613,9 @@ CONTAINS
 
   SUBROUTINE b_field_and_cv1_update
 
+    REAL(num) :: vxb, vxbm, vyb, vybm, dvxdx, dvydy, dv
 #ifdef CAUCHY
-    REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
-    REAL(num) :: dvxdx, dvydx, dvzdx
-    REAL(num) :: dvxdy, dvydy, dvzdy
-    REAL(num) :: dv
-#else
-    REAL(num) :: vxb, vxbm, vyb, vybm
-    REAL(num) :: dvxdx, dvydy
-    REAL(num) :: dv
+    REAL(num) :: dvxdy, dvydx, dvzdx, vzb, vzbm, dvzdy
 #endif
 
     DO iy = -1, ny + 2
@@ -642,7 +637,6 @@ CONTAINS
 
         dv = (dvxdx + dvydy) * dt2
         cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
-
 #ifdef CAUCHY
         ! vx at By(i,j)
         vxb  = (vx(ix ,iy ) + vx(ixm,iy )) * 0.5_num
@@ -800,7 +794,7 @@ CONTAINS
       END DO
     END DO
 
-    IF (driven_boundary) dt_local = MIN(dt_local, dt_driver)
+!     IF (driven_boundary) dt_local = MIN(dt_local, dt_driver)
     dt_locals(1) = dt_local
     dt_locals(2) = dtr_local
     dt_locals(3) = dth_local
