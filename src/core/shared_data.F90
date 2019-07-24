@@ -234,7 +234,6 @@ MODULE shared_data
 
   INTEGER, PARAMETER :: stat_unit = 20
   INTEGER, PARAMETER :: en_unit = 30
-  INTEGER, PARAMETER :: spec_unit = 40
 
 END MODULE shared_data
 
