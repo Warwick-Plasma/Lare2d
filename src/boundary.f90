@@ -55,7 +55,7 @@ CONTAINS
 
     ! Initialize the random number generator. Change the seed to get
     ! different results
-    CALL random_init(76783467)
+    CALL random_init_local(76783467)
 
     DO iel = 1, drive_nel
       ! Uniformly spaced frequency bins
