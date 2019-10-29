@@ -29,7 +29,7 @@ CONTAINS
     IF (xbc_min == BC_OPEN .OR. xbc_max == BC_OPEN &
         .OR. ybc_min == BC_OPEN .OR. ybc_max == BC_OPEN) any_open = .TRUE.
 
-    IF  (ybc_min == BC_USER) CALL setup_driver_spectrum
+    IF (driven_boundary) CALL setup_driver_spectrum
 
   END SUBROUTINE set_boundary_conditions
 
@@ -47,24 +47,24 @@ CONTAINS
     ! Set up a driver with 1000 elements
     drive_nel = 1000
     ALLOCATE(drive_axis(drive_nel))
-    ALLOCATE(drive_amp(drive_nel))
-    ALLOCATE(drive_phase(drive_nel))
+    ALLOCATE(drive_amp(-2:nx+2,drive_nel))
+    ALLOCATE(drive_phase(-2:nx+2,drive_nel))
 
     min_omega = 0.01_num
     max_omega = 10.0_num
 
     ! Initialize the random number generator. Change the seed to get
     ! different results
-    CALL random_init(76783467)
+    CALL random_init_local(76783467)
 
     DO iel = 1, drive_nel
       ! Uniformly spaced frequency bins
       drive_axis(iel) = REAL(iel - 1, num) / REAL(drive_nel - 1, num) &
           * (max_omega - min_omega) + min_omega
       ! Random phase
-      drive_phase(iel) = random() * 2.0_num * pi
+      drive_phase(:,iel) = random() * 2.0_num * pi
       ! Kolmogorov amplitude
-      drive_amp(iel) = 1.0e-4_num * drive_axis(iel)**(-2.5_num / 3.0_num)
+      drive_amp(:,iel) = 1.0e-4_num * drive_axis(iel)**(-2.5_num / 3.0_num)
     END DO
 
   END SUBROUTINE setup_driver_spectrum
@@ -73,7 +73,7 @@ CONTAINS
 
   SUBROUTINE produce_spectrum(dat, time, rise_time)
 
-    REAL(num), DIMENSION(-2:nx+2,-2:0), INTENT(INOUT) :: dat
+    REAL(num), DIMENSION(-2:,:), INTENT(INOUT) :: dat
     REAL(num), INTENT(IN) :: time, rise_time
     REAL(num) :: val
     INTEGER :: iel, ix
@@ -81,8 +81,8 @@ CONTAINS
     DO ix = -2, nx + 2
       val = 0.0_num
       DO iel = 1, drive_nel
-        val = val + drive_amp(iel) &
-            * SIN(drive_axis(iel) * time + drive_phase(iel))
+        val = val + drive_amp(ix,iel) &
+            * SIN(drive_axis(iel) * time + drive_phase(ix,iel))
       END DO
       dat(ix,:) = val
     END DO
@@ -104,7 +104,6 @@ CONTAINS
     CALL energy_bcs
     CALL density_bcs
     CALL velocity_bcs
-    CALL damp_boundaries
 
   END SUBROUTINE boundary_conditions
 
@@ -335,8 +334,8 @@ CONTAINS
     END IF
 
     IF (proc_y_min == MPI_PROC_NULL .AND. ybc_min == BC_USER) THEN
-      vx1(:,ny:ny+2) = 0.0_num
-      vy1(:,ny:ny+2) = 0.0_num
+      vx1(:,-2:0) = 0.0_num
+      vy1(:,-2:0) = 0.0_num
       CALL produce_spectrum(vz1(:,-2:0), time - 0.5_num * dt, 1.0_num)
     END IF
 
@@ -349,86 +348,5 @@ CONTAINS
   END SUBROUTINE remap_v_bcs
 
 
-
-  !****************************************************************************
-  ! Damped boundary conditions
-  !****************************************************************************
-
-  SUBROUTINE damp_boundaries
-
-    ! This is an example damping scheme
-    ! Users should experiment on test cases
-    ! In this example damping is applied to all boundaries. If there is a boundary
-    ! that shouldn't be damped then simply comment out that boundary.
-
-    REAL(num) :: a, d, pos, n_cells, damp_scale
-
-    IF (.NOT.damping) RETURN
-    ! number of cells near boundary to apply linearly increasing damping
-    n_cells = 20.0_num 
-    ! increase the damping if needed
-    damp_scale = 1.0_num
-
-    IF (proc_x_min == MPI_PROC_NULL) THEN
-      d = n_cells * dxb(1)
-      DO iy = -1, ny + 1
-        DO ix = -1, nx + 1
-          pos = xb(ix) - x_min
-          IF (pos < d) THEN
-            a = dt * damp_scale * pos / d + 1.0_num
-            vx(ix,iy) = vx(ix,iy) / a
-            vy(ix,iy) = vy(ix,iy) / a
-            vz(ix,iy) = vz(ix,iy) / a
-          END IF
-        END DO
-      END DO
-    END IF
-
-    IF (proc_x_max == MPI_PROC_NULL) THEN
-      d = n_cells * dxb(nx)
-      DO iy = -1, ny + 1
-        DO ix = -1, nx + 1
-          pos = x_max - xb(ix) 
-          IF (pos < d) THEN
-            a = dt * damp_scale * pos / d + 1.0_num
-            vx(ix,iy) = vx(ix,iy) / a
-            vy(ix,iy) = vy(ix,iy) / a
-            vz(ix,iy) = vz(ix,iy) / a
-          END IF
-        END DO
-      END DO
-    END IF
-
-    IF (proc_y_min == MPI_PROC_NULL) THEN
-      d = n_cells* dyb(1)
-      DO iy = -1, ny + 1
-        DO ix = -1, nx + 1
-          pos = yb(iy) - y_min
-          IF (pos < d) THEN
-            a = dt * damp_scale * pos / d + 1.0_num
-            vx(ix,iy) = vx(ix,iy) / a
-            vy(ix,iy) = vy(ix,iy) / a
-            vz(ix,iy) = vz(ix,iy) / a
-          END IF
-        END DO
-      END DO
-    END IF
-
-    IF (proc_y_max == MPI_PROC_NULL) THEN
-      d = n_cells* dyb(ny)
-      DO iy = -1, ny + 1
-        DO ix = -1, nx + 1
-          pos = y_max - yb(iy) 
-          IF (pos < d) THEN
-            a = dt * damp_scale * pos / d + 1.0_num
-            vx(ix,iy) = vx(ix,iy) / a
-            vy(ix,iy) = vy(ix,iy) / a
-            vz(ix,iy) = vz(ix,iy) / a
-          END IF
-        END DO
-      END DO
-    END IF
-
-  END SUBROUTINE damp_boundaries
 
 END MODULE boundary

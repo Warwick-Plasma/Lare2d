@@ -25,7 +25,7 @@
 \bfseries\scshape LareXd User Guide}
 \author{\bfseries\itshape Tony Arber\thanks{E-mail address: T.D.Arber@warwick.ac.uk}\\
 University of Warwick, Department of Physics, Coventry, CV4 7AL, UK}
-\date{Version 3.3}
+\date{Version 4.0}
 \maketitle
 
 \thispagestyle{empty}
@@ -37,7 +37,7 @@ ideally suited to shock calculations. This document describes how to obtain, mak
 codes. The instructions are aimed at code users, not developers, although some references to more detailed 
 numerics are included. The manual will only be
 updated when there are new physics packages added. Hence this manual applies to all {\it LareXd} versions 
-starting with a major version number of 3. Internal code changes and optimisations will be documented in the 
+starting with a major version number of 4. Internal code changes and optimisations will be documented in the 
 source code itself and through a {\it changelog.txt} file which will be updated with each new version and 
 included with the source code distribution of {\it Lare2d}. The {\it Lare3d} will always track the changes 
 in {\it Lare2d} so if you only use {\it Lare3d} you still need to check the manual and changelog in the 
@@ -49,9 +49,9 @@ in {\it Lare2d} so if you only use {\it Lare3d} you still need to check the manu
 The Lagrangian remap code comes in 2D ({\it Lare2d}) and 3D ({\it Lare3d}). For convenience when referring 
 to either code this is called the {\it LareXd} code. A detailed description of the algorithm has been 
 published \cite{jcp} along with test cases. Note however that the latest version of the code uses a 
-different form of shock viscosity and resistivity to that documented in JCP. 
+different form of shock viscosity and resistivity to that documented in JCP and has many more physics and algorithmic extensions.
 
-Without going into detail, see \cite{jcp} for complete algorithm, the main features of the code are:
+Without going into detail the main features of the code are:
 \begin{itemize}
  \item Solves the nonlinear MHD equations with user controlled viscosity and resistivity. Optional 
  physics packages are: gravity, the Hall term (only in 2D), partially ionised hydrogen equation of state, 
@@ -119,7 +119,7 @@ normalising length, magnetic field and mass density (more on this below). The ad
 that require this are thermal conduction, optically thin radiative losses and the inclusion of neutrals. 
 If you are only running resistive MHD then these are not needed. The second reason you may need to 
 understand the normalisation is that all of the core code works on the normalised equations so that 
-should you want to edit the code, e.g. to change the resistivity, you must do this on normalised equations.
+should you want to edit the code, e.g. to change the resistivity, you must do this on the normalised equations.
 
 The normalisation is through the choice of normalising magnetic field $B_0$, density $\rho_0$ and 
 length $L_0$. Thus we define dimensionless quantities as
@@ -209,7 +209,8 @@ with a reference to the core material. From the user point of view the viscosity
 These are \texttt{visc1} and \texttt{visc2} with the first controlling linear viscosity and hence active on all shock, the
 second acts mostly at strong shocks. For strong shocks these should both be set to one. However for most solar physics,
 which only have very weak shocks, it is better to run with smaller values. Typically \texttt{visc1=0.1} and \texttt{visc2=0}
-are good starting points. It is best to try these values and then either increase or decrease based on the problem studied.
+are good starting points for problems without gravity. If you have strtification so that the Alfv\'en speed is larger
+high in the atmosphere it is often better to use \texttt{visc1=0} and \texttt{visc2=0.1}.
 These initial tests can be done on a low-resolution grid while still 'playing' with the problem. For some idealised wave
 problems it is best to set both to zero for example to avoid wave damping. Experimenting with these parameters is the
 only way to determine what is best.
@@ -268,10 +269,21 @@ $\Delta \mathbf{v}_{a} $ is the same difference but for cell $(ix+1,iy)$ and $\D
 $(ix-1,iy)$. 
 
 When this viscosity is applied to MHD problems we simply replace the sound speed by an effective fast speed $c_f$
-defined through $c_f^2=c_s^2 + v_A^2$ where $v_A$ is the local Alfv\'en speed. Often for MHD problems it is
+defined through $c_f^2=c_s^2 + v_A^2$ where $v_A$ is the local Alfv\'en speed defined only using the component of magnetic field
+perpendicular to the cell edge. Often for MHD problems it is
 better to turn off the $\Delta \hat{\mathbf{v}}_i . \mathbf{S}_i<0$ and always apply the viscosity on expanding
 cells as well. There is no good justification for doing this but it does always seem to give better results!
 If you want to do this it is controlled through the Makefile.
+
+\subsection{Uniform Viscosity}
+Often it is useful to apply a uniform, non-shock, viscosity or to increase damping near boundaries. This is handled
+through an incompressible viscosity term added to the momentum equation.
+\[
+\frac{\partial\mathbf{v}}{\partial t}=\nu \nabla^2 \mathbf{v}
+\]
+Here $\nu=nu(\mathbf{r})$ is a user specified spatially dependent viscosity. This can be useful for applying small backgroun viscosity
+or adding damping to boundary conditions depending on the form of $\nu=nu(\mathbf{r})$ specified in the initial conditions.
+This is purely a damping term and there is no associated heating with the viscosity.
 
 \subsection{Boundary Conditions}
 Boundary conditions can be set in {\tt control.f90}. The preset routines are {\tt periodic}, 
@@ -281,8 +293,10 @@ simplified far-field characteristic model. For this it is best to test on your p
 and use. However if these do not work for you problem, they are not guaranteed to work well for all conditions, 
 then you may have to resort to coding up your own conditions in {\tt boundary.f90} and using {\tt user} as your choice for boundaries.
 
-All choices of boundary also allow damping to be applied near the boundary. This is entirely user configurable and 
-requires that the appropriate boundaries are treated as you prefer in {\tt damp\_boundaries} inside {\tt boundary.f90}.
+All choices of boundary also allow damping to be applied near the boundary through $\nu=nu(\mathbf{r})$. 
+This is entirely user configurable and 
+requires that the appropriate boundaries are treated as you prefer and the flag {\tt use\_viscous\_damping = .TRUE.} in the
+{\tt control.f90} file.
 
 \section{Hall MHD}
 The 2D version {\it Lare2d} comes with an input deck option to run using Hall MHD. In Hall MHD the only difference 
@@ -390,7 +404,7 @@ is known $\eta_c$ can be calculated from the standard formula in \cite{flux-emer
 Thermal conduction in {\it LareXd} is based on the Braginskii thermal conduction in the presence of a magnetic field 
 and is of the form\\
 \[
-\frac{\partial \epsilon}{\partial t} = \nabla . \left(\left(\kappa \frac{\vec{B}}{B^2+b_{min}^2}. 
+\rho \frac{\partial \epsilon}{\partial t} = \nabla . \left(\left(\kappa \frac{\vec{B}}{B^2+b_{min}^2}. 
 \nabla T\right) \vec{B} \right) +  \nabla . \left(\kappa  \frac{b_{min}^2}{B^2+b_{min}^2}  \nabla T \right)
 \]
 where $\kappa = \kappa_0  T^\frac{5}{2}$. In the limit $b_{min}\to 0$ this recovers the Braginskii parallel thermal 
@@ -437,8 +451,8 @@ in the open boundary routine source code.
 
 \section{Alfv\'en speed limiter}
 The file \texttt{control.f90} now includes an option to turn on a limiter which reduces the net force used
-in the Lagrangian step if the Alfv\'en speed exceeeds some user specified value \texttt{va\_max}. The background
-to this is most clearly explained in \cite{gombosi:2002}. There is an option to only apply the limiter to the 
+in the Lagrangian step if the Alfv\'en speed exceeds some user specified value \texttt{va\_max}. The background
+to this is most clearly explained in \cite{gombosi:2002}. There is only applied to the 
 $\mathbf{j}\times \mathbf{B}$ term. The velocity used to trigger this is in {\it LareXd} internal units. If
 you use these flags experiment first to get a feel for how they work and read \cite{gombosi:2002}.
 
@@ -544,18 +558,21 @@ alphabetical order, for {\it Lare2d}.
 First the files in the highest source code directory \texttt{src}. These are the files you may have to setup for each 
 new simulation. For most users you probably won't need need to edit anything else.
 \begin{itemize}
+
  \item{\texttt{boundary.f90:}} Contains the boundary conditions not set automatically by MPI. If you set any boundary 
  condition to \texttt{BC\_USER} in \texttt{control.f90} (see below) then here is where you must set the boundary 
  conditions you want.
+
   \item{\texttt{control.f90:}} This is subdivided into three subroutines: \texttt{User\_Normalisation} sets the 
   parameters used in the code normalisation, \texttt{Control\_Variables} sets basic code parameters  (see the 
   comments in the code for a full description) and
 \texttt{Set\_Output\_Dumps} sets information to be included in the output dumps from the code.
- \item{\texttt{diagnostics.F90:}} Controls the code output, sets the timestep and calculates some diagnostics such as 
- kinetic energy etc. as a function of time.
+
   \item{\texttt{initial\_conditions.f90:}} The initial conditions!
+
   \item{\texttt{radiative.f90:}} Contains the setup of the optically thin radiative losses and a user specified
   heating function. How to change these is documented in the code itself.
+
 \end{itemize}
 
 All of the core routines for solving the equations are hidden away inside a \texttt{core} sub-directory and in most 
@@ -569,6 +586,8 @@ subroutine that is more likely to need user intervention this will be highlighte
   and heating functions. The default radiative losses are RTV but these are easy to change.
   \item{\texttt{lagran.F90:}} All routines associated with the lagrangian step. If you want to change the 
   resistivity it is inside this file in a subroutine called \texttt{eta\_calc}.
+  \item{\texttt{diagnostics.F90:}} Controls the code output, sets the timestep and calculates some diagnostics such as 
+  kinetic energy etc. as a function of time.
   \item{\texttt{lare2d.f90:}} The main control routine.
   \item{\texttt{mpi\_routines.f90:}} Setting up the MPI environment and defining area sizes etc.
   \item{\texttt{mpiboundary.f90:}} All the MPI communication.
@@ -666,59 +685,19 @@ understand how to setup and run \textit{LareXd}.
 All that remains to get the code ready to run is to fill the primary arrays. This is done in the file \\ 
 \texttt{initial\_conditions.f90}. To be complete the 3D initial conditions need to specify the variables everywhere 
 inside the computational domain. Due to the staggered grid these arrays are not all the same size so that the 
-computational domain is defined by
-\begin{itemize}
-\item \texttt{rho(1:nx,1:ny,1:nz)}
-\item \texttt{energy(1:nx,1:ny,1:nz)}
-\item \texttt{vx(0:nx,0:ny,0:nz)}
-\item \texttt{vy(0:nx,0:ny,0:nz)}
-\item \texttt{vz(0:nx,0:ny,0:nz)}
-\item \texttt{bx(0:nx,1:ny,1:nz)}
-\item \texttt{by(1:nx,0:ny,1:nz)}
-\item \texttt{bz(1:nx,1:ny,0:nz)}
-\item \texttt{grav(0:nz)}
-\end{itemize}
-
-The simplest possible initial condition is therefore something like
-\begin{verbatim}
-  SUBROUTINE set_initial_conditions
-
-    vx = 0.0_num
-    vy = 0.0_num
-    vz = 0.0_num
-    bx = 0.0_num
-    by = 0.0_num
-    bz = 0.0_num
-    energy = 1.0_num
-    rho = 1.0_num
-
-    grav = 0.0_num
-
-  END SUBROUTINE set_initial_conditions
-\end{verbatim}
-
-
+computational domain. This is made clear in the trivial setup in the default \texttt{initial\_conditions.f90}.
 
 Because the code is an MPI code the different processes need to be able to swap information. This is done by each 
 process having a set of `ghost' cells defined around the real cells. These act as a buffer for the exchange of 
 boundary information through MPI and are how the real boundary conditions are applied. In order to cut down on the 
 number of times that processes have to communicate there are two ghost cells in this buffer zone. As a result the 
-initial conditions should set
-\begin{itemize}
-\item \texttt{rho(-1:nx+2,-1:ny+2,-1:nz+2)}
-\item \texttt{energy(-1:nx+2,-1:ny+2,-1:nz+2)}
-\item \texttt{vx(-2:nx+2,-2:ny+2,-2:nz+2)}
-\item \texttt{vy(-2:nx+2,-2:ny+2,-2:nz+2)}
-\item \texttt{vz(-2:nx+2,-2:ny+2,-2:nz+2)}
-\item \texttt{bx(-2:nx+2,-1:ny+2,-1:nz+2)}
-\item \texttt{by(-1:nx+2,-2:ny+2,-1:nz+2)}
-\item \texttt{bz(-1:nx+2,-1:ny+2,-2:nz+2)}
-\item \texttt{grav(0:nz)}
-\end{itemize}
-Note that the gravity array has not changed as this is not updated and therefore never needs to be communicated between processes.  
+initial conditions should set for these values as well.
 Pay particular attention to the use, for example, of \texttt{xc(ix)} and \texttt{xb(ix)}, as different locations are specified.
 
-If Hall MHD is used then you must also specify \texttt{lambda\_i(0:nz)} in the initial conditions.
+It is possible to setup any initial magnetic field and the users responsibility to ensure this satisfies the boundary conditions
+and $\nabla.\mathbf{B}=0$. An option exists for specifying a potential field and an example of this is now included
+in \texttt{initial\_conditions.f90} for a monopolar flux on the lower boundary.
+
 
 \section{Probe points}
 Probe points can also be added to the run by adding any number of lines of the form\\
@@ -782,33 +761,48 @@ TARGET = lare3d
 \texttt{TARGET} controls the name of the output binary
 file in the \texttt{bin} subdirectory. Normally, there is no need to change this.
 \begin{verbatim}
-# The following are a list of pre-processor defines which can be added to
-# the above line modifying the code behaviour at compile time.
+# The following are a list of pre-processor defines which can be activated by 
+# uncommenting some of the lines below.
+
+# Uncomment to use Cauchy solution for predictor step B-field, othwerwise advective prediction
+#DEFINES += $(D)CAUCHY
 
 # Uncomment the following line to run with limiters on shock viscosity
 #DEFINES += $(D)SHOCKLIMITER
+
+# Uncomment the following line to allow shock viscosity in expanding cells
+#DEFINES += $(D)SHOCKEXPANSION
 
 # Uncomment the following line to run in single precision
 #DEFINES += $(D)SINGLE
 
 # Uncomment the following line to use first order scheme for resistive update
 #DEFINES += $(D)FOURTHORDER
+
+# Uncomment to add the 'nfs' file prefix required by some filesystems
+#DEFINES += $(D)FILEPREFIX
+
+# Don't generate any output at all. Useful for benchmarking.
+#DEFINES += $(D)NO_IO
+
+# Uncomment to enable the MPI error handler which is useful for debugging
+#DEFINES += $(D)MPI_DEBUG
 \end{verbatim}
-The above section controls optional flags which can be passed to the code or compiler. \texttt{SINGLE} forces the code 
+
+The above section controls optional flags which can be passed to the code or compiler. 
+\texttt{CAUCHY} stops using remap based advection for the predictor step and uses the Cauchy solution instead. 
+What this means is if you want to get results closer to old versions of \lare you should uncomment this option. Otherwise it 
+uses the newer advetcion based scheme which is guarenteed to maintain a potential field as an equilibrium.
+\texttt{SHOCKLIMITER} can trun on additional limiters to reduce shock viscosity away from real shocks. This is
+experimental and deosn't really do anything at the moment other than slow the code down.
+\texttt{SHOCKEXPANSION} allows shock viscosity in expanding cells. 
+\texttt{SINGLE} forces the code 
 to run in single precision. This is much faster and is recommended for preparatory work but the full double precision 
 should always be checked for publications. \texttt{FOURTHORDER} runs the resistive routines in fourth order instead of 
 the default first order. Usually first order is fine for diffusive terms but you should
-check for your problem.
-In order to allow vector optimisation of the code all \texttt{IF} statements were removed from the main loop. This 
-meant that allowing the change between using tensor shock viscosity and simple Wilkins QMONO shock viscosity had to 
-be moved out to the makefile. To run the code with tensor shock viscosity comment this flag out, to run with the Wilkins 
-viscosity uncomment it.
-\subsection{Further Optimisation}
-The {\it LareXd} codes are fairly robust with regard to compiler flags, so you can normally use your favourite optimisations. 
-An example would be
-\begin{itemize}
-\item ifort : -ip -xP (Turn on higher level optimisation)
-\end{itemize}
+check for your problem. Unless you are debugging the code ignore the final two options. Note all these options are
+off by default.
+
 \subsection{Debugging}
 The {\it LareXd} codes are also robust with regard to input conditions. Therefore, the most likely cause of a code crash 
 is that the code either has not been given all the data which is needed or you have written over the end of an array 
@@ -821,7 +815,7 @@ and so cannot be left on for general use, since optimisation increases the code 
 \section{Common Questions}
 \subsection*{How do I run several copies of {\it LareXd} at the same time?}
 One common use of {\it LareXd} is to run parameter space studies using a large
-Beowulf cluster, with several versions of the code in the cluster queue at the
+cluster, with several versions of the code in the cluster queue at the
 same time. This can be achieved by the simply copying the entire {\it
   LareXd} directory and compiling and running different versions of the code
 there. Although this leads to an unnecessary duplication of data, it has the

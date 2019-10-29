@@ -24,19 +24,23 @@ CONTAINS
 
     REAL(num) :: vxb, vxbm, vyb, vybm, dv
 
-    ALLOCATE(rho1  (-1:nx+2, -1:ny+2))
-    ALLOCATE(dm    (-1:nx+2, -1:ny+2))
-    ALLOCATE(cv2   (-1:nx+2, -1:ny+2))
-    ALLOCATE(flux  (-1:nx+2, -2:ny+2))
-    ALLOCATE(dyb1  (-1:nx+2, -1:ny+2))
-    ALLOCATE(dyc1  (-1:nx+1, -1:ny+1))
-    ALLOCATE(rho_v (-1:nx+2, -1:ny+2))
-    ALLOCATE(rho_v1(-1:nx+2, -1:ny+2))
+    IF (predictor_step) THEN
+      ALLOCATE(cv2   (-1:nx+2, -1:ny+2))
+      ALLOCATE(flux  (-1:nx+2, -2:ny+2))
+      ALLOCATE(dyb1  (-1:nx+2, -1:ny+2))
+      ALLOCATE(dyc1  (-1:nx+2, -1:ny+2))
+    ELSE 
+      ALLOCATE(rho1  (-1:nx+2, -1:ny+2))
+      ALLOCATE(dm    (-1:nx+2, -1:ny+2))
+      ALLOCATE(cv2   (-1:nx+2, -1:ny+2))
+      ALLOCATE(flux  (-1:nx+2, -2:ny+2))
+      ALLOCATE(dyb1  (-1:nx+2, -1:ny+2))
+      ALLOCATE(dyc1  (-1:nx+2, -1:ny+2))
+      ALLOCATE(rho_v (-1:nx+2, -1:ny+2))
+      ALLOCATE(rho_v1(-1:nx+2, -1:ny+2))
+    END IF
 
-    dm = 0.0_num
-    ! Store initial density in rho1
-    rho1(:,:) = rho(:,:)
-
+ 
     DO iy = -1, ny + 2
       iym = iy - 1
       DO ix = -1, nx + 2
@@ -70,9 +74,9 @@ CONTAINS
       END DO
     END DO
 
-    DO iy = -1, ny + 1
-      iyp = iy + 1
-      DO ix = -1, nx + 1
+    DO iy = -1, ny + 2
+      iyp = MIN(iy + 1, ny + 2)
+      DO ix = -1, nx + 2
         ! dyc before remap
         dyc1(ix,iy) = 0.5_num * (dyb1(ix,iy) + dyb1(ix,iyp))
       END DO
@@ -82,15 +86,15 @@ CONTAINS
     ! constrained transport remap of magnetic fluxes
     CALL vy_bx_flux
 
-    DO iy = 1, ny
+    DO iy = 0, ny + 1
       iym = iy - 1
-      DO ix = 0, nx
+      DO ix = 0, nx + 1
         bx(ix,iy) = bx(ix,iy) - flux(ix,iy) + flux(ix,iym)
       END DO
     END DO
 
-    DO iy = 0, ny
-      DO ix = 1, nx
+    DO iy = 0, ny + 1
+      DO ix = 0, nx + 1
         ixm = ix - 1
         by(ix,iy) = by(ix,iy) + flux(ix,iy) - flux(ixm,iy)
       END DO
@@ -98,12 +102,21 @@ CONTAINS
 
     CALL vy_bz_flux
 
-    DO iy = 1, ny
+    DO iy = 0, ny + 1
       iym = iy - 1
-      DO ix = 1, nx
+      DO ix = 0, nx + 1
         bz(ix,iy) = bz(ix,iy) - flux(ix,iy) + flux(ix,iym)
       END DO
     END DO
+
+    IF (predictor_step) THEN
+      DEALLOCATE(cv2, flux, dyb1, dyc1)
+      RETURN
+    END IF
+
+    dm = 0.0_num
+    ! Store initial density in rho1
+    rho1(:,:) = rho(:,:)
 
     ! Remap of mass + calculation of mass fluxes (dm) needed for later remaps
     ! Calculates dm(0:nx+1,0:ny)
@@ -267,11 +280,11 @@ CONTAINS
     REAL(num) :: dyu, dby, dbyp, dbyp2, dbym
     INTEGER :: iyp2
 
-    DO iy = 0, ny
-      iym  = iy - 1
+    DO iy = -1, ny + 1
+      iym  = MAX(iy - 1, -1)
       iyp  = iy + 1
-      iyp2 = iy + 2
-      DO ix = 0, nx
+      iyp2 = MIN(iy + 2, ny + 2)
+      DO ix = -1 , nx + 1
         ixp = ix + 1
 
         v_advect = vy1(ix,iy)
@@ -331,11 +344,11 @@ CONTAINS
     REAL(num) :: dyu, dby, dbyp, dbyp2, dbym
     INTEGER :: iyp2
 
-    DO iy = 0, ny
-      iym  = iy - 1
+    DO iy = -1, ny + 1
+      iym  = MAX(iy - 1, -1)
       iyp  = iy + 1
-      iyp2 = iy + 2
-      DO ix = 0, nx
+      iyp2 = MIN(iy + 2, ny + 2)
+      DO ix = -1, nx + 1
         ixm = ix - 1
 
         v_advect = (vy1(ix,iy) + vy1(ixm,iy)) * 0.5_num

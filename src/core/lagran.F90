@@ -10,6 +10,7 @@ MODULE lagran
   USE conduct
   USE radiative
   USE openboundary
+  USE remap
 
   IMPLICIT NONE
 
@@ -22,6 +23,8 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_heat, pressure, rho_v, cv_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: flux_x, flux_y, flux_z, curlb
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc, fy_visc, fz_visc
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx0, by0, bz0
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: qx, qy, qz
 
 CONTAINS
 
@@ -34,6 +37,11 @@ CONTAINS
     INTEGER :: substeps, subcycle
     REAL(num) :: actual_dt, dt_sub
 
+#ifndef CAUCHY
+    ALLOCATE(bx0(-2:nx+2,-1:ny+2))
+    ALLOCATE(by0(-1:nx+2,-2:ny+2))
+    ALLOCATE(bz0(-1:nx+2,-1:ny+2))
+#endif
     ALLOCATE(bx1(-1:nx+2,-1:ny+2))
     ALLOCATE(by1(-1:nx+2,-1:ny+2))
     ALLOCATE(bz1(-1:nx+2,-1:ny+2))
@@ -43,6 +51,9 @@ CONTAINS
     ALLOCATE(pressure(-1:nx+2,-1:ny+2))
     ALLOCATE(rho_v(-1:nx+1,-1:ny+1))
     ALLOCATE(cv_v(-1:nx+1,-1:ny+1))
+    ALLOCATE(qx(0:nx+1,0:ny+1))
+    ALLOCATE(qy(0:nx+1,0:ny+1))
+    ALLOCATE(qz(0:nx+1,0:ny+1))
     ALLOCATE(fx_visc(0:nx,0:ny))
     ALLOCATE(fy_visc(0:nx,0:ny))
     ALLOCATE(fz_visc(0:nx,0:ny))
@@ -78,7 +89,9 @@ CONTAINS
     END DO
 
     IF (coronal_heating) CALL user_defined_heating
-    CALL shock_viscosity
+
+    IF (use_viscous_damping) CALL viscous_damping
+    CALL edge_shock_viscosity
     CALL set_dt
     dt2 = dt * 0.5_num
 
@@ -126,7 +139,11 @@ CONTAINS
 
     DEALLOCATE(bx1, by1, bz1, alpha1, alpha2)
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
+    DEALLOCATE(qx, qy, qz)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
+#ifndef CAUCHY
+    DEALLOCATE(bx0, by0, bz0)
+#endif
 
     CALL energy_bcs
     CALL density_bcs
@@ -146,9 +163,17 @@ CONTAINS
     REAL(num) :: e1
     REAL(num) :: vxb, vxbm, vyb, vybm
     REAL(num) :: bxv, byv, bzv, jx, jy, jz
-    REAL(num) :: cvx, cvxp, cvy, cvyp
     REAL(num) :: dv
     REAL(num) :: fx, fy, fz
+#ifdef CAUCHY
+    REAL(num) :: cvx, cvxp, cvy, cvyp
+#endif
+
+#ifndef CAUCHY
+    bx0(:,:) = bx(:,:) 
+    by0(:,:) = by(:,:) 
+    bz0(:,:) = bz(:,:) 
+#endif
 
     CALL b_field_and_cv1_update
 
@@ -195,6 +220,7 @@ CONTAINS
 
         fz = 0.0_num
 
+#ifdef CAUCHY
         cvx  = cv1(ix ,iy ) + cv1(ix ,iyp)
         cvxp = cv1(ixp,iy ) + cv1(ixp,iyp)
         cvy  = cv1(ix ,iy ) + cv1(ixp,iy )
@@ -224,27 +250,37 @@ CONTAINS
 
         bzv = (bz1(ix,iy ) + bz1(ixp,iy ) + bz1(ix,iyp) + bz1(ixp,iyp)) &
             / (cvx + cvxp)
-
-        fx = fx + (jy * bzv - jz * byv)
-        fy = fy + (jz * bxv - jx * bzv)
-        fz = fz + (jx * byv - jy * bxv)
+#else
+        bxv = 0.5_num * (bx(ix,iy) + bx(ix,iyp))   
+        byv = 0.5_num * (by(ix,iy) + by(ixp,iy))
+        bzv = 0.25_num * (bz(ix,iy ) + bz(ixp,iy ) + bz(ix,iyp) + bz(ixp,iyp)) 
+        
+        jx = 0.5_num * (bz(ix,iyp) + bz(ixp,iyp) - bz(ix,iy) - bz(ixp,iy)) / dyc(iy)
+        jy = - 0.5_num * (bz(ixp,iy) + bz(ixp,iyp)- bz(ix,iy) - bz(ix,iyp)) / dxc(ix)
+        jz = (by(ixp,iy) - by(ix,iy)) / dxc(ix) - (bx(ix,iyp) - bx(ix,iy)) / dyc(iy)
+#endif
+        fx = fx + gamma_boris(ix,iy) * (jy * bzv - jz * byv)
+        fy = fy + gamma_boris(ix,iy) * (jz * bxv - jx * bzv)
+        fz = fz + gamma_boris(ix,iy) * (jx * byv - jy * bxv)
 
         fy = fy - rho_v(ix,iy) * grav(iy)
 
         ! Find half step velocity needed for remap
-        vx1(ix,iy) = vx(ix,iy) + dt2 * gamma_boris(ix,iy) * (fx_visc(ix,iy) + fx) / rho_v(ix,iy)
-        vy1(ix,iy) = vy(ix,iy) + dt2 * gamma_boris(ix,iy) * (fy_visc(ix,iy) + fy) / rho_v(ix,iy)
-        vz1(ix,iy) = vz(ix,iy) + dt2 * gamma_boris(ix,iy) * (fz_visc(ix,iy) + fz) / rho_v(ix,iy)
+        vx1(ix,iy) = vx(ix,iy) + dt2 * (fx_visc(ix,iy) + fx) / rho_v(ix,iy)
+        vy1(ix,iy) = vy(ix,iy) + dt2 * (fy_visc(ix,iy) + fy) / rho_v(ix,iy)
+        vz1(ix,iy) = vz(ix,iy) + dt2 * (fz_visc(ix,iy) + fz) / rho_v(ix,iy)
       END DO
     END DO
 
-    bx1(:,:) = bx1(:,:) / cv1(:,:)
-    by1(:,:) = by1(:,:) / cv1(:,:)
-    bz1(:,:) = bz1(:,:) / cv1(:,:)
+#ifndef CAUCHY
+    bx(:,:) = bx0(:,:) 
+    by(:,:) = by0(:,:) 
+    bz(:,:) = bz0(:,:) 
+#endif
     
     CALL remap_v_bcs
 
-    CALL shock_heating
+    CALL edge_shock_heating
 
     DO iy = 0, ny
       DO ix = 0, nx
@@ -284,6 +320,8 @@ CONTAINS
             + (dt * visc_heat(ix,iy) - dv * pressure(ix,iy)) &
             / rho(ix,iy)
 
+        visc_dep(ix,iy) = visc_dep(ix,iy) + dt * visc_heat(ix,iy)
+
         rho(ix,iy) = rho(ix,iy) / (1.0_num + dv)
 
         total_visc_heating = total_visc_heating &
@@ -292,8 +330,55 @@ CONTAINS
       END DO
     END DO
 
+    IF (cooling_term) THEN
+      DO iy = 1, ny
+        DO ix = 1, nx
+          cool_term_v(ix,iy) = alpha_av * dt * visc_heat(ix,iy)/rho(ix,iy) + &
+              (1.0_num - alpha_av) * cool_term_v(ix,iy)
+
+          energy(ix,iy) = energy(ix,iy) - cool_term_v(ix,iy)
+        END DO
+      END DO
+      energy = MAX(energy, 0.0_num)
+    END IF
+
   END SUBROUTINE predictor_corrector_step
 
+
+
+  SUBROUTINE viscous_damping
+
+    qx = 0.0_num
+    qy = 0.0_num
+    qz = 0.0_num
+
+    DO iy = 0, ny
+      iyp = iy + 1
+      iym = iy - 1
+      DO ix = 0, nx
+        ixp = ix + 1
+        ixm = ix - 1
+        qx(ix,iy) = visc3(ix,iy)  &
+           * (((vx(ixp,iy) - vx(ix,iy))/ dxb(ixp) - (vx(ix,iy) - vx(ixm,iy))/ dxb(ix)) / dxc(ix) &
+           +  ((vx(ix,iyp) - vx(ix,iy))/ dyb(iyp) - (vx(ix,iy) - vx(ix,iym))/ dyb(iy)) / dyc(iy)) 
+        qy(ix,iy) = visc3(ix,iy)  &
+           * (((vy(ixp,iy) - vy(ix,iy))/ dxb(ixp) - (vy(ix,iy) - vy(ixm,iy))/ dxb(ix)) / dxc(ix) &
+           +  ((vy(ix,iyp) - vy(ix,iy))/ dyb(iyp) - (vy(ix,iy) - vy(ix,iym))/ dyb(iy)) / dyc(iy)) 
+        qz(ix,iy) = visc3(ix,iy)  &
+           * (((vz(ixp,iy) - vz(ix,iy))/ dxb(ixp) - (vz(ix,iy) - vz(ixm,iy))/ dxb(ix)) / dxc(ix) &
+           +  ((vz(ix,iyp) - vz(ix,iy))/ dyb(iyp) - (vz(ix,iy) - vz(ix,iym))/ dyb(iy)) / dyc(iy)) 
+      END DO
+    END DO
+
+    DO iy = 0, ny
+      DO ix = 0, nx
+        vx(ix,iy) = vx(ix,iy) + dt * qx(ix,iy)
+        vy(ix,iy) = vy(ix,iy) + dt * qy(ix,iy)
+        vz(ix,iy) = vz(ix,iy) + dt * qz(ix,iy)
+      END DO
+    END DO
+
+  END SUBROUTINE viscous_damping
 
 
   !****************************************************************************
@@ -301,7 +386,7 @@ CONTAINS
   ! magnetic field
   !****************************************************************************
 
-  SUBROUTINE shock_viscosity
+  SUBROUTINE edge_shock_viscosity
 
     REAL(num) :: dvdots, dx, dxm, dxp
     REAL(num) :: b2, rmin
@@ -320,11 +405,11 @@ CONTAINS
     p_visc = 0.0_num
     visc_heat = 0.0_num
 
-    DO ix = -1, nx + 2
-      DO iy = -1, ny + 2
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
         rmin = MAX(rho(ix,iy), none_zero)
-        b2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
-        cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + b2) / rmin)
+        b2 = by(ix,iym)**2 + bz(ix,iy)**2
+        cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + gamma_boris(ix,iy) * b2) / rmin)
       END DO
     END DO
 
@@ -332,11 +417,9 @@ CONTAINS
       iyp = iy + 1
       DO ix = -1, nx + 1
         ixp = ix + 1
-
         cs_v(ix,iy) = cs(ix,iy) * cv(ix,iy) + cs(ixp,iy) * cv(ixp,iy) &
             +   cs(ix,iyp) * cv(ix,iyp) + cs(ixp,iyp) * cv(ixp,iyp)
         cs_v(ix,iy) = 0.25_num * cs_v(ix,iy) / cv_v(ix,iy)
-
       END DO
     END DO
 
@@ -367,6 +450,25 @@ CONTAINS
         ! Force on node is alpha*dv*ds but store only alpha and convert to force
         ! when needed.  
         alpha1(ix,iy) = edge_viscosity()
+      END DO
+    END DO
+
+
+    DO iy = -1, ny + 2
+      DO ix = -1, nx + 2
+        rmin = MAX(rho(ix,iy), none_zero)
+        b2 = bx(ix,iy)**2 + bz(ix,iy)**2
+        cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + gamma_boris(ix,iy) * b2) / rmin)
+      END DO
+    END DO
+
+    DO iy = -1, ny + 1
+      iyp = iy + 1
+      DO ix = -1, nx + 1
+        ixp = ix + 1
+        cs_v(ix,iy) = cs(ix,iy) * cv(ix,iy) + cs(ixp,iy) * cv(ixp,iy) &
+            +   cs(ix,iyp) * cv(ix,iyp) + cs(ixp,iyp) * cv(ixp,iyp)
+        cs_v(ix,iy) = 0.25_num * cs_v(ix,iy) / cv_v(ix,iy)
       END DO
     END DO
 
@@ -522,11 +624,11 @@ CONTAINS
 
     END FUNCTION edge_viscosity
 
-  END SUBROUTINE shock_viscosity
+  END SUBROUTINE edge_shock_viscosity
 
 
 
-  SUBROUTINE shock_heating
+  SUBROUTINE edge_shock_heating
 
     REAL(num) :: a1, a2, a3, a4
 
@@ -564,16 +666,16 @@ CONTAINS
 
     visc_heat = MAX(visc_heat, 0.0_num)
 
-  END SUBROUTINE shock_heating
+  END SUBROUTINE edge_shock_heating
 
 
 
   SUBROUTINE b_field_and_cv1_update
 
-    REAL(num) :: vxb, vxbm, vyb, vybm, vzb, vzbm
-    REAL(num) :: dvxdx, dvydx, dvzdx
-    REAL(num) :: dvxdy, dvydy, dvzdy
-    REAL(num) :: dv
+    REAL(num) :: vxb, vxbm, vyb, vybm, dvxdx, dvydy, dv
+#ifdef CAUCHY
+    REAL(num) :: dvxdy, dvydx, dvzdx, vzb, vzbm, dvzdy
+#endif
 
     DO iy = -1, ny + 2
       iym = iy - 1
@@ -594,7 +696,7 @@ CONTAINS
 
         dv = (dvxdx + dvydy) * dt2
         cv1(ix,iy) = cv(ix,iy) * (1.0_num + dv)
-
+#ifdef CAUCHY
         ! vx at By(i,j)
         vxb  = (vx(ix ,iy ) + vx(ixm,iy )) * 0.5_num
         ! vx at By(i,j-1)
@@ -626,8 +728,21 @@ CONTAINS
         bx1(ix,iy) = (bx1(ix,iy) + w3 * dt2) / (1.0_num + dv)
         by1(ix,iy) = (by1(ix,iy) + w4 * dt2) / (1.0_num + dv)
         bz1(ix,iy) = (bz1(ix,iy) + w5 * dt2) / (1.0_num + dv)
+#endif
       END DO
     END DO
+
+#ifndef CAUCHY
+    vx1(:,:) = vx(:,:)
+    vy1(:,:) = vy(:,:)
+    vz1(:,:) = vz(:,:)
+    
+    predictor_step = .TRUE.
+    dt = 0.5_num * dt
+    CALL eulerian_remap(step)
+    dt = 2.0_num * dt
+    predictor_step = .FALSE. 
+#endif
 
   END SUBROUTINE b_field_and_cv1_update
 
@@ -642,10 +757,8 @@ CONTAINS
     ! Assumes all variables are defined at the same point. Be careful with
     ! setting 'dt_multiplier' if you expect massive changes across cells.
 
-    REAL(num) :: vxbm, vxbp, avxm, avxp, dvx, ax
-    REAL(num) :: vybm, vybp, avym, avyp, dvy, ay
-    REAL(num) :: cs2, c_visc2, area, rho0, length
-    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dt2, dth_local
+    REAL(num) :: cs2, c_visc2, rho0, length
+    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dth_local
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
     REAL(num) :: dt_fudge = 1e-4_num
@@ -680,10 +793,10 @@ CONTAINS
         IF (boris .AND. (w2 .GE. va_max2)) THEN
           gamma_boris(ix,iy) = 1.0_num / (1.0_num + w2 / va_max2)
         END IF
-        cs2 = gamma_boris(ix,iy) * (gamma * pressure(ix,iy) +  w1) / rho0
+        cs2 =  (gamma * pressure(ix,iy) +  gamma_boris(ix,iy) * w1) / rho0
 
         !effective speed from viscous pressure
-        c_visc2 = gamma_boris(ix,iy) * p_visc(ix,iy) / rho0
+        c_visc2 = p_visc(ix,iy) / rho0
 
         ! length based on simple DYNA2D estimates
         length = dxb(ix) * dyb(iy) / SQRT(dxb(ix)**2 + dyb(iy)**2)
@@ -691,28 +804,6 @@ CONTAINS
         ! Find ideal MHD CFL limit for Lagrangian step
         dt1 = length / (SQRT(c_visc2) + SQRT(cs2 + c_visc2))
         dt_local = MIN(dt_local, dt1)
-
-        ! Now find dt for remap step
-        ax = 0.5_num * dyb(iy)
-        ay = 0.5_num * dxb(ix)
-        vxbm = (vx(ixm,iy ) + vx(ixm,iym)) * ax
-        vxbp = (vx(ix ,iy ) + vx(ix ,iym)) * ax
-        vybm = (vy(ix ,iym) + vy(ixm,iym)) * ay
-        vybp = (vy(ix ,iy ) + vy(ixm,iy )) * ay
-
-        dvx = ABS(vxbp - vxbm)
-        dvy = ABS(vybp - vybm)
-        avxm = ABS(vxbm)
-        avxp = ABS(vxbp)
-        avym = ABS(vybm)
-        avyp = ABS(vybp)
-
-        area = dxb(ix) * dyb(iy)
-        dt1 = area / MAX(avxm, avxp, dvx, 1.e-10_num * area)
-        dt2 = area / MAX(avym, avyp, dvy, 1.e-10_num * area)
-
-        ! Fix dt for remap step
-        dt_local = MIN(dt_local, dt1, dt2)
 
         ! Note resistive limits assumes uniform resistivity hence cautious
         ! factor 0.2
@@ -868,7 +959,7 @@ CONTAINS
 
   SUBROUTINE resistive_effects
 
-    REAL(num) :: jx1, jx2, jy1, jy2, jz1
+    REAL(num) :: jx1, jx2, jy1, jy2, jz1, local_heating
 #ifdef FOURTHORDER
     REAL(num) :: dt6, half_dt
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: k1x, k2x, k3x, k4x
@@ -901,13 +992,31 @@ CONTAINS
       iym = iy - 1
       DO ix = 1, nx
         ixm = ix - 1
-        energy(ix,iy) = energy(ix,iy) &
-            + (curlb(ix ,iy ) + curlb(ixm,iy )  &
-            +  curlb(ix ,iym) + curlb(ixm,iym)) &
+        local_heating = (curlb(ix ,iy ) + curlb(ixm,iy )  &
+            + curlb(ix ,iym) + curlb(ixm,iym)) &
             * dt / (4.0_num * rho(ix,iy))
+
+        ohmic_dep(ix,iy) = ohmic_dep(ix,iy) + local_heating
+        
+        energy(ix,iy) = energy(ix,iy) + local_heating 
       END DO
     END DO
 
+    IF (cooling_term) THEN 
+      DO iy = 1, ny
+        DO ix = 1, nx
+          local_heating = (curlb(ix ,iy ) + curlb(ixm,iy )  &
+              + curlb(ix ,iym) + curlb(ixm,iym)) &
+              * dt / (4.0_num * rho(ix,iy))
+          cool_term_b(ix,iy) = alpha_av * local_heating  &
+            + (1.0_num - alpha_av) * cool_term_b(ix,iy)
+
+          energy(ix,iy) = energy(ix,iy) - cool_term_b(ix,iy)
+        END DO
+      END DO
+    END IF
+
+    energy = MAX(energy, 0.0_num)
     CALL energy_bcs
 
     DO iy = 0, ny

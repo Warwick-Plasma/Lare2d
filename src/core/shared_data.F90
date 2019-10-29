@@ -49,7 +49,7 @@ MODULE constants
   REAL(num), PARAMETER :: largest_number = HUGE(1.0_num)
   REAL(num), PARAMETER :: third = 1.0_num / 3.0_num, sixth = 1.0_num / 6.0_num
   INTEGER, PARAMETER :: BC_PERIODIC = 1, BC_USER = 2
-  INTEGER, PARAMETER :: BC_OPEN = 3, BC_DRIVEN = 4
+  INTEGER, PARAMETER :: BC_OPEN = 3
 
   ! IC codes
   ! This is a bitmask, remember that
@@ -94,8 +94,10 @@ MODULE shared_data
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: jx_r, jy_r, jz_r
 
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: delta_ke, p_visc
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: cool_term_b, cool_term_v
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_dep, ohmic_dep
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: eta, cv, cv1
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: lambda_i
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: lambda_i, visc3
 
   REAL(num), DIMENSION(:), ALLOCATABLE :: xc, xb, dxb, dxc, xb_global
   REAL(num), DIMENSION(:), ALLOCATABLE :: yc, yb, dyb, dyc, yb_global
@@ -124,7 +126,10 @@ MODULE shared_data
   INTEGER :: ybc_min, ybc_max, iy, iym, iyp, ypass
   INTEGER :: restart_snapshot
   INTEGER :: peak_substeps = 0, n_s_stages
+  LOGICAL :: driven_boundary = .FALSE.
+  LOGICAL :: use_viscous_damping
   LOGICAL :: x_stretch, y_stretch
+  LOGICAL :: predictor_step
   LOGICAL :: resistive_mhd, any_open, rke, hall_mhd
   LOGICAL :: restart, heat_flux_limiter, force_exact_time_outputs
 
@@ -148,6 +153,10 @@ MODULE shared_data
 
   ! Damping boundary variables
   LOGICAL :: damping
+
+  ! Include exponentially moving average cooling term
+  LOGICAL :: cooling_term
+  REAL(num) :: alpha_av
 
   ! Boris Alfven speed limiter
   LOGICAL :: boris
