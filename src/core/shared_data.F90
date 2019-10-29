@@ -97,7 +97,7 @@ MODULE shared_data
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: cool_term_b, cool_term_v
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: visc_dep, ohmic_dep
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: eta, cv, cv1
-  REAL(num), DIMENSION(:,:), ALLOCATABLE :: lambda_i
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: lambda_i, visc3
 
   REAL(num), DIMENSION(:), ALLOCATABLE :: xc, xb, dxb, dxc, xb_global
   REAL(num), DIMENSION(:), ALLOCATABLE :: yc, yb, dyb, dyc, yb_global
@@ -127,6 +127,7 @@ MODULE shared_data
   INTEGER :: restart_snapshot
   INTEGER :: peak_substeps = 0, n_s_stages
   LOGICAL :: driven_boundary = .FALSE.
+  LOGICAL :: use_viscous_damping
   LOGICAL :: x_stretch, y_stretch
   LOGICAL :: predictor_step
   LOGICAL :: resistive_mhd, any_open, rke, hall_mhd

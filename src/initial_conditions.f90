@@ -89,6 +89,18 @@ CONTAINS
     ! Must have ybc_min = BC_USER for this to work
     IF (IAND(initial, IC_NEW) /= 0) CALL potential_field
 
+    ! example use of visc3  - add viscous damping at top
+    IF (use_viscous_damping) THEN
+      width = length_x / 10.0_num
+      centre = 0.4_num * length_x + width
+      amp = 1.e2_num
+      DO iy = -1, ny + 1
+       DO ix = -1, nx + 1
+          visc3(ix,iy) = visc3(ix,iy) + amp * (1.0_num + TANH((ABS(xb(ix)) - centre) / width)) 
+        END DO
+      END DO
+    END IF
+
     DEALLOCATE(temperature)
 
   END SUBROUTINE set_initial_conditions

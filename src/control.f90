@@ -69,6 +69,9 @@ CONTAINS
     ! Shock viscosities as detailed in manual - they are dimensionless
     visc1 = 0.1_num
     visc2 = 0.0_num
+    ! \nabla^2 v damping 
+    ! visc3 is an array set initial conditions
+    use_viscous_damping = .TRUE.
 
     ! Set these constants to manually override the domain decomposition.
     ! If either constant is set to zero then the code will try to automatically
@@ -156,11 +159,6 @@ CONTAINS
 
     !If any user boundaries are driven set this flag
     driven_boundary = .TRUE.
-
-    ! Set to true to turn on routine for damped boundaries.
-    ! These routines are in boundary.f90 and you should check that they
-    ! actually do what you want.
-    damping = .FALSE.
 
     ! Control Boris scheme for limiting the Alfven speed
     ! Logical boris to turn on/off
