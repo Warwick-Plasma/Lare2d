@@ -149,10 +149,10 @@ CONTAINS
     ! BC_PERIODIC - Periodic boundary conditions
     ! BC_OPEN     - Riemann far-field characteristic boundary conditions
     ! BC_USER     - User boundary conditions specified in boundary.f90
-    xbc_min = BC_OPEN
-    xbc_max = BC_OPEN
-    ybc_min = BC_PERIODIC
-    ybc_max = BC_PERIODIC
+    xbc_min = BC_USER
+    xbc_max = BC_USER
+    ybc_min = BC_USER
+    ybc_max = BC_USER
 
     !If any user boundaries are driven set this flag
     driven_boundary = .TRUE.

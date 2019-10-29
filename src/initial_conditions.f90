@@ -86,6 +86,7 @@ CONTAINS
     CALL add_probe(0.0_num, 0.0_num)
 
     ! An example of fixing the initial field to a potential field based on specifying the lower boundary
+    ! Must have ybc_min = BC_USER for this to work
     IF (IAND(initial, IC_NEW) /= 0) CALL potential_field
 
     DEALLOCATE(temperature)
