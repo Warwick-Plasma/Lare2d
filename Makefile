@@ -131,8 +131,8 @@ TARGET = lare2d
 # Set pre-processor defines
 DEFINES := $(DEFINE)
 
-# The following are a list of pre-processor defines which can be added to
-# the above line modifying the code behaviour at compile time.
+# The following are a list of pre-processor defines which can be activated by 
+# uncommenting some of the lines below.
 
 # Uncomment to use Cauchy solution for predictor step B-field, othwerwise advective prediction
 #DEFINES += $(D)CAUCHY
