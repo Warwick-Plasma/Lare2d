@@ -35,7 +35,7 @@ CONTAINS
   SUBROUTINE set_initial_conditions
 
     REAL(num), DIMENSION(:,:), ALLOCATABLE :: temperature
-    REAL(num) :: xi_v
+    REAL(num) :: xi_v, amp, centre, width
 
     ! Below are all the variables which must be defined and their sizes
 

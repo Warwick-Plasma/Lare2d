@@ -12,7 +12,7 @@ MODULE boundary
   IMPLICIT NONE
 
   REAL(num), DIMENSION(:), ALLOCATABLE :: drive_axis
-  REAL(num), DIMENSION(:), ALLOCATABLE :: drive_phase, drive_amp
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: drive_phase, drive_amp
   INTEGER :: drive_nel
 
   SAVE
