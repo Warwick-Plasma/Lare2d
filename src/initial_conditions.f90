@@ -61,7 +61,7 @@ CONTAINS
     DO ix = -1,nx+2,1
        DO iy = -1,ny+2,1
          IF (eos_number /= EOS_IDEAL) THEN         
-           xi_v = get_neutral(energy(ix,iy), rho(ix,iy))
+           xi_v = get_neutral(temperature(ix,iy), rho(ix,iy))
          ELSE  
            IF (neutral_gas) THEN
              xi_v = 1.0_num
