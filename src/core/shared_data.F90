@@ -151,9 +151,6 @@ MODULE shared_data
   ! Equation of state
   INTEGER :: eos_number = EOS_IDEAL
 
-  ! Damping boundary variables
-  LOGICAL :: damping
-
   ! Include exponentially moving average cooling term
   LOGICAL :: cooling_term
   REAL(num) :: alpha_av
