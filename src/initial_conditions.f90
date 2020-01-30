@@ -93,7 +93,7 @@ CONTAINS
     IF (use_viscous_damping) THEN
       width = length_x / 10.0_num
       centre = 0.4_num * length_x + width
-      amp = 1.e2_num
+      amp = 1.0_num   !adjust this value as required
       DO iy = -1, ny + 1
        DO ix = -1, nx + 1
           visc3(ix,iy) = visc3(ix,iy) + amp * (1.0_num + TANH((ABS(xb(ix)) - centre) / width)) 
@@ -113,17 +113,12 @@ CONTAINS
       REAL(num) :: w, errmax, error, residual, fractional_error
       REAL(num) :: by_min, by_min_local
       REAL(num) :: by_max, by_max_local
-      REAL(num) :: dx1, dy1
       INTEGER :: loop, x1, y1, redblack
       LOGICAL :: converged
 
       ALLOCATE(phi(-1:nx+2,-1:ny+2))
       phi = 0.0_num
       CALL phi_mpi
-
-      ! Only works for uniform x,y grids - no strecthed grids
-      dx1 = (REAL(nx_global, num) / length_x)**2
-      dy1 = (REAL(ny_global, num) / length_y)**2
 
       converged = .FALSE.
       w = 2.0_num / (1.0_num + SIN(pi / REAL(nx_global,num)))
@@ -142,9 +137,11 @@ CONTAINS
             DO ix = x1, nx, 2
               ixm = ix - 1
               ixp = ix + 1
-              residual = (((phi(ixp,iy) - 2.0_num * phi(ix,iy)) + phi(ixm,iy)) * dx1 &
-                       + ((phi(ix,iyp) - 2.0_num * phi(ix,iy)) + phi(ix,iym)) * dy1) &
-                       / 2.0_num / (dx1 + dy1)
+              residual = &
+                  ((phi(ixp,iy) - phi(ix,iy))/dxc(ix) - (phi(ix,iy) - phi(ixm,iy))/dxc(ixm)) / dxb(ix) &
+                + ((phi(ix,iyp) - phi(ix,iy))/dyc(iy) - (phi(ix,iy) - phi(ix,iym))/dyc(ixm)) / dyb(iy)
+              residual = residual / ((1.0_num/dxc(ix) +1.0_num/dxc(ixm))/dxb(ix) &
+                                  +  (1.0_num/dyc(iy) +1.0_num/dyc(iym))/dyb(iy))
               phi(ix,iy) = phi(ix,iy) + w * residual 
               error = ABS(residual) 
               errmax = MAX(errmax, error)
