@@ -117,7 +117,7 @@ CONTAINS
         flux(ixp,iy) = flux(ixp,iy) + fc / dxb(ix)
 
         ! Y flux
-        bxf = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iym) + bx(ixm,iym))
+        bxf = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iyp) + bx(ixm,iyp))
         bzf = 0.5_num * (bz(ix,iy) + bz(ix,iyp))
         modb = by(ix,iy)**2 + bxf**2 + bzf**2 + min_b
 
