@@ -122,7 +122,7 @@ CONTAINS
     REAL(num), INTENT(IN), DIMENSION(-1:,-1:) :: temperature
     REAL(num), INTENT(OUT), DIMENSION(-1:,-1:) :: flux
     INTEGER :: ix, ixp, ixm
-    REAL(num) :: tb, tg, fc_sp, rho_b
+    REAL(num) :: tb, tg, fc_sp
     REAL(num) :: tg_a, tb_p, tb_m
     REAL(num) :: modb
     REAL(num) :: byf, bxf, bzf
