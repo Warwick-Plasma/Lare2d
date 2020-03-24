@@ -8,7 +8,7 @@ MODULE conduct
 
   PRIVATE
 
-  PUBLIC :: conduct_heat
+  PUBLIC :: conduct_heat, calc_s_stages
 
   REAL(num), PARAMETER :: pow = 2.5_num
   REAL(num), PARAMETER :: min_b = 1.0e-6_num
@@ -16,14 +16,67 @@ MODULE conduct
 CONTAINS
 
   !****************************************************************************
+  ! Subroutine implementing Braginskii parallel thermal conduction.
+  ! Notation and algorithm in Appendix of Manual
+  !****************************************************************************
+
+  SUBROUTINE conduct_heat
+
+    ALLOCATE(larsen_factor(0:nx,0:ny))
+    CALL calc_s_stages(.FALSE.)
+    CALL heat_conduct_sts2
+    DEALLOCATE(larsen_factor)
+
+  END SUBROUTINE conduct_heat
+
+
+  !****************************************************************************
   ! Subroutine calculating the number of stages needed for the RKL2
   !****************************************************************************
 
-  SUBROUTINE s_stages
+  SUBROUTINE calc_s_stages(lagrangian_call)
 
+    LOGICAL, INTENT(IN) :: lagrangian_call
     REAL(num) :: stages, dt_parab, dt1, dt2
-    REAL(num) :: gm1, temp
+    REAL(num) :: q_fs, q_fs2, q_spx, q_spy, q_sp2
+    REAL(num) :: gm1, temp, kappa1
     INTEGER :: n_s_stages_local
+
+    ! Make sure arrays are allocated if calling this routine just to determine
+    ! dt from the lagrangian setp
+    IF (lagrangian_call) ALLOCATE(larsen_factor(0:nx,0:ny))
+
+    DO iy=-1,ny+2
+      DO ix=-1,nx+2
+        temperature(ix,iy) = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) &
+            * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
+      ENDDO
+    ENDDO
+
+    ! Include flux limiting through a larson factor correction to the
+    ! conductivity
+      DO iy = 0, ny
+        iym = iy - 1
+        iyp = iy + 1
+        DO ix = 0, nx
+          ixm = ix - 1
+          ixp = ix + 1
+          temp = temperature(ix,iy)**pow
+          q_fs = flux_limiter * 42.85_num * rho(ix,iy) &  ! 42.85 = SQRT(m_i/m_e)
+              * temperature(ix,iy)**1.5_num
+          q_fs2 = q_fs**2
+          q_spx = - kappa_0 * temp &
+              * (temperature(ixp,iy) - temperature(ixm,iy)) &
+              * 0.5_num / dxb(ix)
+          q_spy = - kappa_0 * temp &
+              * (temperature(ix,iyp) - temperature(ix,iym)) &
+              * 0.5_num / dyb(iy)
+          q_sp2 = q_spx**2 + q_spy**2
+          larsen_factor(ix,iy) = q_fs / SQRT(q_fs2 + q_sp2)
+        END DO
+      END DO
+
+    IF (.NOT. heat_flux_limiter) larsen_factor = 1.0_num
 
     dt_parab = 1.e10_num
     gm1 = 0.5_num * (gamma - 1.0_num)
@@ -34,7 +87,8 @@ CONTAINS
         temp = gm1 * (2.0_num - xi_n(ix,iy)) &
             *(energy(ix,iy)-(1.0_num - xi_n(ix,iy))&
             *ionise_pot)
-        temp = gm1 * rho(ix,iy) / (kappa_0 * temp**pow)
+        kappa1 = kappa_0 * larsen_factor(ix,iy)
+        temp = gm1 * rho(ix,iy) / (kappa1 * temp**pow)
         dt1 = temp * dxb(ix)**2
         dt2 = temp * dyb(iy)**2
         dt_parab = MIN(dt_parab, dt1, dt2)
@@ -53,7 +107,9 @@ CONTAINS
     CALL MPI_ALLREDUCE(n_s_stages_local, n_s_stages, 1, MPI_INTEGER, MPI_MAX, &
         comm, errcode)
 
-  END SUBROUTINE s_stages
+    IF (lagrangian_call) DEALLOCATE(larsen_factor)
+
+  END SUBROUTINE calc_s_stages
 
 
 
@@ -68,11 +124,8 @@ CONTAINS
     INTEGER :: ix, ixp, ixm
     REAL(num) :: tb, tg, fc_sp, rho_b
     REAL(num) :: tg_a, tb_p, tb_m
-    REAL(num) :: fc_sa, fc, modb, hfl
-    REAL(num) :: byf, bxf, bzf, b_component
-
-    hfl = 0.0_num
-    IF (heat_flux_limiter) hfl = 1.0_num
+    REAL(num) :: modb
+    REAL(num) :: byf, bxf, bzf
 
     flux=0.0_num
     DO iy = 0, ny
@@ -102,19 +155,11 @@ CONTAINS
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dyc(iy) + dyc(iym))
 
-        fc_sp = - kappa_0 * tb**pow / modb &
+        fc_sp = - larsen_factor(ix,iy) * kappa_0 * tb**pow / modb &
             * (bx(ix ,iy) * (tg * bx(ix ,iy) + tg_a * byf) + tg * min_b)
 
-        ! Saturated Conductive Flux
-        rho_b = 0.5_num * (rho(ix,iy) + rho(ixp,iy))
-        b_component = SQRT((bx(ix,iy)**2 + min_b) / modb)
-        fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  
-
-        ! Conductive Flux Limiter. 
-        fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
-
-        flux(ix,iy) = flux(ix,iy) - fc / dxb(ix)
-        flux(ixp,iy) = flux(ixp,iy) + fc / dxb(ix)
+        flux(ix,iy) = flux(ix,iy) - fc_sp / dxb(ix)
+        flux(ixp,iy) = flux(ixp,iy) + fc_sp / dxb(ix)
 
         ! Y flux
         bxf = 0.25_num * (bx(ix,iy) + bx(ixm,iy) + bx(ix,iyp) + bx(ixm,iyp))
@@ -134,37 +179,17 @@ CONTAINS
         ! Uses centred difference on averaged values, so likely very smoothed
         tg_a = (tb_p - tb_m) / (dxc(ix) + dxc(ixm))
 
-        fc_sp = - kappa_0 * tb**pow / modb &
+        fc_sp = - larsen_factor(ix,iy) * kappa_0 * tb**pow / modb &
             * (by(ix,iy ) * (tg * by(ix,iy ) + tg_a * bxf) + min_b * tg)
 
-        ! Saturated Conductive Flux
-        rho_b = 0.5_num * (rho(ix,iy) + rho(ix,iyp))
-        b_component = SQRT((by(ix,iy)**2 + min_b) / modb)
-        fc_sa = 42.85_num * b_component * flux_limiter * rho_b * tb**1.5_num  
-
-        ! Conductive Flux Limiter
-        fc = (1.0_num - hfl) * fc_sp + hfl * fc_sp * fc_sa / MAX(ABS(fc_sp) + fc_sa, none_zero)
-
-        flux(ix,iy) = flux(ix,iy) - fc / dyb(iy)
-        flux(ix,iyp) = flux(ix,iyp) + fc / dyb(iy)
+        flux(ix,iy) = flux(ix,iy) - fc_sp / dyb(iy)
+        flux(ix,iyp) = flux(ix,iyp) + fc_sp / dyb(iy)
       END DO
     END DO
 
   END SUBROUTINE heat_flux
 
 
-
-  !****************************************************************************
-  ! Subroutine implementing Braginskii parallel thermal conduction.
-  ! Notation and algorithm in Appendix of Manual
-  !****************************************************************************
-
-  SUBROUTINE conduct_heat
-
-    CALL s_stages
-    CALL heat_conduct_sts2
-
-  END SUBROUTINE conduct_heat
 
 
   !****************************************************************************

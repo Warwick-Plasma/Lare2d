@@ -25,6 +25,7 @@ MODULE lagran
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: fx_visc, fy_visc, fz_visc
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: bx0, by0, bz0
   REAL(num), DIMENSION(:,:), ALLOCATABLE :: qx, qy, qz
+  REAL(num), DIMENSION(:,:), ALLOCATABLE :: energy0, delta_energy
 
 CONTAINS
 
@@ -61,6 +62,8 @@ CONTAINS
     ALLOCATE(flux_y(0:nx,0:ny))
     ALLOCATE(flux_z(0:nx,0:ny))
     ALLOCATE(curlb (0:nx,0:ny))
+    ALLOCATE(energy0(-1:nx+2,-1:ny+2))
+    ALLOCATE(delta_energy(-1:nx+2,-1:ny+2))
 
     DO iy = -1, ny + 2
       iym = iy - 1
@@ -132,8 +135,19 @@ CONTAINS
       dt = actual_dt
     END IF
 
-    IF (conduction) CALL conduct_heat
-    IF (radiation) CALL rad_losses
+    delta_energy = 0.0_num
+    IF (conduction) THEN
+      energy0 = energy
+      CALL conduct_heat
+      delta_energy = energy0 - energy
+    END IF
+    IF (radiation) THEN
+      energy0 = energy
+      CALL rad_losses
+      delta_energy = delta_energy + energy0 - energy
+    END IF
+    energy = energy + delta_energy
+    energy = MAX(energy, 0.0_num)
 
     CALL predictor_corrector_step
 
@@ -141,6 +155,7 @@ CONTAINS
     DEALLOCATE(visc_heat, pressure, rho_v, cv_v, flux_x, flux_y, flux_z, curlb)
     DEALLOCATE(qx, qy, qz)
     DEALLOCATE(fx_visc, fy_visc, fz_visc)
+    DEALLOCATE(energy0, delta_energy)
 #ifndef CAUCHY
     DEALLOCATE(bx0, by0, bz0)
 #endif
@@ -758,7 +773,7 @@ CONTAINS
     ! setting 'dt_multiplier' if you expect massive changes across cells.
 
     REAL(num) :: cs2, c_visc2, rho0, length
-    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dth_local
+    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dth_local, ss_limit
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
     REAL(num) :: dt_fudge = 1e-4_num
@@ -891,6 +906,19 @@ CONTAINS
         nramp = nramp + 1
       END IF
 
+    END IF
+
+    IF (conduction) THEN
+      CALL calc_s_stages(.TRUE.)
+      ss_limit = 60
+      IF (n_s_stages >= ss_limit) THEN
+        dt  = dt  * REAL(2 * ss_limit**2   - 9, num) &
+                  / REAL(2 * n_s_stages**2 - 9, num)
+        dtr = dtr * REAL(2 * ss_limit**2   - 9, num) &
+                  / REAL(2 * n_s_stages**2 - 9, num)
+        dth = dth * REAL(2 * ss_limit**2   - 9, num) &
+                  / REAL(2 * n_s_stages**2 - 9, num)
+      END IF
     END IF
 
     time = time + dt
