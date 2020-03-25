@@ -423,7 +423,7 @@ CONTAINS
     DO iy = -1, ny + 2
       DO ix = -1, nx + 2
         rmin = MAX(rho(ix,iy), none_zero)
-        b2 = by(ix,iym)**2 + bz(ix,iy)**2
+        b2 = bx1(ix,iy)**2 + by1(ix,iy)**2 + bz1(ix,iy)**2
         cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + gamma_boris(ix,iy) * b2) / rmin)
       END DO
     END DO
@@ -468,26 +468,7 @@ CONTAINS
       END DO
     END DO
 
-
-    DO iy = -1, ny + 2
-      DO ix = -1, nx + 2
-        rmin = MAX(rho(ix,iy), none_zero)
-        b2 = bx(ix,iy)**2 + bz(ix,iy)**2
-        cs(ix,iy) = SQRT((gamma * pressure(ix,iy) + gamma_boris(ix,iy) * b2) / rmin)
-      END DO
-    END DO
-
-    DO iy = -1, ny + 1
-      iyp = iy + 1
-      DO ix = -1, nx + 1
-        ixp = ix + 1
-        cs_v(ix,iy) = cs(ix,iy) * cv(ix,iy) + cs(ixp,iy) * cv(ixp,iy) &
-            +   cs(ix,iyp) * cv(ix,iyp) + cs(ixp,iyp) * cv(ixp,iyp)
-        cs_v(ix,iy) = 0.25_num * cs_v(ix,iy) / cv_v(ix,iy)
-      END DO
-    END DO
-
-      ! Edge viscosity for triangle 2
+    ! Edge viscosity for triangle 2
     DO iy = 0, ny + 1
       iym = iy - 1
       iyp = iy + 1

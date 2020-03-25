@@ -269,10 +269,10 @@ $\Delta \mathbf{v}_{a} $ is the same difference but for cell $(ix+1,iy)$ and $\D
 $(ix-1,iy)$. 
 
 When this viscosity is applied to MHD problems we simply replace the sound speed by an effective fast speed $c_f$
-defined through $c_f^2=c_s^2 + v_A^2$ where $v_A$ is the local Alfv\'en speed defined only using the component of magnetic field
-perpendicular to the cell edge. Often for MHD problems it is
+defined through $c_f^2=c_s^2 + v_A^2$ where $v_A$ is the local Alfv\'en speed defined at the cell centre. 
+Often for MHD problems it is
 better to turn off the $\Delta \hat{\mathbf{v}}_i . \mathbf{S}_i<0$ and always apply the viscosity on expanding
-cells as well. There is no good justification for doing this but it does always seem to give better results!
+cells as well. There is no good justification for doing this but it does often seem to give better results!
 If you want to do this it is controlled through the Makefile.
 
 \subsection{Uniform Viscosity}
@@ -281,8 +281,9 @@ through an incompressible viscosity term added to the momentum equation.
 \[
 \frac{\partial\mathbf{v}}{\partial t}=\nu \nabla^2 \mathbf{v}
 \]
-Here $\nu=nu(\mathbf{r})$ is a user specified spatially dependent viscosity. This can be useful for applying small backgroun viscosity
-or adding damping to boundary conditions depending on the form of $\nu=nu(\mathbf{r})$ specified in the initial conditions.
+Here $\nu=\nu(\mathbf{r})$ is a user specified spatially dependent viscosity. This can be useful for applying small 
+backgroun viscosity
+or adding damping to boundary conditions depending on the form of $\nu=\nu(\mathbf{r})$ specified in the initial conditions.
 This is purely a damping term and there is no associated heating with the viscosity.
 
 \subsection{Boundary Conditions}
@@ -291,12 +292,14 @@ Boundary conditions can be set in {\tt control.f90}. The preset routines are {\t
 precisely your imposed conditions - take care in getting the grid staggering right. Open boundary works on a 
 simplified far-field characteristic model. For this it is best to test on your problem, if fine then go ahead 
 and use. However if these do not work for you problem, they are not guaranteed to work well for all conditions, 
-then you may have to resort to coding up your own conditions in {\tt boundary.f90} and using {\tt user} as your choice for boundaries.
+then you may have to resort to coding up your own conditions in {\tt boundary.f90} and using {\tt user} as your 
+choice for boundaries.
 
-All choices of boundary also allow damping to be applied near the boundary through $\nu=nu(\mathbf{r})$. 
+All choices of boundary also allow damping to be applied near the boundary through $\nu=\nu(\mathbf{r})$. 
 This is entirely user configurable and 
 requires that the appropriate boundaries are treated as you prefer and the flag {\tt use\_viscous\_damping = .TRUE.} in the
-{\tt control.f90} file.
+{\tt control.f90} file. For {\it Lare2d} there is an example driven boundary which requires {\tt driven\_boundary = .TRUE.}
+to work. This is just as an example and you must change this in the boundary routines to match your problem.
 
 \section{Hall MHD}
 The 2D version {\it Lare2d} comes with an input deck option to run using Hall MHD. In Hall MHD the only difference 
@@ -452,7 +455,7 @@ in the open boundary routine source code.
 \section{Alfv\'en speed limiter}
 The file \texttt{control.f90} now includes an option to turn on a limiter which reduces the net force used
 in the Lagrangian step if the Alfv\'en speed exceeds some user specified value \texttt{va\_max}. The background
-to this is most clearly explained in \cite{gombosi:2002}. There is only applied to the 
+to this is most clearly explained in \cite{gombosi:2002}. This is only applied to the 
 $\mathbf{j}\times \mathbf{B}$ term. The velocity used to trigger this is in {\it LareXd} internal units. If
 you use these flags experiment first to get a feel for how they work and read \cite{gombosi:2002}.
 
@@ -1085,11 +1088,14 @@ Firstly the conduction is written in terms of the heat flux vector $\vec{q}$ so 
 \]
 Then the specific energy density in each cell is updated using super-stepping \cite{Meyer:2012eb}
 
-It is possible that sufficient heating occurs so that $qx$ exceeds the free streaming heat flux $q_f=v_{the} k_B T$. 
-In this case the Braginskii flux needs to be limited. This is done by calculating the components of the Braginskii 
-(Spitzer-Harn) heat flux, e.g. $qsh_x$ and the free streaming limit $q_f$ and then finding the non-linear limited flux through
+It is possible that sufficient heating occurs so that $qx$ exceeds the free streaming heat flux 
+$q_f=v_{the} k_B T$. 
+In this case the Braginskii flux needs to be limited. This is done by calculating the components of the 
+Braginskii 
+(Spitzer-Harn) heat flux, e.g. $qsh_x$ and the free streaming limit $q_f$ and 
+then finding the non-linear limited flux through a Larsen limiter.
 \[
-q_{nl} = \frac{1}{(1/q_sh + 1/q_f)}
+q_{nl} = \frac{1}{\sqrt{(1/q_{sh}^2 + 1/q_f^2)}}
 \]
 
 Experience from measured heat fluxes in laser plasma experiments suggest that actually the heat flux must be limited 

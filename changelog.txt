@@ -3,12 +3,18 @@ Version 4.0 - November 2019
 ---------------------------
 This is a major update. Tested at Warwick but likely to still be untested options. Please report bugs.
 1. Added an option to calculate an intiial potential field
-2. Added Makefile option to use advective predictor step (my the default) instead of Cauchy solution. This will ensure any initial potential field is an exact numerical equilibrium.
-3. Addd a cooling term based on moving exponential avergae - controlled from control.f90
-4. Moved radiative losses to base src directory. Includes Townsend exact intergration and a user defined heating function.
+2. Added Makefile option to use advective predictor step (now the default) instead of Cauchy solution. 
+This will ensure any initial potential field is an exact numerical equilibrium.
+3. Added a cooling term based on moving exponential avergae - controlled from control.f90
+4. Moved radiative losses to base src directory. Includes Townsend exact intergration and a user defined 
+heating function.
 5. Moved diagnostics.f90 into core and should only be edited if you're sure you know what you are doing.
 6. Removed option for damp_boundaries - see visc3 below.
-7. Added a simple (visc3 * \nabla^2 v) damping term. visc3 can vary with space and is set in initial conditions. Useful for uniform background damping or increased damping near boundaries.
+7. Added a simple (visc3 * \nabla^2 v) damping term. visc3 can vary with space and is set in initial 
+conditions. Useful for uniform background damping or increased damping near boundaries. This viscosity 
+doesn't contribute to heating.
+8. Changed the thermal flux limiter to a Larsen limiter. This means it can now be included in the 
+diffusive timestep stability limit and should improve runtime.
 
 
 Version 3.4 - June 2018
