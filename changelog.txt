@@ -1,5 +1,4 @@
-
-Version 4.0 - November 2019
+Version 4.0 - March 2020
 ---------------------------
 This is a major update. Tested at Warwick but likely to still be untested options. Please report bugs.
 1. Added an option to calculate an intiial potential field
