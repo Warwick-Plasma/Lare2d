@@ -164,7 +164,6 @@ CONTAINS
       iyp = iy + 1
       DO ix = -1, nx + 1
         ixp = ix + 1
-
         ! Vertex density before remap
         rho_v(ix,iy) = rho1(ix,iy) * cv1(ix,iy) &
             + rho1(ixp,iy ) * cv1(ixp,iy ) &
@@ -176,6 +175,7 @@ CONTAINS
       END DO
     END DO
 
+    ! cv1 = vertex CV before remap
     DO iy = 0, ny
       iyp = iy + 1
       DO ix = 0, nx
@@ -183,10 +183,9 @@ CONTAINS
         flux(ix,iy) = cv1(ix,iy) + cv1(ixp,iy) + cv1(ix,iyp) + cv1(ixp,iyp)
       END DO
     END DO
-
-    ! cv1 = vertex CV before remap
     cv1(0:nx,0:ny) = flux(0:nx,0:ny) * 0.25_num
 
+    ! cv2 = vertex CV after remap
     DO iy = 0, ny
       iyp = iy + 1
       DO ix = 0, nx
@@ -194,38 +193,18 @@ CONTAINS
         flux(ix,iy) = cv2(ix,iy) + cv2(ixp,iy) + cv2(ix,iyp) + cv2(ixp,iyp)
       END DO
     END DO
-
-    ! cv2 = vertex CV after remap
     cv2(0:nx,0:ny) = flux(0:nx,0:ny) * 0.25_num
 
+    ! Vertex boundary velocity used in remap
     DO iy = 0, ny
       DO ix = -2, nx + 1
         ixp = ix + 1
         flux(ix,iy) = (vx1(ix,iy) + vx1(ixp,iy)) * 0.5_num
       END DO
     END DO
-
-    ! Vertex boundary velocity used in remap
     vx1(-2:nx+1,0:ny) = flux(-2:nx+1,0:ny)
 
-    ! Calculate vertex-centred lengths
-
-    DO iy = -1, ny + 2
-      DO ix = -1, nx + 2
-        ixm = ix - 1
-        ! dxb before remap
-        dxb1(ix,iy) = dxb(ix) + (vx1(ix,iy) - vx1(ixm,iy)) * dt
-      END DO
-    END DO
-
-    DO iy = -1, ny + 1
-      DO ix = -1, nx + 1
-        ixp = ix + 1
-        ! dxc before remap
-        dxc1(ix,iy) = 0.5_num * (dxb1(ix,iy) + dxb1(ixp,iy))
-      END DO
-    END DO
-
+    ! Mass flux out of vertex CV
     DO iy = 0, ny
       iyp = iy + 1
       DO ix = -1, nx
@@ -233,14 +212,12 @@ CONTAINS
         flux(ix,iy) = dm(ix,iy) + dm(ixp,iy) + dm(ix,iyp) + dm(ixp,iyp)
       END DO
     END DO
-
-    ! Mass flux out of vertex CV
     dm(-1:nx,0:ny) = flux(-1:nx,0:ny) * 0.25_num
 
+    ! Vertex density after remap
     DO iy = 0, ny
       DO ix = 0, nx
         ixm = ix - 1
-        ! Vertex density after remap
         rho_v1(ix,iy) = (rho_v(ix,iy) * cv1(ix,iy) &
             + dm(ixm,iy) - dm(ix,iy)) / cv2(ix,iy)
       END DO
