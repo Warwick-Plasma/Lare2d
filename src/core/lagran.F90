@@ -768,7 +768,8 @@ CONTAINS
     ! setting 'dt_multiplier' if you expect massive changes across cells.
 
     REAL(num) :: cs2, c_visc2, rho0, length
-    REAL(num) :: dxlocal, dt_local, dtr_local, dt1, dth_local, ss_limit
+    REAL(num) :: dxlocal, dt_local, dtr_local, dth_local, ss_limit
+    REAL(num) :: dt1, dt2, dt3, dt4
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
     REAL(num) :: dt_fudge = 1e-4_num
@@ -815,25 +816,30 @@ CONTAINS
         dt1 = length / (SQRT(c_visc2) + SQRT(cs2 + c_visc2))
         dt_local = MIN(dt_local, dt1)
 
+        ! Check no node moves more than one cell to allow remap
+        dt2 = MIN(dxb(ix) / MAX(ABS(vx(ix,iy)),none_zero), &
+              dyb(iy) / MAX(ABS(vy(ix,iy)),none_zero))
+        dt_local = MIN(dt_local, dt2)
+
         ! Note resistive limits assumes uniform resistivity hence cautious
         ! factor 0.2
         dxlocal = 1.0_num / (1.0_num / dxb(ix)**2 + 1.0_num / dyb(iy)**2)
 
         IF (cowling_resistivity) THEN
-          dt1 = 0.2_num * dxlocal &
+          dt3 = 0.2_num * dxlocal &
               / MAX(MAX(eta(ix,iy), eta_perp(ix,iy)), none_zero)
         ELSE
-          dt1 = 0.2_num * dxlocal / MAX(eta(ix,iy), none_zero)
+          dt3 = 0.2_num * dxlocal / MAX(eta(ix,iy), none_zero)
         END IF
 
         ! Adjust to accomodate resistive effects
-        dtr_local = MIN(dtr_local, dt1)
+        dtr_local = MIN(dtr_local, dt3)
 
         ! Hall MHD CFL limit
         IF (hall_mhd) THEN
-          dt1 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
+          dt4 = 0.75_num * rho(ix,iy) * MIN(dxb(ix), dyb(iy))**2 &
             / MAX(lambda_i(ix,iy) * SQRT(w1), none_zero)
-          dth_local = MIN(dth_local, dt1)
+          dth_local = MIN(dth_local, dt4)
         END IF
         
       END DO
