@@ -153,7 +153,7 @@ CONTAINS
               ixp = ix + 1
               residual = &
                   ((phi(ixp,iy) - phi(ix,iy))/dxc(ix) - (phi(ix,iy) - phi(ixm,iy))/dxc(ixm)) / dxb(ix) &
-                + ((phi(ix,iyp) - phi(ix,iy))/dyc(iy) - (phi(ix,iy) - phi(ix,iym))/dyc(ixm)) / dyb(iy)
+                + ((phi(ix,iyp) - phi(ix,iy))/dyc(iy) - (phi(ix,iy) - phi(ix,iym))/dyc(iym)) / dyb(iy)
               residual = residual / ((1.0_num/dxc(ix) +1.0_num/dxc(ixm))/dxb(ix) &
                                   +  (1.0_num/dyc(iy) +1.0_num/dyc(iym))/dyb(iy))
               phi(ix,iy) = phi(ix,iy) + w * residual 
