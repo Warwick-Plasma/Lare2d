@@ -184,8 +184,6 @@ CONTAINS
         flux(ix,iy) = cv1(ix,iy) + cv1(ixp,iy) + cv1(ix,iyp) + cv1(ixp,iyp)
       END DO
     END DO
-
-    ! cv1 = vertex CV before remap
     cv1(0:nx,0:ny) = flux(0:nx,0:ny) * 0.25_num
 
     DO iy = 0, ny
@@ -195,8 +193,6 @@ CONTAINS
         flux(ix,iy) = cv2(ix,iy) + cv2(ixp,iy) + cv2(ix,iyp) + cv2(ixp,iyp)
       END DO
     END DO
-
-    ! cv2 = vertex CV after remap
     cv2(0:nx,0:ny) = flux(0:nx,0:ny) * 0.25_num
 
     DO iy = -2, ny + 1
@@ -205,27 +201,7 @@ CONTAINS
         flux(ix,iy) = (vy1(ix,iy) + vy1(ix,iyp)) * 0.5_num
       END DO
     END DO
-
-    ! Vertex boundary velocity used in remap
     vy1(0:nx,-2:ny+1) = flux(0:nx,-2:ny+1)
-
-    ! Calculate vertex-centred lengths
-
-    DO iy = -1, ny + 2
-      iym = iy - 1
-      DO ix = -1, nx + 2
-        ! dyb before remap
-        dyb1(ix,iy) = dyb(iy) + (vy1(ix,iy) - vy1(ix,iym)) * dt
-      END DO
-    END DO
-
-    DO iy = -1, ny + 1
-      iyp = iy + 1
-      DO ix = -1, nx + 1
-        ! dyc before remap
-        dyc1(ix,iy) = 0.5_num * (dyb1(ix,iy) + dyb1(ix,iyp))
-      END DO
-    END DO
 
     DO iy = -1, ny
       iyp = iy + 1
@@ -234,8 +210,6 @@ CONTAINS
         flux(ix,iy) = dm(ix,iy) + dm(ixp,iy) + dm(ix,iyp) + dm(ixp,iyp)
       END DO
     END DO
-
-    ! Mass flux out of vertex CV
     dm(0:nx,-1:ny) = flux(0:nx,-1:ny) * 0.25_num
 
     DO iy = 0, ny
