@@ -53,7 +53,7 @@ CONTAINS
     LOGICAL, INTENT(IN) :: lagrangian_call
     REAL(num) :: stages, dt_parab, dt1, dt2
     REAL(num) :: q_fs, q_fs2, q_spx, q_spy, q_sp2
-    REAL(num) :: gm1, temp, kappa1
+    REAL(num) :: temp, kappa1
     INTEGER :: n_s_stages_local
 
     ! Make sure arrays are allocated if calling this routine just to determine
@@ -93,14 +93,12 @@ CONTAINS
     IF (.NOT. heat_flux_limiter) larsen_factor = 1.0_num
 
     dt_parab = 1.e10_num
-    gm1 = 0.5_num * (gamma - 1.0_num)
 
     DO iy = 1, ny
       DO ix = 1, nx
         ! Estimate explicit thermal conduction time-step
-        temp = gm1 * (2.0_num - xi_n(ix,iy)) &
-            *(energy(ix,iy)-(1.0_num - xi_n(ix,iy))&
-            *ionise_pot)
+        temp = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) &
+             * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
         kappa1 = kappa_0 * larsen_factor(ix,iy)
         temp = gm1 * rho(ix,iy) / (kappa1 * temp**pow)
         dt1 = temp * dxb(ix)**2
