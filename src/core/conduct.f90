@@ -97,10 +97,8 @@ CONTAINS
     DO iy = 1, ny
       DO ix = 1, nx
         ! Estimate explicit thermal conduction time-step
-        temp = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) &
-             * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
         kappa1 = kappa_0 * larsen_factor(ix,iy)
-        temp = gm1 * rho(ix,iy) / (kappa1 * temp**pow)
+        temp = rho(ix,iy) / (4.0_num * kappa1 * temperature(ix,iy)**pow)
         dt1 = temp * dxb(ix)**2
         dt2 = temp * dyb(iy)**2
         dt_parab = MIN(dt_parab, dt1, dt2)
