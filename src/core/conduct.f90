@@ -53,7 +53,7 @@ CONTAINS
     LOGICAL, INTENT(IN) :: lagrangian_call
     REAL(num) :: stages, dt_parab, dt1, dt2
     REAL(num) :: q_fs, q_fs2, q_spx, q_spy, q_sp2
-    REAL(num) :: temp, kappa1
+    REAL(num) :: temp, kappa1, gm1
     INTEGER :: n_s_stages_local
 
     ! Make sure arrays are allocated if calling this routine just to determine
