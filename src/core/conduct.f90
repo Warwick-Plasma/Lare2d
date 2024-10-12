@@ -60,9 +60,10 @@ CONTAINS
     ! dt from the lagrangian setp
     IF (lagrangian_call) ALLOCATE(larsen_factor(0:nx,0:ny))
 
+    gm1 = gamma - 1.0_num
     DO iy=-1,ny+2
       DO ix=-1,nx+2
-        temperature(ix,iy) = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) &
+        temperature(ix,iy) = gm1 / (2.0_num - xi_n(ix,iy)) &
             * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
       ENDDO
     ENDDO
@@ -97,10 +98,10 @@ CONTAINS
     DO iy = 1, ny
       DO ix = 1, nx
         ! Estimate explicit thermal conduction time-step
-        temp = (gamma - 1.0_num) / (2.0_num - xi_n(ix,iy)) &
+        temp = gm1 / (2.0_num - xi_n(ix,iy)) &
              * (energy(ix,iy) - (1.0_num - xi_n(ix,iy)) * ionise_pot)
         kappa1 = kappa_0 * larsen_factor(ix,iy)
-        temp = gm1 * rho(ix,iy) / (kappa1 * temp**pow)
+        temp = 0.5_num * rho(ix,iy) / (kappa1 * temp**pow)
         dt1 = temp * dxb(ix)**2
         dt2 = temp * dyb(iy)**2
         dt_parab = MIN(dt_parab, dt1, dt2)
