@@ -101,7 +101,7 @@ CONTAINS
     strmax = strmin + 12
     c_revision = -1
 
-    IF (c_commit_id(i:i) == 'v') THEN
+    IF (c_commit_id(1:1) == 'v') THEN
       strmin = 2
     END IF
 
