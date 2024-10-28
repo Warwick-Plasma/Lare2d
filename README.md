@@ -163,3 +163,184 @@ conflicts. You must now resolve those conflicts and commit the changes.
 After successfully merging in the changes, you can now delete the temporary
 copy of your work branch with `git branch -D workold`.
 
+
+# Installing the python SDF readers
+
+To install the python SDF readers you need to have an installation of
+python (2 or 3) with the numpy library. The automated plotting library
+requires the matplotlib library. Both numpy and matplotlib are available
+through most system package managers or are installable through
+[pip](https://pip.pypa.io/en/stable/).
+
+Once you have a working python install, just go to the root Lare2d
+directory and type
+
+`make sdfutils`
+
+This will build the SDF python library and install the sdf_helper
+wrapper and utility layer.
+
+# Using the sdf_helper wrapper layer
+
+The low level python SDF library is not user friendly, so a wrapper
+layer called sdf_helper has been written. This wrapper layer simplifies
+loading SDF files and provides simple plotting routines using
+matplotlib.
+
+### Importing sdf_helper
+
+Importing sdf_helper is as simple as
+
+```python
+import sdf_helper
+```
+
+In these examples, the numpy and matplotlib libraries are usually loaded
+too, and an alias is created for sdf_helper, so the boilerplate code
+looks like
+
+```python
+import sdf_helper as sh
+import numpy as np
+import matplotlib.pyplot as plt
+```
+
+### Loading an SDF file using sdf_helper
+
+To load a file, use the `getdata` function. This function takes either a
+string which it loads as a filename, so to load the file `Data/0001.df`
+you would run
+
+```python
+import sdf_helper as sh
+data = sh.getdata('Data/0001.sdf')
+```
+
+or it takes a number which is the dump number, and optionally a second
+parameter which is the directory name as a string, so you would run
+
+```python
+import sdf_helper as sh
+data = sh.getdata(1, 'Data')
+```
+
+Because memory is only allocated when needed in the SDF python reader
+there is no way of specifying which variables to load using getdata. All
+variables are available when the file is first loaded, and memory is
+allocated when the variable is first used.
+
+### Listing the available variables in an SDF file
+
+To see what variables are available use the list_variables method
+
+```python
+import sdf_helper as sh
+data = sh.getdata('Data/0001.sdf')
+sh.list_variables(data)
+```
+
+This produces an output that looks something like
+
+```text
+Reading file Data/0010.sdf
+t() = time
+p(100, 100) = Pressure
+rho(100, 100) = Rho
+vx(101, 101) = Vx
+vy(101, 101) = Vy
+vz(101, 101) = Vz
+bx(101, 100) = Bx
+by(100, 101) = By
+bz(100, 100) = Bz
+x(101, 101) = grid
+y(101, 101) = grid
+xc(100, 100) = grid_mid
+yc(100, 100) = grid_mid
+CPUs_Current_rank <class 'sdf.BlockPlainVariable'> [0, 0]
+CPUs_Original_rank <class 'sdf.BlockPlainVariable'> [1, 1]
+Fluid_Energy <class 'sdf.BlockPlainVariable'> [100, 100]
+Fluid_Pressure <class 'sdf.BlockPlainVariable'> [100, 100]
+Fluid_Rho <class 'sdf.BlockPlainVariable'> [100, 100]
+Fluid_Temperature <class 'sdf.BlockPlainVariable'> [100, 100]
+Grid_CPUs_Original_rank <class 'sdf.BlockPlainMesh'> [2, 2]
+Grid_CPUs_Original_rank_mid <class 'sdf.BlockPlainMesh'> [1, 1]
+Grid_Grid <class 'sdf.BlockPlainMesh'> [101, 101]
+Grid_Grid_mid <class 'sdf.BlockPlainMesh'> [100, 100]
+Grid_Grid_xface <class 'sdf.BlockPlainMesh'> [102, 101]
+Grid_Grid_xface_mid <class 'sdf.BlockPlainMesh'> [101, 100]
+Grid_Grid_yface <class 'sdf.BlockPlainMesh'> [101, 102]
+Grid_Grid_yface_mid <class 'sdf.BlockPlainMesh'> [100, 101]
+Integer_flags <class 'sdf.BlockNameValue'> [11]
+Last_dump_time_requested <class 'sdf.BlockConstant'> [1]
+Logical_flags <class 'sdf.BlockNameValue'> [6]
+Magnetic_Field_Bx <class 'sdf.BlockPlainVariable'> [101, 100]
+Magnetic_Field_Bx_centred <class 'sdf.BlockPlainVariable'> [100, 100]
+Magnetic_Field_By <class 'sdf.BlockPlainVariable'> [100, 101]
+Magnetic_Field_By_centred <class 'sdf.BlockPlainVariable'> [100, 100]
+Magnetic_Field_Bz <class 'sdf.BlockPlainVariable'> [100, 100]
+Material_parameters <class 'sdf.BlockConstant'> [1]
+Real_flags <class 'sdf.BlockNameValue'> [15]
+Time_increment <class 'sdf.BlockConstant'> [1]
+Velocity_Vx <class 'sdf.BlockPlainVariable'> [101, 101]
+Velocity_Vy <class 'sdf.BlockPlainVariable'> [101, 101]
+Velocity_Vz <class 'sdf.BlockPlainVariable'> [101, 101]
+Viscous_heating_total <class 'sdf.BlockConstant'> [1]
+```
+
+These are the names of the variables in the data structure. This example
+is taken from the default setup.
+
+### Working with the data in an SDF file
+
+You can access the underlying data using the names obtained from
+`list_variables`
+
+```python
+variable = data.Magnetic_Field_Bx
+```
+
+This returns an instance of `sdf.BlockPlainVariable`. The raw contents of the
+variable is a numpy array. It is then available using the `data` element
+of these objects.
+
+```python
+import numpy as np
+variable = data.Magnetic_Field_Bx
+raw = variable.data
+print(type(raw))
+print(np.mean(raw))
+```
+
+produces the output
+
+```text
+<class 'numpy.ndarray'>
+3.799161591345515e-11
+```
+
+### Plotting using sdf_helper
+
+The sdf_helper wrapper script comes with some plotting routines. They
+are incomplete currently, but aim to provide as close as possible to
+press ready figures in a single command. You need the `matplotlib`
+library to use these routines. To plot data, simply provide an
+`sdf.BlockPlainVariable` object to the routine `plot_auto`. An example
+of plotting a 2D variable, using the default setup to
+generate the figures would be
+
+```python
+import sdf_helper as sh
+import matplotlib.pyplot as plt
+
+plt.ion()
+data=sh.getdata('Data/0001.sdf')
+sh.plot_auto(data.Magnetic_Field_Bx)
+```
+
+This will produce a window similar to the image shown here, with slight
+difference depending on your version of matplotlib and your operating
+system. The code `plt.ion()` sets matplotlib to interactive mode, so
+control will be returned to you as soon as the plot has finished
+drawing.
+
+![Example 2D plot generated by sdf_helper.plot_auto](Manual/Matplotlib2D_screenshot.png)
