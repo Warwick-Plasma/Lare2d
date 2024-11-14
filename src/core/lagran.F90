@@ -769,14 +769,16 @@ CONTAINS
     ! setting 'dt_multiplier' if you expect massive changes across cells.
 
     REAL(num) :: cs2, c_visc2, rho0, length
-    REAL(num) :: dxlocal, dt_local, dtr_local, dth_local, ss_limit
-    REAL(num) :: dt1, dt2, dt3, dt4
+    REAL(num) :: dxlocal, dt_local, dtr_local, dth_local
+    REAL(num) :: dt1, dt2, dt3, dt4, ss_reduct_fac
     REAL(num) :: dt_locals(3), dt_min(3)
     REAL(num) :: dt0, time_dump, time_rem
     REAL(num) :: dt_fudge = 1e-4_num
     CHARACTER(LEN=1) :: dt_reason
     LOGICAL :: is_restart = .FALSE.
     LOGICAL, SAVE :: first = .TRUE.
+    ! Maximum number of super-steps
+    INTEGER, PARAMETER :: ss_limit = 60
 
     IF (first) THEN
       first = .FALSE.
@@ -912,14 +914,14 @@ CONTAINS
 
     IF (conduction) THEN
       CALL calc_s_stages(.TRUE.)
-      ss_limit = 60
       IF (n_s_stages >= ss_limit) THEN
-        dt  = dt  * REAL(2 * ss_limit**2   - 9, num) &
-                  / REAL(2 * n_s_stages**2 - 9, num)
-        dtr = dtr * REAL(2 * ss_limit**2   - 9, num) &
-                  / REAL(2 * n_s_stages**2 - 9, num)
-        dth = dth * REAL(2 * ss_limit**2   - 9, num) &
-                  / REAL(2 * n_s_stages**2 - 9, num)
+        ss_reduct_fac = REAL(2 * ss_limit**2   - 9, num) &
+                      / REAL(2 * n_s_stages**2 - 9, num)
+        dt  = dt  * ss_reduct_fac
+        dtr = dtr * ss_reduct_fac
+        IF (hall_mhd) THEN
+          dth = dth * ss_reduct_fac
+        END IF
       END IF
     END IF
 
